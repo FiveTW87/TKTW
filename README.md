@@ -13,7 +13,7 @@ rules work.
 | **P0** | Engine core — RNG, event stack, decisions, turn loop, distance, judgment, HP/death, hidden-info filter | ✅ Done |
 | **P1** | Full 104-card deck, all basic/instant/delayed tricks, all weapons/armor/horses | ✅ Done |
 | **P2** | 25 generals with skills | ✅ Done — all 25 |
-| **P3** | Identity Mode (role assignment, win conditions) | ⬜ Not started |
+| **P3** | Identity Mode (role assignment, win conditions) | ✅ Done |
 | **P4** | Server (Node + Socket.IO) | ⬜ Not started |
 | **P5** | Client (React + Framer Motion) | ⬜ Not started |
 
@@ -23,9 +23,18 @@ incl. the judgment-rewrite "อัจฉริยะปีศาจ"), แฮห
 กำเหลง, ลิบอง, อุยกาย, ไต้เกี้ยว, ซุนซางเซียง, ลกซุน, ซุนกวน, เอียนสี, ฮัวโต๋,
 ลิโป้, เตียวเสี้ยน.
 
-60 tests passing, including two 1000-game headless fuzz suites (bots-only,
-and all-25-generals-round-robin across every seat) that play full games to
-completion with no hangs or crashes.
+Identity Mode (P3) is fully in: role proportions for every player count
+3–10 (SPEC's table), lord always seat 0 with the rest shuffled, general
+selection (lord offered 5, everyone else 3, one at a time), all four win
+conditions including the traitor's narrower "sole survivor" case, and the
+kill reward/penalty table (killing a rebel draws 3 regardless of who did
+it; the lord killing a loyalist discards his own hand and gear).
+
+84 tests passing, including three 1000-game headless fuzz suites (bots-only,
+all-25-generals-round-robin, and identity-mode across every player count)
+that play full games to completion with no hangs or crashes, and confirm
+every identity-mode game ends with exactly one of the three valid winner
+sets.
 
 ## Architecture
 
@@ -38,6 +47,7 @@ packages/
       cards/         <- one file per card type's play/judge effect
       equipment/     <- weapon/armor hooks that aren't simple stats
       generals/      <- one file per general's skills
+      modes/         <- identity.ts: roles, general selection, win conditions
       data/           <- cards.json (104-card deck, balance-verified)
       bots/          <- a deliberately dumb bot used for fuzz testing
       sim/           <- CLI entry point
@@ -74,10 +84,17 @@ to be serialized directly.
 ```bash
 pnpm install
 pnpm test          # full Vitest suite
-pnpm sim --players 8 --seed 12345   # watch one full headless game play out
+pnpm sim --players 8 --seed 12345              # bare-mode headless game
+pnpm sim --players 8 --seed 12345 --identity   # identity-mode: roles, generals, win condition
 ```
 
-`pnpm sim` options: `--players 3-10`, `--seed <n>`, `--games <n>`, `--quiet`.
+`pnpm sim` options: `--players 3-10`, `--seed <n>`, `--games <n>`, `--quiet`, `--identity`.
+
+Identity mode's win condition and kill-reward rules are pluggable — they're
+not in `engine/core/` at all, just two optional slots on `GameConfig`
+(`checkGameEnd`, `onDeath`) that `modes/identity.ts` fills in. Bare mode
+(P0-P2) uses the trivial default (`lastAliveWins`, no `onDeath`); `createGame`
+gives you that, `createIdentityGame` gives you the real ruleset.
 
 Getting all 25 generals in was also the real test of the three-hook design
 (trigger / query / active skill from `core/activeSkill.ts`) — several gaps

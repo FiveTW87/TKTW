@@ -140,5 +140,6 @@ export function* killPlayer(
     `${deadId} เสียชีวิต (บทบาท: ${p.role})${killerId ? ` — สังหารโดย ${killerId}` : ""}`,
   );
   yield* fireTrigger(ctx, "OnDeath", { deadId, killerId });
+  if (ctx.onDeath) yield* ctx.onDeath(ctx, deadId, killerId);
   ctx.checkGameEnd(state);
 }

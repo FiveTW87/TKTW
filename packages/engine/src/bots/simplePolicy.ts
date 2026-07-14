@@ -205,6 +205,10 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       const options = (pending.data as { options: string[] }).options;
       return { ...base, cardIds: options.length > 0 ? [options[0]!] : [] };
     }
+    case "pickGeneral": {
+      const options = (pending.data as { options: string[] }).options;
+      return options[0] ? { ...base, choice: options[0] } : { ...base, pass: true };
+    }
     case "swordIceChoice":
       return { ...base, choice: "damage" };
     case "guanshiForce":

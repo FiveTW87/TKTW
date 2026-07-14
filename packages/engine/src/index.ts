@@ -6,6 +6,13 @@ import { makeCtx, lastAliveWins, type GameConfig } from "./core/ctx";
 import { runGame } from "./core/turnLoop";
 import { createSession, replaySession, type GameSession } from "./core/decisions";
 import type { GameState, DecisionLogEntry } from "./types";
+import {
+  createIdentityGame,
+  recoverIdentityGame,
+  identityCheckGameEnd,
+  identityOnDeath,
+  roleTableFor,
+} from "./modes/identity";
 
 export interface CreateGameOptions extends SetupOptions {
   checkGameEnd?: (state: GameState) => void;
@@ -30,6 +37,9 @@ export function recoverGame(
   const config: GameConfig = { checkGameEnd: opts.checkGameEnd ?? lastAliveWins };
   return replaySession(() => runGame(makeCtx(state, rng, config)), state, rng, log);
 }
+
+export { createIdentityGame, recoverIdentityGame, roleTableFor, identityCheckGameEnd, identityOnDeath };
+export { assignGeneral } from "./core/generalAssign";
 
 export * from "./types";
 export * from "./core/view";
