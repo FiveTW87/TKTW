@@ -2,7 +2,7 @@
 import type { Decision, EngineGenerator } from "./decisions";
 import type { Ctx } from "./ctx";
 import { fireTrigger, queryHook } from "./triggers";
-import { getPlayer, log, healPlayer, seatOrderFrom, discardFromHand } from "./state";
+import { getPlayer, log, healPlayer, seatOrderFrom, discardCardsFromHand } from "./state";
 import { countsAsType } from "./cardChecks";
 
 export function* dealDamage(
@@ -98,14 +98,15 @@ export function* resolveDying(
         data: { dyingId, hp: getPlayer(state, dyingId).hp },
       } satisfies Decision;
       if (!answer.pass && answer.cardIds && answer.cardIds.length > 0) {
-        for (const cid of answer.cardIds) {
+        const ids = answer.cardIds;
+        for (const cid of ids) {
           if (!countsAsType(state, pid, cid, "tao")) {
             throw new Error(`respondTao: ${cid} does not count as tao`);
           }
-          discardFromHand(state, pid, cid);
         }
+        discardCardsFromHand(state, pid, ids);
         log(state, `${pid} ลง "ท้อ" ช่วย ${dyingId}`);
-        yield* heal(ctx, dyingId, answer.cardIds.length, pid);
+        yield* heal(ctx, dyingId, ids.length, pid);
         anyHelped = true;
       }
     }

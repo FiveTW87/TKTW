@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "test": "pnpm --filter @tktw/engine test",
-    "sim": "pnpm --filter @tktw/engine sim"
+    "test": "pnpm -r test",
+    "sim": "pnpm --filter @tktw/engine sim",
+    "server": "pnpm --filter @tktw/server start",
+    "server:dev": "pnpm --filter @tktw/server dev"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

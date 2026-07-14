@@ -7,6 +7,7 @@ import {
   log,
   drawCards,
   discardFromHand,
+  discardCardsFromHand,
   removeFromHand,
   equipCard,
   cardById,
@@ -152,6 +153,11 @@ function* runPlayPhase(ctx: Ctx, activeId: string): EngineGenerator {
 
 // SPEC 8.4 ทวนงูจั้งปา: 2 arbitrary hand cards substitute for 1 สังหาร
 // (any suit — legality/range checked exactly like a normal sha play).
+//
+// All validation (throws) happens before any mutation (counter increment,
+// discard) — a rejected play must leave state byte-identical to before the
+// call, since the server (P4) will be feeding this untrusted client input
+// directly and must be able to retry safely after a thrown error.
 function* playZhangbaSha(
   ctx: Ctx,
   playerId: string,
@@ -170,7 +176,6 @@ function* playZhangbaSha(
   if (p.shaUsedThisTurn >= 1 + bonus) {
     throw new Error(`${playerId}: สังหาร usage limit reached`);
   }
-  p.shaUsedThisTurn += 1;
 
   const isLastCards = p.hand.length === cardIds.length;
   const maxTargets = isLastCards ? 3 : 1;
@@ -182,18 +187,28 @@ function* playZhangbaSha(
       throw new Error(`${playerId}: target ${targetId} is out of range for สังหาร`);
     }
   }
-
-  for (const cid of cardIds) discardFromHand(state, playerId, cid);
-  log(state, `${playerId} ใช้ทวนงูจั้งปา ทิ้งการ์ด 2 ใบแทน "สังหาร"`);
-
   const shaEffect = CARD_EFFECTS.sha;
   if (!shaEffect?.play) throw new Error("no play effect registered for sha");
+  if (new Set(cardIds).size !== cardIds.length) {
+    throw new Error(`${playerId}: duplicate card id in ทวนงูจั้งปา substitute`);
+  }
+
+  // Everything above only reads state. Nothing past this point may throw.
+  p.shaUsedThisTurn += 1;
+  discardCardsFromHand(state, playerId, cardIds);
+  log(state, `${playerId} ใช้ทวนงูจั้งปา ทิ้งการ์ด 2 ใบแทน "สังหาร"`);
+
   // First spent card stands in as the "reference" sha for color-dependent
   // interactions (renwang) — a documented simplification, real rules treat
   // zhangba's substitute as suit-less.
   yield* shaEffect.play({ ...ctx, playerId, cardIds: [cardIds[0]!], targetIds });
 }
 
+// Every throw in this function happens during the VALIDATION section,
+// before any mutation — a rejected play must leave `state` byte-identical
+// to how it was called, since P4's server feeds this untrusted client
+// input directly and must be able to safely re-prompt the same decision
+// after an error instead of the room ending up in a corrupted turn state.
 function* playCard(
   ctx: Ctx,
   playerId: string,
@@ -214,6 +229,13 @@ function* playCard(
 
   const firstId = cardIds[0];
   if (!firstId) return;
+  if (cardIds.length !== 1) {
+    // Only zhangba's substitute (handled above) ever legitimately spends 2.
+    throw new Error(`${playerId}: expected exactly 1 card, got ${cardIds.length}`);
+  }
+  if (!getPlayer(state, playerId).hand.some((c) => c.id === firstId)) {
+    throw new Error(`${playerId}: ${firstId} is not in hand`);
+  }
   const literalCard = cardById(firstId);
 
   // Card-conversion skills (Guan Yu's red-card-as-สังหาร, Zhao Yun's
@@ -234,6 +256,7 @@ function* playCard(
   const card = typeKey === literalCard.typeKey ? literalCard : { ...literalCard, typeKey };
   const def = cardDef(typeKey);
 
+  // ── validation only, below — nothing here may mutate state ──
   if (typeKey === "sha") {
     // Base limit 1/turn; crossbow/locked skills raise this — see P1.7/P2.
     const bonus = queryHook<number>(
@@ -243,11 +266,9 @@ function* playCard(
       (rs) => rs.reduce((a, b) => a + b, 0),
       0,
     );
-    const p = getPlayer(state, playerId);
-    if (p.shaUsedThisTurn >= 1 + bonus) {
+    if (getPlayer(state, playerId).shaUsedThisTurn >= 1 + bonus) {
       throw new Error(`${playerId}: สังหาร usage limit reached`);
     }
-    p.shaUsedThisTurn += 1;
   }
   if (card.typeKey === "tao" && getPlayer(state, playerId).hp >= getPlayer(state, playerId).maxHp) {
     throw new Error(`${playerId}: cannot play tao at full hp`);
@@ -327,6 +348,17 @@ function* playCard(
       throw new Error(`${playerId}: target ${targetId} is out of range for ${card.typeKey}`);
     }
   }
+  if (def.category === "delayedTrick") {
+    const targetId = targetIds[0] ?? playerId;
+    if (getPlayer(state, targetId).judgmentZone.some((c) => c.typeKey === card.typeKey)) {
+      throw new Error(`${targetId} already has a ${card.typeKey} in their judgment zone`);
+    }
+  }
+
+  // ── everything above only read state; mutation starts here ──
+  if (typeKey === "sha") {
+    getPlayer(state, playerId).shaUsedThisTurn += 1;
+  }
 
   if (def.category === "equipment") {
     equipCard(state, playerId, removeFromHand(state, playerId, firstId));
@@ -336,17 +368,13 @@ function* playCard(
 
   if (def.category === "delayedTrick") {
     const targetId = targetIds[0] ?? playerId;
-    const tgt = getPlayer(state, targetId);
-    if (tgt.judgmentZone.some((c) => c.typeKey === card.typeKey)) {
-      throw new Error(`${targetId} already has a ${card.typeKey} in their judgment zone`);
-    }
     removeFromHand(state, playerId, firstId);
-    tgt.judgmentZone.push(card);
+    getPlayer(state, targetId).judgmentZone.push(card);
     log(state, `${playerId} วาง ${card.typeKey} ในเขตตัดสินของ ${targetId}`);
     return; // no wuxie window at play time (SPEC 8.3) — opens at resolution
   }
 
-  // basic + instant trick: spend the card(s) up front, then resolve.
+  // basic + instant trick: spend the card(s), then resolve.
   for (const cid of cardIds) discardFromHand(state, playerId, cid);
   if (getPlayer(state, playerId).hand.length === 0) {
     yield* fireTrigger(ctx, "OnHandEmpty", { playerId });
@@ -386,7 +414,7 @@ function* runDiscardPhase(ctx: Ctx, activeId: string): EngineGenerator {
   if (ids.length !== over) {
     throw new Error(`${activeId}: must discard exactly ${over} card(s), got ${ids.length}`);
   }
-  for (const cid of ids) discardFromHand(state, activeId, cid);
+  discardCardsFromHand(state, activeId, ids);
   log(state, `${activeId} ทิ้งการ์ด ${ids.length} ใบ (เกินเพดาน HP)`);
   if (getPlayer(state, activeId).hand.length === 0) {
     yield* fireTrigger(ctx, "OnHandEmpty", { playerId: activeId });

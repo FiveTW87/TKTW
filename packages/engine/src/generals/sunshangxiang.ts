@@ -2,7 +2,7 @@
 // on the OnEquipmentLost hook wired via cards/_shared.ts's pickCardFrom.
 import { registerGeneral } from "./registry";
 import { heal } from "../core/damage";
-import { discardFromHand, drawCards, getPlayer, log } from "../core/state";
+import { discardCardsFromHand, drawCards, getPlayer, log } from "../core/state";
 
 registerGeneral({
   id: "sunshangxiang",
@@ -19,7 +19,7 @@ registerGeneral({
         if (!targetId || cardIds.length < 2) return;
         const p = getPlayer(state, targetId);
         if (p.hp >= p.maxHp) return; // must be injured
-        for (const cid of cardIds.slice(0, 2)) discardFromHand(state, ownerId, cid);
+        discardCardsFromHand(state, ownerId, cardIds.slice(0, 2));
         yield* heal(ctx, ownerId, 1);
         yield* heal(ctx, targetId, 1);
         log(state, `${ownerId} และ ${targetId} ฟื้น HP 1 (ผูกสัมพันธ์)`);

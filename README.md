@@ -14,7 +14,7 @@ rules work.
 | **P1** | Full 104-card deck, all basic/instant/delayed tricks, all weapons/armor/horses | ✅ Done |
 | **P2** | 25 generals with skills | ✅ Done — all 25 |
 | **P3** | Identity Mode (role assignment, win conditions) | ✅ Done |
-| **P4** | Server (Node + Socket.IO) | ⬜ Not started |
+| **P4** | Server (Node + Socket.IO) | ✅ Done |
 | **P5** | Client (React + Framer Motion) | ⬜ Not started |
 
 All 25 generals across all three factions + Qun: โจโฉ, สุมาอี้ (both skills,
@@ -42,11 +42,33 @@ random draw from everything still unclaimed. Nobody gets a duplicate
 either way, and those 3 characters get more chances to actually be played
 by someone, lord or not.
 
-88 tests passing, including three 1000-game headless fuzz suites (bots-only,
+95 tests passing, including three 1000-game headless fuzz suites (bots-only,
 all-25-generals-round-robin, and identity-mode across every player count)
 that play full games to completion with no hangs or crashes, and confirm
 every identity-mode game ends with exactly one of the three valid winner
 sets.
+
+Every function reachable from untrusted client input (P4's whole reason for
+existing) was audited for validate-before-mutate ordering: a rejected/thrown
+action must leave `state` byte-identical to before the call, so the future
+server can safely re-prompt the same decision after an error instead of the
+room ending up in a corrupted turn state. Real bugs this surfaced: a
+usage-limit counter that could get bumped by a play later rejected on range,
+and — the recurring one — several places that looped `discardFromHand` over
+a player-submitted array of card ids one at a time, so a batch with one
+valid id followed by one invalid/duplicate id would discard the valid card
+before throwing on the rest. Fixed with a single reusable primitive,
+`discardCardsFromHand` (`core/state.ts`), that validates every id is a
+distinct card actually in hand before discarding any of them, now used at
+every multi-card discard site (ทวนงูจั้งปา, ท้อ multi-card saves, 
+กระบี่น้ำแข็ง/ขวานทะลุศิลา/ตัดเวรตัดกรรม's forced discards, the end-of-turn
+hand-limit discard). `core/decisions.ts`'s `respond()` had the same class of
+bug one layer up: it logged an answer to `decisionLog` *before* confirming
+the engine accepted it, so a rejected answer got logged, and — since
+`pendingDecision` isn't cleared on a throw — a later successful retry on the
+same decision id logged a second entry under it, corrupting replay. Fixed by
+only logging after the engine's `advance()` call succeeds. `tests/atomicity.test.ts`
+covers both the primitive and several of these end-to-end through `respond()`.
 
 ## Architecture
 
@@ -64,6 +86,14 @@ packages/
       bots/          <- a deliberately dumb bot used for fuzz testing
       sim/           <- CLI entry point
     tests/
+  server/            <- P4: Node + Socket.IO multiplayer server
+    src/
+      rooms/         <- RoomManager (room/session lifecycle, no socket.io)
+                        and gameFlow (broadcast + decision-timeout wiring)
+      protocol/      <- Zod schemas for every client->server event
+      timeouts.ts    <- the 30s default-answer policy
+      socketHandlers.ts, server.ts, index.ts
+    tests/           <- socket.io-client end-to-end tests
 ```
 
 Three kinds of hooks a general/equipment skill can register:
@@ -120,6 +150,61 @@ in name only with nothing ever firing them (`OnEquipmentLost`,
 writing the general that needed it, never worked around inside a general's
 own file — by general #25 the hook surface is wide enough that it's a
 reasonable bet the shape is basically done.
+
+## Server (P4)
+
+`packages/server` is a bare `http.createServer()` + Socket.IO — no Express,
+no database, rooms live purely in memory (`Map<roomCode, GameRoom>`). That's
+a deliberate spec constraint, not a shortcut: a room only needs to survive a
+client's tab close/reopen while the process stays up, not a full server
+restart. (`GameSession`'s event-sourced `decisionLog`/`recoverGame` machinery
+already solves the harder crash-recovery problem and still exists in the
+engine, just not wired in here as the primary reconnect path.)
+
+- **Reconnect identity**: a room-scoped session token
+  (`crypto.randomUUID()`), handed to the client once at `room:create`/
+  `room:join` and presented again via `room:rejoin` — not `socket.id` (a new
+  socket every reconnect) or IP/name matching (spoofable, ambiguous with
+  duplicate names).
+- **Protocol validation**: every client→server event payload is a Zod schema
+  in `protocol/schema.ts`, checked before anything touches a room or the
+  engine. Player identity is never trusted from the payload — the server
+  always derives `playerId` from the session-token-authenticated seat, never
+  from a client-supplied field.
+- **Answer rejection is safe by construction**: `game:answer` calls the
+  engine's `respond()` inside a `try/catch` and just reports the error back
+  on failure. This only works because of the atomicity audit above — a
+  thrown `respond()` is guaranteed to leave `state` and `pendingDecision`
+  untouched, so the client can retry the exact same decision with no
+  room-level recovery logic needed.
+- **Decision timeout** (`timeouts.ts`, 30s default): reuses `simpleBotAnswer`
+  for every decision kind except `mainAction` (play a card / use a skill),
+  which times out to `endPhase` instead — auto-declining an AFK player's
+  dodge/wuxie/discard is a reasonable default, auto-spending their cards and
+  attacks on their behalf is not.
+- **Room GC**: a room is deleted once every seat has been disconnected for
+  longer than a grace period (default 30 minutes) — tracked as a single
+  `emptySince` timestamp on the room, so a room with anyone still connected
+  is never touched regardless of age.
+- **Host**: the room creator; auto-transfers to the next connected seat if
+  the host disconnects during the lobby. Minimum 3 players to start.
+
+`RoomManager` (room/session lifecycle) and `gameFlow` (broadcast + timeout
+scheduling) are both plain TypeScript with no socket.io dependency —
+`socketHandlers.ts` is the only file that touches the transport, which is
+what makes `tests/e2e.test.ts` possible over a real `socket.io-client`
+connection without mocking anything.
+
+```bash
+pnpm --filter @tktw/server dev     # tsx watch, PORT env var (default 3001)
+pnpm --filter @tktw/server start
+pnpm --filter @tktw/server test    # socket.io-client end-to-end tests
+```
+
+Deploy target is a long-running host (Fly.io, Railway, a plain VM) — the
+in-memory `GameSession`s and open WebSocket connections rule out serverless
+platforms like Vercel/Netlify. `GET /health` returns `{"ok":true}` for
+whatever health check the host wants.
 
 ## Design notes / known simplifications
 

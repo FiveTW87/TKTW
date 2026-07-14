@@ -2,7 +2,7 @@
 import { registerGeneral } from "./registry";
 import { runJudgment } from "../core/judgment";
 import { loseHp } from "../core/damage";
-import { getPlayer, discardFromHand } from "../core/state";
+import { getPlayer, discardCardsFromHand } from "../core/state";
 
 registerGeneral({
   id: "xiahoudun",
@@ -26,7 +26,11 @@ registerGeneral({
           };
           if (answer.choice === "discard2") {
             const pick = yield { kind: "discardChosenBy", playerId: ownerId, data: { count: 2 } };
-            for (const cid of (pick.cardIds ?? []).slice(0, 2)) discardFromHand(state, ownerId, cid);
+            const ids = pick.cardIds ?? [];
+            if (ids.length !== 2) {
+              throw new Error(`${ownerId}: discard2 requires exactly 2 card ids, got ${ids.length}`);
+            }
+            discardCardsFromHand(state, ownerId, ids);
           } else {
             yield* loseHp(ctx, ownerId, 1);
           }

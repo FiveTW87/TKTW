@@ -7,7 +7,7 @@ import type { CardDef } from "../core/cardEffects";
 import type { Ctx } from "../core/ctx";
 import type { EngineGenerator } from "../core/decisions";
 import { dealDamage } from "../core/damage";
-import { discardFromHand, getPlayer, log, cardById } from "../core/state";
+import { discardFromHand, discardCardsFromHand, getPlayer, log, cardById } from "../core/state";
 import { fireTrigger, queryHook } from "../core/triggers";
 import { countsAsType } from "../core/cardChecks";
 
@@ -27,9 +27,12 @@ function* resolveShaHit(
     const answer = yield { kind: "swordIceChoice", playerId: sourceId, data: { targetId } };
     if (answer.choice === "discard2") {
       const pick = yield { kind: "discardChosenBy", playerId: targetId, data: { count: 2 } };
-      const ids = (pick.cardIds ?? []).slice(0, 2);
-      for (const cid of ids) discardFromHand(state, targetId, cid);
-      log(state, `${targetId} ทิ้งการ์ด ${ids.length} ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`);
+      const ids = pick.cardIds ?? [];
+      if (ids.length !== 2) {
+        throw new Error(`${targetId}: discard2 requires exactly 2 card ids, got ${ids.length}`);
+      }
+      discardCardsFromHand(state, targetId, ids);
+      log(state, `${targetId} ทิ้งการ์ด 2 ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`);
       return;
     }
   }
@@ -61,7 +64,7 @@ function* resolveShaDodged(
   if (weaponOf(ctx, sourceId) === "guanshi") {
     const answer = yield { kind: "guanshiForce", playerId: sourceId, data: { targetId } };
     if (answer.choice === "force" && (answer.cardIds?.length ?? 0) === 2) {
-      for (const cid of answer.cardIds!) discardFromHand(state, sourceId, cid);
+      discardCardsFromHand(state, sourceId, answer.cardIds!);
       log(state, `${sourceId} ทิ้งการ์ด 2 ใบ บังคับให้ "สังหาร" โดน (ขวานทะลุศิลา)`);
       yield* resolveShaHit(ctx, sourceId, targetId, shaCard);
       return;

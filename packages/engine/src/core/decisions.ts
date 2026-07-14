@@ -52,8 +52,14 @@ export function respond(session: GameSession, answer: PlayerAnswer): void {
   if (answer.decisionId !== pending.id) {
     throw new Error(`stale decision id: expected ${pending.id}, got ${answer.decisionId}`);
   }
-  session.decisionLog.push({ decisionId: pending.id, answer });
+  // Log only after advance() succeeds: pendingDecision is left untouched by
+  // a throw inside advance() (same id, safe to retry), so an answer that
+  // gets rejected must not end up in decisionLog — otherwise a later,
+  // successful retry logs a second entry under that same decision id, and
+  // replaying the log deterministically re-throws on the first (bad) one
+  // before ever reaching the second.
   advance(session, answer);
+  session.decisionLog.push({ decisionId: pending.id, answer });
 }
 
 /**

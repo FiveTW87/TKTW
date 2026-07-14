@@ -4,7 +4,7 @@
 // teammate's ท้อ during resolveDying).
 import { registerGeneral } from "./registry";
 import { heal } from "../core/damage";
-import { discardFromHand, drawCards, log } from "../core/state";
+import { discardCardsFromHand, drawCards, log } from "../core/state";
 
 registerGeneral({
   id: "sunquan",
@@ -17,7 +17,7 @@ registerGeneral({
       maxPerTurn: 1,
       active: function* (ctx) {
         const { state, rng, ownerId, cardIds } = ctx;
-        for (const cid of cardIds) discardFromHand(state, ownerId, cid);
+        discardCardsFromHand(state, ownerId, cardIds);
         if (cardIds.length > 0) {
           drawCards(state, rng, ownerId, cardIds.length);
           log(state, `${ownerId} ทิ้ง ${cardIds.length} จั่ว ${cardIds.length} (ถ่วงดุลอำนาจ)`);

@@ -55,6 +55,23 @@ export function discardFromHand(state: GameState, playerId: string, cardId: stri
   moveToDiscard(state, removeFromHand(state, playerId, cardId));
 }
 
+/** Discard several cards from one hand as a single atomic operation: every
+ *  id must be a distinct card actually in hand, checked before any of them
+ *  is removed, so a partially-invalid submission (e.g. one real id + one
+ *  stale/duplicate id) can't discard some cards then throw on the rest. */
+export function discardCardsFromHand(state: GameState, playerId: string, cardIds: string[]): void {
+  const hand = getPlayer(state, playerId).hand;
+  if (new Set(cardIds).size !== cardIds.length) {
+    throw new Error(`${playerId}: duplicate card id in the same discard request`);
+  }
+  for (const cid of cardIds) {
+    if (!hand.some((c) => c.id === cid)) {
+      throw new Error(`${playerId}: ${cid} is not in hand`);
+    }
+  }
+  for (const cid of cardIds) discardFromHand(state, playerId, cid);
+}
+
 export function drawCards(state: GameState, rng: Rng, playerId: string, n: number): Card[] {
   const drawn: Card[] = [];
   for (let i = 0; i < n; i++) {
