@@ -1,0 +1,165 @@
+// SPEC 8.1 (สังหาร) + weapon riders from SPEC 8.4 that fire specifically off
+// a sha's own resolution (qinglong/guanshi/qilin/sword_ice). Armor
+// (bagua/renwang, SPEC 8.5) hooks in via OnNeedDodge / armorIgnored instead
+// of living here — see equipment/bagua.ts, equipment/renwang.ts.
+import type { Card } from "../types";
+import type { CardDef } from "../core/cardEffects";
+import type { Ctx } from "../core/ctx";
+import type { EngineGenerator } from "../core/decisions";
+import { dealDamage } from "../core/damage";
+import { discardFromHand, getPlayer, log, cardById } from "../core/state";
+import { fireTrigger, queryHook } from "../core/triggers";
+import { countsAsType } from "../core/cardChecks";
+
+function weaponOf(ctx: Ctx, playerId: string): string | undefined {
+  return getPlayer(ctx.state, playerId).equipment.weapon?.typeKey;
+}
+
+function* resolveShaHit(
+  ctx: Ctx,
+  sourceId: string,
+  targetId: string,
+  shaCard: Card,
+): EngineGenerator {
+  const { state } = ctx;
+
+  if (weaponOf(ctx, sourceId) === "sword_ice") {
+    const answer = yield { kind: "swordIceChoice", playerId: sourceId, data: { targetId } };
+    if (answer.choice === "discard2") {
+      const pick = yield { kind: "discardChosenBy", playerId: targetId, data: { count: 2 } };
+      const ids = (pick.cardIds ?? []).slice(0, 2);
+      for (const cid of ids) discardFromHand(state, targetId, cid);
+      log(state, `${targetId} ทิ้งการ์ด ${ids.length} ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`);
+      return;
+    }
+  }
+
+  yield* dealDamage(ctx, sourceId, targetId, 1, shaCard.id);
+
+  if (weaponOf(ctx, sourceId) === "qilin" && getPlayer(state, targetId).alive) {
+    const p = getPlayer(state, targetId);
+    const slot = p.equipment.horseMinus ? "horseMinus" : p.equipment.horsePlus ? "horsePlus" : undefined;
+    if (slot) {
+      const c = p.equipment[slot]!;
+      delete p.equipment[slot];
+      state.discardPile.push(c);
+      log(state, `${targetId} ถูกทำลายม้าด้วยธนูกิเลน`);
+    }
+  }
+}
+
+function* resolveShaDodged(
+  ctx: Ctx,
+  sourceId: string,
+  targetId: string,
+  shaCard: Card,
+  allowQinglongReplay: boolean,
+): EngineGenerator {
+  const { state } = ctx;
+  log(state, `${targetId} ลง "หลบ" สังหารจาก ${sourceId}`);
+
+  if (weaponOf(ctx, sourceId) === "guanshi") {
+    const answer = yield { kind: "guanshiForce", playerId: sourceId, data: { targetId } };
+    if (answer.choice === "force" && (answer.cardIds?.length ?? 0) === 2) {
+      for (const cid of answer.cardIds!) discardFromHand(state, sourceId, cid);
+      log(state, `${sourceId} ทิ้งการ์ด 2 ใบ บังคับให้ "สังหาร" โดน (ขวานทะลุศิลา)`);
+      yield* resolveShaHit(ctx, sourceId, targetId, shaCard);
+      return;
+    }
+  }
+
+  if (allowQinglongReplay && weaponOf(ctx, sourceId) === "qinglong") {
+    const answer = yield { kind: "qinglongReplay", playerId: sourceId, data: { targetId } };
+    if (!answer.pass && answer.choice === "replay") {
+      log(state, `${sourceId} ใช้ง้าวมังกรเขียว ลง "สังหาร" ซ้ำใส่ ${targetId}`);
+      yield* attemptSha(ctx, sourceId, targetId, shaCard, false);
+    }
+  }
+}
+
+function* attemptSha(
+  ctx: Ctx,
+  sourceId: string,
+  targetId: string,
+  shaCard: Card,
+  allowQinglongReplay: boolean,
+): EngineGenerator {
+  const { state } = ctx;
+
+  const targetedBox = { blockedFromDodge: false };
+  yield* fireTrigger(ctx, "OnShaTargeted", { sourceId, targetId, box: targetedBox, card: shaCard });
+
+  if (
+    weaponOf(ctx, sourceId) === "sword_yy" &&
+    getPlayer(state, sourceId).gender !== getPlayer(state, targetId).gender
+  ) {
+    const answer = yield { kind: "swordYyChoice", playerId: targetId, data: { sourceId } };
+    if (answer.choice === "discard" && (answer.cardIds?.length ?? 0) > 0) {
+      discardFromHand(state, targetId, answer.cardIds![0]!);
+      log(state, `${targetId} ทิ้งการ์ด 1 ใบ (กระบี่คู่หยินหยาง)`);
+    } else {
+      const p = getPlayer(state, sourceId);
+      const c = state.drawPile.pop();
+      if (c) {
+        p.hand.push(c);
+        log(state, `${sourceId} จั่ว 1 ใบ (กระบี่คู่หยินหยาง)`);
+      }
+    }
+  }
+
+  const needed = queryHook<number>(
+    state,
+    "dodgeRequirement",
+    { targetId },
+    (rs) => Math.max(...rs),
+    1,
+  );
+
+  let dodged = true;
+  if (targetedBox.blockedFromDodge) {
+    dodged = false;
+  }
+  for (let i = 0; dodged && i < needed; i++) {
+    const box = { autoDodged: false };
+    yield* fireTrigger(ctx, "OnNeedDodge", { sourceId, targetId, box, card: shaCard });
+    if (box.autoDodged) continue;
+
+    const answer = yield {
+      kind: "respondShan",
+      playerId: targetId,
+      data: { sourceId, index: i, needed },
+    };
+    const offered = !answer.pass && (answer.cardIds?.length ?? 0) > 0;
+    if (offered) {
+      const cid = answer.cardIds![0]!;
+      if (!countsAsType(state, targetId, cid, "shan")) {
+        throw new Error(`respondShan: ${cid} does not count as shan`);
+      }
+      discardFromHand(state, targetId, cid);
+    } else {
+      dodged = false;
+      break;
+    }
+  }
+
+  if (dodged) {
+    yield* resolveShaDodged(ctx, sourceId, targetId, shaCard, allowQinglongReplay);
+  } else {
+    yield* resolveShaHit(ctx, sourceId, targetId, shaCard);
+  }
+}
+
+export const shaCard: CardDef = {
+  // Normally a single target. fangtian (last card in hand) allows up to 3 —
+  // turnLoop.ts validates that legality before this ever runs; here we just
+  // resolve whichever targets were actually submitted, one at a time.
+  play: function* (ctx) {
+    const shaId = ctx.cardIds[0];
+    if (!shaId || ctx.targetIds.length === 0) return;
+    const card = cardById(shaId);
+    for (const targetId of ctx.targetIds) {
+      if (!getPlayer(ctx.state, targetId).alive) continue;
+      yield* attemptSha(ctx, ctx.playerId, targetId, card, true);
+    }
+  },
+};

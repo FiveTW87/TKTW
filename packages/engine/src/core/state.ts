@@ -1,0 +1,85 @@
+import type { Card, GameState, Player } from "../types";
+import type { Rng } from "./rng";
+import { CARD_BY_ID, cardDef } from "./cardData";
+
+export function getPlayer(state: GameState, id: string): Player {
+  const p = state.players.find((pp) => pp.id === id);
+  if (!p) throw new Error(`no such player: ${id}`);
+  return p;
+}
+
+export function isAlive(state: GameState, id: string): boolean {
+  return state.players.find((p) => p.id === id)?.alive ?? false;
+}
+
+export function aliveIds(state: GameState): string[] {
+  return state.players.filter((p) => p.alive).map((p) => p.id);
+}
+
+export function cardById(id: string): Card {
+  const c = CARD_BY_ID[id];
+  if (!c) throw new Error(`unknown card id: ${id}`);
+  return c;
+}
+
+/** Clockwise seat order starting at `fromId` inclusive, alive players only. */
+export function seatOrderFrom(state: GameState, fromId: string): string[] {
+  const alive = state.players.filter((p) => p.alive).sort((a, b) => a.seat - b.seat);
+  const idx = alive.findIndex((p) => p.id === fromId);
+  if (idx < 0) return alive.map((p) => p.id);
+  return [...alive.slice(idx), ...alive.slice(0, idx)].map((p) => p.id);
+}
+
+/** Clockwise seat order starting right *after* `fromId` (used for polling
+ *  responses to something `fromId` did — dodge/wuxie/AoE windows). */
+export function seatOrderAfter(state: GameState, fromId: string): string[] {
+  return seatOrderFrom(state, fromId).slice(1);
+}
+
+export function log(state: GameState, text: string, data?: Record<string, unknown>): void {
+  state.log.push({ turn: state.turnNumber, text, ...(data ? { data } : {}) });
+}
+
+export function removeFromHand(state: GameState, playerId: string, cardId: string): Card {
+  const p = getPlayer(state, playerId);
+  const idx = p.hand.findIndex((c) => c.id === cardId);
+  if (idx < 0) throw new Error(`card ${cardId} not in ${playerId}'s hand`);
+  return p.hand.splice(idx, 1)[0]!;
+}
+
+export function moveToDiscard(state: GameState, card: Card): void {
+  state.discardPile.push(card);
+}
+
+export function discardFromHand(state: GameState, playerId: string, cardId: string): void {
+  moveToDiscard(state, removeFromHand(state, playerId, cardId));
+}
+
+export function drawCards(state: GameState, rng: Rng, playerId: string, n: number): Card[] {
+  const drawn: Card[] = [];
+  for (let i = 0; i < n; i++) {
+    if (state.drawPile.length === 0) {
+      if (state.discardPile.length === 0) break; // truly out of cards, extremely rare
+      state.drawPile = rng.shuffle(state.discardPile);
+      state.discardPile = [];
+      log(state, `กองจั่วหมด — สับกองทิ้งเป็นกองจั่วใหม่ ${state.drawPile.length} ใบ`);
+    }
+    drawn.push(state.drawPile.pop()!);
+  }
+  getPlayer(state, playerId).hand.push(...drawn);
+  return drawn;
+}
+
+export function equipCard(state: GameState, playerId: string, card: Card): void {
+  const def = cardDef(card.typeKey);
+  if (!def.slot) throw new Error(`card ${card.typeKey} is not equipment`);
+  const p = getPlayer(state, playerId);
+  const old = p.equipment[def.slot];
+  if (old) state.discardPile.push(old);
+  p.equipment[def.slot] = card;
+}
+
+export function healPlayer(state: GameState, playerId: string, amount: number): void {
+  const p = getPlayer(state, playerId);
+  p.hp = Math.min(p.maxHp, p.hp + amount);
+}

@@ -1,0 +1,12 @@
+{
+  "name": "tktw",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "test": "pnpm --filter @tktw/engine test",
+    "sim": "pnpm --filter @tktw/engine sim"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
