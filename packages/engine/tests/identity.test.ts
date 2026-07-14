@@ -134,17 +134,36 @@ describe("SPEC 3: setup", () => {
     expect(picks.size).toBeGreaterThan(1);
   });
 
-  it("generals left unpicked in a round queue up front for the very next player", () => {
-    const session = createIdentityGame({ playerCount: 3, seed: 23 });
-    const lordOffer = (session.state.pendingDecision!.data as { options: string[] }).options;
-    const lordPending = session.state.pendingDecision!;
-    const lordChoice = lordOffer[2]!; // pick something other than index 0/1
-    respond(session, { decisionId: lordPending.id, playerId: lordPending.playerId, choice: lordChoice });
+  it("generals left unpicked in a round go back into the pool and get reshuffled, not queued in order", () => {
+    // Leftovers must stay in circulation (available for later rounds), but
+    // aren't pinned to a fixed position — across many seeds, the very next
+    // offer should sometimes contain a leftover and sometimes not.
+    let sawLeftoverReturn = false;
+    let sawNoLeftoverReturn = false;
+    for (let seed = 0; seed < 60 && !(sawLeftoverReturn && sawNoLeftoverReturn); seed++) {
+      const session = createIdentityGame({ playerCount: 3, seed });
+      const lordPending = session.state.pendingDecision!;
+      const lordOffer = (lordPending.data as { options: string[] }).options;
+      const lordChoice = lordOffer[0]!;
+      respond(session, { decisionId: lordPending.id, playerId: lordPending.playerId, choice: lordChoice });
+      const lordLeftovers = new Set(lordOffer.filter((g) => g !== lordChoice));
 
-    const nextOffer = (session.state.pendingDecision!.data as { options: string[] }).options;
-    const lordLeftovers = lordOffer.filter((g) => g !== lordChoice);
-    // next player's 3 options should all have come from the lord's 4 leftovers
-    for (const g of nextOffer) expect(lordLeftovers).toContain(g);
+      const nextOffer = (session.state.pendingDecision!.data as { options: string[] }).options;
+      if (nextOffer.some((g) => lordLeftovers.has(g))) sawLeftoverReturn = true;
+      else sawNoLeftoverReturn = true;
+    }
+    expect(sawLeftoverReturn).toBe(true);
+    expect(sawNoLeftoverReturn).toBe(true);
+  });
+
+  it("a general never vanishes: everyone ends up with a unique pick even across many small pools", () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const session = createIdentityGame({ playerCount: 3, seed: seed + 500 });
+      finishGeneralSelection(session, 3);
+      const ids = session.state.players.map((p) => p.generalId);
+      expect(new Set(ids).size).toBe(3);
+      expect(ids.every((id) => id !== "none")).toBe(true);
+    }
   });
 });
 

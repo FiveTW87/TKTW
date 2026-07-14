@@ -80,11 +80,12 @@ function resolvePick(offered: readonly string[], answer: PlayerAnswer, rng: Rng)
 // option to make their unique skill matter) plus 2 random from the rest of
 // the pool. Everyone else is offered 3. Whatever isn't picked in a round —
 // including any of the 3 lord-skill generals the lord passed on — goes back
-// to the FRONT of the shared pool, so it's what the next player in the
-// queue sees first. That's what keeps generals from repeating across
-// players and gives the 3 lord-skill generals more chances to actually get
-// played (by whoever ends up drawing them next), not just buried in a
-// 25-general pool that might never resurface them in a short player count.
+// into the shared pool and gets reshuffled, not queued in order — so the
+// next player isn't guaranteed to see specifically the previous player's
+// leftovers, just a random draw from everything still unclaimed. That's
+// what keeps generals from repeating across players and gives the 3
+// lord-skill generals more chances to actually get played by someone, not
+// just buried in a 25-general pool that might never resurface them.
 function* setupIdentityGame(ctx: Ctx): EngineGenerator {
   const { state, rng } = ctx;
   const players = [...state.players].sort((a, b) => a.seat - b.seat);
@@ -121,7 +122,9 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
     const answer = yield { kind: "pickGeneral", playerId: p.id, data: { options: offered } };
     const chosen = resolvePick(offered, answer, rng);
     assignGeneral(state, p.id, chosen, p.role === "lord");
-    pool = [...offered.filter((g) => g !== chosen), ...pool]; // leftovers queue up front
+    // leftovers go back into the pool and get reshuffled — not queued in
+    // order, so the next player isn't guaranteed to see them specifically.
+    pool = rng.shuffle([...offered.filter((g) => g !== chosen), ...pool]);
     log(state, `${p.id} เลือกนายพล ${chosen}`);
   }
 }

@@ -35,12 +35,14 @@ order): the lord's 5 are always the 3 lord-skill generals (โจโฉ/เล�
 anything) plus 2 random, everyone else is offered 3. A player can also send
 no choice at all ("just randomize it for me") instead of waiting to
 deliberate. Whatever's left unpicked each round — including any of the 3
-lord-skill generals the lord passed on — queues at the front of the shared
-pool for the next player, which both guarantees nobody gets a duplicate and
-gives those 3 characters more chances to actually get played by someone,
-lord or not.
+lord-skill generals the lord passed on — goes back into the shared pool and
+gets reshuffled, not queued in a fixed order, so the next player isn't
+guaranteed to see specifically the previous player's leftovers, just a
+random draw from everything still unclaimed. Nobody gets a duplicate
+either way, and those 3 characters get more chances to actually be played
+by someone, lord or not.
 
-87 tests passing, including three 1000-game headless fuzz suites (bots-only,
+88 tests passing, including three 1000-game headless fuzz suites (bots-only,
 all-25-generals-round-robin, and identity-mode across every player count)
 that play full games to completion with no hangs or crashes, and confirm
 every identity-mode game ends with exactly one of the three valid winner
