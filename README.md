@@ -12,18 +12,20 @@ rules work.
 |---|---|---|
 | **P0** | Engine core — RNG, event stack, decisions, turn loop, distance, judgment, HP/death, hidden-info filter | ✅ Done |
 | **P1** | Full 104-card deck, all basic/instant/delayed tricks, all weapons/armor/horses | ✅ Done |
-| **P2** | 25 generals with skills | 🟡 12 / 25 |
+| **P2** | 25 generals with skills | ✅ Done — all 25 |
 | **P3** | Identity Mode (role assignment, win conditions) | ⬜ Not started |
 | **P4** | Server (Node + Socket.IO) | ⬜ Not started |
 | **P5** | Client (React + Framer Motion) | ⬜ Not started |
 
-Generals implemented so far: โจโฉ, สุมาอี้ (both skills, incl. the
-judgment-rewrite "อัจฉริยะปีศาจ"), แฮหัวตุ้น, เคาทู, เตียวหุย, กวนอู,
-ม้าเฉียว, จิวยี่, เอียนสี, อุยกาย, ซุนซางเซียง, ลกซุน.
+All 25 generals across all three factions + Qun: โจโฉ, สุมาอี้ (both skills,
+incl. the judgment-rewrite "อัจฉริยะปีศาจ"), แฮหัวตุ้น, เคาทู, เตียวเลี้ยว,
+กุยแก, เตียวหุย, กวนอู, ขงเบ้ง, จูล่ง, ม้าเฉียว, หองหยิม, เล่าปี่, จิวยี่,
+กำเหลง, ลิบอง, อุยกาย, ไต้เกี้ยว, ซุนซางเซียง, ลกซุน, ซุนกวน, เอียนสี, ฮัวโต๋,
+ลิโป้, เตียวเสี้ยน.
 
-58 tests passing, including headless fuzz runs (1000+ games with bots only,
-300+ games with real generals assigned) that play full games to completion
-with no hangs or crashes.
+60 tests passing, including two 1000-game headless fuzz suites (bots-only,
+and all-25-generals-round-robin across every seat) that play full games to
+completion with no hangs or crashes.
 
 ## Architecture
 
@@ -76,6 +78,19 @@ pnpm sim --players 8 --seed 12345   # watch one full headless game play out
 ```
 
 `pnpm sim` options: `--players 3-10`, `--seed <n>`, `--games <n>`, `--quiet`.
+
+Getting all 25 generals in was also the real test of the three-hook design
+(trigger / query / active skill from `core/activeSkill.ts`) — several gaps
+in it only showed up once actual content needed them: card conversion
+wasn't reachable from a player's own main-action play (only reactive
+responses), `dodgeRequirement`/`duelShaRequirement` didn't say who was
+attacking (needed for Lu Bu), สังหาร resolution had no way to redirect its
+target mid-flight (needed for Dai Qiao), and a few trigger points existed
+in name only with nothing ever firing them (`OnEquipmentLost`,
+`OnHandEmpty`, `OnUseTrick`). Each was fixed in `engine/core/` *before*
+writing the general that needed it, never worked around inside a general's
+own file — by general #25 the hook surface is wide enough that it's a
+reasonable bet the shape is basically done.
 
 ## Design notes / known simplifications
 
