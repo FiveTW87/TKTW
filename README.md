@@ -24,13 +24,23 @@ incl. the judgment-rewrite "อัจฉริยะปีศาจ"), แฮห
 ลิโป้, เตียวเสี้ยน.
 
 Identity Mode (P3) is fully in: role proportions for every player count
-3–10 (SPEC's table), lord always seat 0 with the rest shuffled, general
-selection (lord offered 5, everyone else 3, one at a time), all four win
-conditions including the traitor's narrower "sole survivor" case, and the
-kill reward/penalty table (killing a rebel draws 3 regardless of who did
-it; the lord killing a loyalist discards his own hand and gear).
+3–10 (SPEC's table), lord always seat 0 with the rest shuffled, all four
+win conditions including the traitor's narrower "sole survivor" case, and
+the kill reward/penalty table (killing a rebel draws 3 regardless of who
+did it; the lord killing a loyalist discards his own hand and gear).
 
-84 tests passing, including three 1000-game headless fuzz suites (bots-only,
+General selection is a queue, one player at a time (lord first, then seat
+order): the lord's 5 are always the 3 lord-skill generals (โจโฉ/เล่าปี่/
+ซุนกวน — the only ones with a skill that needs `role === "lord"` to mean
+anything) plus 2 random, everyone else is offered 3. A player can also send
+no choice at all ("just randomize it for me") instead of waiting to
+deliberate. Whatever's left unpicked each round — including any of the 3
+lord-skill generals the lord passed on — queues at the front of the shared
+pool for the next player, which both guarantees nobody gets a duplicate and
+gives those 3 characters more chances to actually get played by someone,
+lord or not.
+
+87 tests passing, including three 1000-game headless fuzz suites (bots-only,
 all-25-generals-round-robin, and identity-mode across every player count)
 that play full games to completion with no hangs or crashes, and confirm
 every identity-mode game ends with exactly one of the three valid winner

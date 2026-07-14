@@ -18,6 +18,8 @@ import { makeCtx } from "../core/ctx";
 import { runGame } from "../core/turnLoop";
 import { createSession, replaySession, type GameSession } from "../core/decisions";
 import type { DecisionLogEntry } from "../types";
+import type { PlayerAnswer } from "../types";
+import type { Rng } from "../core/rng";
 import { getPlayer, drawCards, log } from "../core/state";
 import { assignGeneral } from "../core/generalAssign";
 import { GENERALS } from "../generals/registry";
@@ -51,10 +53,38 @@ export function roleTableFor(playerCount: number): Role[] {
   return roles;
 }
 
+// Generals with a lord-only skill (currently โจโฉ, เล่าปี่, ซุนกวน) — derived
+// from the registry, not hardcoded, so adding a 4th later needs no edit here.
+function lordSkillGeneralIds(): string[] {
+  return Object.values(GENERALS)
+    .filter((g) => g.skills.some((s) => s.lordOnly))
+    .map((g) => g.id);
+}
+
+// A player may deliberately pick from `offered`, or send no valid choice
+// (omitted, `pass: true`, or an id not in `offered`) to mean "just
+// randomize it for me" — the engine-level equivalent of a UI's "random
+// pick" button, so nobody is forced to wait on a decision that's already
+// been made in their head as "whatever, surprise me".
+function resolvePick(offered: readonly string[], answer: PlayerAnswer, rng: Rng): string {
+  if (answer.choice && offered.includes(answer.choice)) return answer.choice;
+  return offered[rng.nextInt(offered.length)]!;
+}
+
 // SPEC 3.1-3.3: assign roles (lord = seat 0, always), then run the general
-// selection flow (lord offered 5, everyone else offered 3, one at a time in
-// seat order). Card dealing is already done by createInitialState — nothing
-// here should draw the initial 4.
+// selection flow. Card dealing is already done by createInitialState —
+// nothing here should draw the initial 4.
+//
+// Selection is a queue, one player at a time (lord first, then seat order).
+// The lord's 5 are the 3 lord-skill generals (so the lord always has the
+// option to make their unique skill matter) plus 2 random from the rest of
+// the pool. Everyone else is offered 3. Whatever isn't picked in a round —
+// including any of the 3 lord-skill generals the lord passed on — goes back
+// to the FRONT of the shared pool, so it's what the next player in the
+// queue sees first. That's what keeps generals from repeating across
+// players and gives the 3 lord-skill generals more chances to actually get
+// played (by whoever ends up drawing them next), not just buried in a
+// 25-general pool that might never resurface them in a short player count.
 function* setupIdentityGame(ctx: Ctx): EngineGenerator {
   const { state, rng } = ctx;
   const players = [...state.players].sort((a, b) => a.seat - b.seat);
@@ -71,16 +101,27 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
     p.role = shuffledRoles[i]!;
   });
 
-  let pool = rng.shuffle(Object.keys(GENERALS).filter((id) => id !== "none"));
+  const lordSkillIds = rng.shuffle(lordSkillGeneralIds());
+  let pool = rng.shuffle(
+    Object.keys(GENERALS).filter((id) => id !== "none" && !lordSkillIds.includes(id)),
+  );
+
   const pickOrder = [lord, ...others];
   for (const p of pickOrder) {
-    const offerCount = p.id === lord.id ? 5 : 3;
-    const offered = pool.slice(0, Math.min(offerCount, pool.length));
+    let offered: string[];
+    if (p.id === lord.id) {
+      offered = [...lordSkillIds, ...pool.slice(0, 2)];
+      pool = pool.slice(2);
+    } else {
+      offered = pool.slice(0, Math.min(3, pool.length));
+      pool = pool.slice(offered.length);
+    }
     if (offered.length === 0) throw new Error(`no generals left to offer ${p.id}`);
+
     const answer = yield { kind: "pickGeneral", playerId: p.id, data: { options: offered } };
-    const chosen = offered.find((g) => g === answer.choice) ?? offered[0]!;
+    const chosen = resolvePick(offered, answer, rng);
     assignGeneral(state, p.id, chosen, p.role === "lord");
-    pool = pool.filter((g) => g !== chosen); // only the pick leaves the pool
+    pool = [...offered.filter((g) => g !== chosen), ...pool]; // leftovers queue up front
     log(state, `${p.id} เลือกนายพล ${chosen}`);
   }
 }

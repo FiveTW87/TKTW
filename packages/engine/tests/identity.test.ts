@@ -108,6 +108,44 @@ describe("SPEC 3: setup", () => {
     expect(seen[0]!.count).toBe(5);
     for (const entry of seen.slice(1)) expect(entry.count).toBe(3);
   });
+
+  it("the lord's 5 always include exactly the 3 lord-skill generals (โจโฉ/เล่าปี่/ซุนกวน) plus 2 random", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 17 });
+    const pending = session.state.pendingDecision!;
+    const options = (pending.data as { options: string[] }).options;
+    expect(options).toHaveLength(5);
+    const lordSkillInOffer = options.filter((g) =>
+      ["caocao", "liubei", "sunquan"].includes(g),
+    );
+    expect(lordSkillInOffer.sort()).toEqual(["caocao", "liubei", "sunquan"]);
+  });
+
+  it("a missing/invalid choice picks randomly from what was offered instead of always the first option", () => {
+    // Same seed, same offer every time (nothing upstream depends on the
+    // answer yet) — only vary how the lord answers, and confirm "no choice"
+    // doesn't deterministically collapse to options[0] every run.
+    const picks = new Set<string>();
+    for (let seed = 0; seed < 30; seed++) {
+      const session = createIdentityGame({ playerCount: 4, seed });
+      const pending = session.state.pendingDecision!;
+      respond(session, { decisionId: pending.id, playerId: pending.playerId, pass: true });
+      picks.add(getPlayer(session.state, "p0").generalId);
+    }
+    expect(picks.size).toBeGreaterThan(1);
+  });
+
+  it("generals left unpicked in a round queue up front for the very next player", () => {
+    const session = createIdentityGame({ playerCount: 3, seed: 23 });
+    const lordOffer = (session.state.pendingDecision!.data as { options: string[] }).options;
+    const lordPending = session.state.pendingDecision!;
+    const lordChoice = lordOffer[2]!; // pick something other than index 0/1
+    respond(session, { decisionId: lordPending.id, playerId: lordPending.playerId, choice: lordChoice });
+
+    const nextOffer = (session.state.pendingDecision!.data as { options: string[] }).options;
+    const lordLeftovers = lordOffer.filter((g) => g !== lordChoice);
+    // next player's 3 options should all have come from the lord's 4 leftovers
+    for (const g of nextOffer) expect(lordLeftovers).toContain(g);
+  });
 });
 
 describe("SPEC 2: win conditions", () => {
