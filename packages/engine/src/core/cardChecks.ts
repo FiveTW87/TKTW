@@ -16,13 +16,19 @@ export function countsAsType(
   playerId: string,
   cardId: string,
   wanted: string,
+  /** "mainAction" for a player's own proactive play (turnLoop.ts's
+   *  playCard); omitted/"reactive" everywhere else (dodge, tao-rescue,
+   *  wuxie, forced-sha asks). Lets a skill like Hua Tuo's "ปฐมพยาบาล"
+   *  (red-as-tao, but *only* when reactively saving a dying player, never
+   *  as his own turn's main action) tell the two apart. */
+  context: "mainAction" | "reactive" = "reactive",
 ): boolean {
   const card = cardById(cardId);
   if (card.typeKey === wanted) return true;
   return queryHook<boolean>(
     state,
     "canConvertCard",
-    { playerId, cardId, card, asType: wanted },
+    { playerId, cardId, card, asType: wanted, context },
     (rs) => rs.some(Boolean),
     false,
   );

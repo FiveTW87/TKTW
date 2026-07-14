@@ -63,7 +63,8 @@ export type QueryHookName =
   | "duelShaRequirement" // (playerId) -> number, how many sha needed in a duel (default 1)
   | "armorIgnored" // (playerId) -> boolean, true if playerId's armor (e.g. bagua) is pierced this sha
   | "drawAmountModifier" // (playerId) -> number, additive to the base 2-card turn draw
-  | "damageBonus"; // (playerId) -> number, additive to damage playerId deals (simplification: applies to all of their damage this turn, not just สังหาร/ดวล as SPEC's Cao Ren wording says)
+  | "damageBonus" // (playerId) -> number, additive to damage playerId deals (simplification: applies to all of their damage this turn, not just สังหาร/ดวล as SPEC's Cao Ren wording says)
+  | "ignoresCardRange"; // (playerId) -> boolean, true bypasses a trick's own fixed `range` (e.g. Pang Tong's "อัจฉริยะพิสดาร" on shunshou)
 
 export interface TriggerCtx extends Ctx {
   point: TriggerPoint;

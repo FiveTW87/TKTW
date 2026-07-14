@@ -18,7 +18,7 @@ export const juedouCard: CardDef = {
       const needed = queryHook<number>(
         state,
         "duelShaRequirement",
-        { playerId: responder },
+        { playerId: responder, opponentId: opponent },
         (rs) => Math.max(...rs),
         1,
       );

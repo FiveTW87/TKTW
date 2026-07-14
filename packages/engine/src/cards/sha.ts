@@ -86,8 +86,11 @@ function* attemptSha(
 ): EngineGenerator {
   const { state } = ctx;
 
-  const targetedBox = { blockedFromDodge: false };
-  yield* fireTrigger(ctx, "OnShaTargeted", { sourceId, targetId, box: targetedBox, card: shaCard });
+  // Mutable box: Dai Qiao's "หลบลี้ภัย" redirects targetId mid-resolution,
+  // so everything downstream must read box.targetId, not the parameter.
+  const targetedBox = { targetId, blockedFromDodge: false };
+  yield* fireTrigger(ctx, "OnShaTargeted", { sourceId, box: targetedBox, card: shaCard });
+  targetId = targetedBox.targetId;
 
   if (
     weaponOf(ctx, sourceId) === "sword_yy" &&
@@ -110,7 +113,7 @@ function* attemptSha(
   const needed = queryHook<number>(
     state,
     "dodgeRequirement",
-    { targetId },
+    { sourceId, targetId },
     (rs) => Math.max(...rs),
     1,
   );

@@ -104,6 +104,9 @@ export interface GameState {
   /** Set by เพลินจนลืมแคว้นสู่'s judge handler, consumed and cleared by
    *  runTurn before entering the play phase. */
   skipPlayPhase?: boolean;
+  /** Set by ลิบอง's "ข่มใจตนเอง", consumed and cleared by runTurn before
+   *  entering the discard phase. */
+  skipDiscardPhase?: boolean;
 }
 
 /** Answer fed back into a suspended decision generator via gen.next(answer). */
@@ -114,6 +117,7 @@ export interface PlayerAnswer {
   targetIds?: string[];
   choice?: string;
   skillId?: string; // choice === "useSkill": which active skill to invoke
+  asType?: string; // choice === "playCard": play cardIds[0] as this typeKey via a canConvertCard skill (e.g. Guan Yu's red-card-as-สังหาร)
   pass?: boolean;
 }
 

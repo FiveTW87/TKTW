@@ -9,6 +9,7 @@ import "../src/generals/index";
 import { GENERALS } from "../src/generals/registry";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 import { runUntilEnd } from "../src/bots/runner";
+import { forceIntoHand } from "./_testUtils";
 
 const REAL_GENERALS = Object.keys(GENERALS).filter((id) => id !== "none");
 
@@ -16,7 +17,11 @@ function createGeneralsGame(playerCount: number, seed: number) {
   const rng = createRng(seed);
   const state = createInitialState({ playerCount, seed }, rng);
   for (let i = 0; i < playerCount; i++) {
-    const gid = REAL_GENERALS[i % REAL_GENERALS.length]!;
+    // Offset by `seed` (not just `i`) so which generals appear varies across
+    // fuzz iterations — playerCount is always < 25, so a fixed i%25 mapping
+    // would otherwise pin every game to the same first `playerCount` generals
+    // and never reach the rest at all.
+    const gid = REAL_GENERALS[(i + seed) % REAL_GENERALS.length]!;
     assignGeneral(state, `p${i}`, gid, i === 0);
   }
   const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
@@ -35,12 +40,12 @@ function skipOptionalPrompts(session: ReturnType<typeof createSession>) {
 }
 
 describe("P2 fuzz: every registered general in real play, no crashes/hangs", () => {
-  it("has at least the 5 tier-A generals registered", () => {
-    expect(REAL_GENERALS.length).toBeGreaterThanOrEqual(5);
+  it("has all 25 generals registered", () => {
+    expect(REAL_GENERALS.length).toBe(25);
   });
 
-  it("300 games with generals round-robin-assigned across all seats finish cleanly", () => {
-    for (let seed = 0; seed < 300; seed++) {
+  it("1000 games with generals round-robin-assigned across all seats finish cleanly", () => {
+    for (let seed = 0; seed < 1000; seed++) {
       const session = createGeneralsGame(8, seed + 900000);
       expect(() => runUntilEnd(session, simpleBotAnswer)).not.toThrow();
       expect(session.state.finished).toBe(true);
@@ -141,6 +146,66 @@ describe("active skill dispatch (SPEC 12.1 third hook shape)", () => {
         skillId: "zhouyu_fanjian",
         cardIds: [p0.hand[0]!.id],
         targetIds: ["p1"],
+      }),
+    ).toThrow();
+  });
+});
+
+describe("card conversion applies to main-action plays, not just reactive responses", () => {
+  it("Guan Yu can actively play a red card as สังหาร on his own turn", () => {
+    const rng = createRng(21);
+    const state = createInitialState({ playerCount: 3, seed: 21 }, rng);
+    assignGeneral(state, "p0", "guanyu");
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+
+    const p0 = state.players[0]!;
+    p0.hand = p0.hand.filter((c) => c.typeKey !== "sha"); // force reliance on conversion
+    forceIntoHand(state, "p0", "heart_9_1"); // real card, typeKey "wuzhong", red
+
+    const p1 = state.players[1]!;
+    p1.hand = p1.hand.filter((c) => c.typeKey !== "shan"); // force a guaranteed hit
+    const before = p1.hp;
+
+    const session = createSession(runGame(ctx), state, rng);
+    const pending = session.state.pendingDecision!;
+    expect(pending.kind).toBe("mainAction");
+    respond(session, {
+      decisionId: pending.id,
+      playerId: "p0",
+      choice: "playCard",
+      cardIds: ["heart_9_1"],
+      targetIds: ["p1"],
+      asType: "sha",
+    });
+
+    // Resolve the dodge ask this triggers, same as any real สังหาร.
+    for (let i = 0; i < 10; i++) {
+      const d = session.state.pendingDecision;
+      if (!d || (d.kind === "mainAction" && d.playerId === "p0")) break;
+      respond(session, simpleBotAnswer(session));
+    }
+
+    expect(p1.hp).toBe(before - 1);
+    expect(state.discardPile.some((c) => c.id === "heart_9_1")).toBe(true);
+  });
+
+  it("rejects converting a card the player has no skill to convert", () => {
+    const rng = createRng(22);
+    const state = createInitialState({ playerCount: 3, seed: 22 }, rng);
+    // p0 has no general with canConvertCard registered ("none")
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    forceIntoHand(state, "p0", "heart_9_1"); // real card, typeKey "wuzhong", not สังหาร
+
+    const session = createSession(runGame(ctx), state, rng);
+    const pending = session.state.pendingDecision!;
+    expect(() =>
+      respond(session, {
+        decisionId: pending.id,
+        playerId: "p0",
+        choice: "playCard",
+        cardIds: ["heart_9_1"],
+        targetIds: ["p1"],
+        asType: "sha",
       }),
     ).toThrow();
   });

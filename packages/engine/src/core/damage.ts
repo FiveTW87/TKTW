@@ -33,6 +33,12 @@ export function* dealDamage(
   p.hp -= amount;
   log(state, `${targetId} ได้รับดาเมจ ${amount} จาก ${sourceId ?? "?"} (เหลือ ${p.hp} HP)`);
   yield* fireTrigger(ctx, "OnDamaged", { sourceId, targetId, amount, sourceCardId });
+  // OnHPLost is a superset of OnDamaged: it fires for ANY hp loss (damage
+  // or not), once per point (Guo Jia's "แผนสุดท้าย" explicitly triggers
+  // once per point: "เสีย 2 HP = ทำงาน 2 ครั้ง").
+  for (let i = 0; i < amount && p.alive; i++) {
+    yield* fireTrigger(ctx, "OnHPLost", { targetId, amount: 1 });
+  }
   if (p.hp <= 0) yield* resolveDying(ctx, targetId, sourceId);
 }
 
@@ -43,14 +49,32 @@ export function* loseHp(ctx: Ctx, targetId: string, amount: number): EngineGener
   const p = getPlayer(state, targetId);
   p.hp -= amount;
   log(state, `${targetId} เสีย HP ${amount} (ไม่ใช่ดาเมจ, เหลือ ${p.hp})`);
-  yield* fireTrigger(ctx, "OnHPLost", { targetId, amount });
+  for (let i = 0; i < amount && p.alive; i++) {
+    yield* fireTrigger(ctx, "OnHPLost", { targetId, amount: 1 });
+  }
   if (p.hp <= 0) yield* resolveDying(ctx, targetId, undefined);
 }
 
-export function* heal(ctx: Ctx, targetId: string, amount: number): EngineGenerator {
-  healPlayer(ctx.state, targetId, amount);
-  log(ctx.state, `${targetId} ฟื้น HP ${amount}`);
-  yield* fireTrigger(ctx, "OnHealed", { targetId, amount });
+export function* heal(
+  ctx: Ctx,
+  targetId: string,
+  amount: number,
+  /** Who's playing the healing card, when it's not the target healing
+   *  themselves — lets Sun Quan's "กอบกู้" (another Wu player's ท้อ heals
+   *  him 1 extra) tell "self-heal" apart from "someone else healed me". */
+  sourceId?: string,
+): EngineGenerator {
+  const { state } = ctx;
+  healPlayer(state, targetId, amount);
+  log(state, `${targetId} ฟื้น HP ${amount}`);
+  yield* fireTrigger(ctx, "OnHealed", { targetId, amount, sourceId });
+  if (sourceId && sourceId !== targetId) {
+    const source = getPlayer(state, sourceId);
+    const target = getPlayer(state, targetId);
+    if (source.faction === "wu" && target.faction === "wu") {
+      yield* fireTrigger(ctx, "OnHealedByWu", { targetId, amount, sourceId });
+    }
+  }
 }
 
 /** SPEC section 6: ask the dying player first, then seat order, repeatedly
@@ -80,8 +104,8 @@ export function* resolveDying(
           }
           discardFromHand(state, pid, cid);
         }
-        healPlayer(state, dyingId, answer.cardIds.length);
         log(state, `${pid} ลง "ท้อ" ช่วย ${dyingId}`);
+        yield* heal(ctx, dyingId, answer.cardIds.length, pid);
         anyHelped = true;
       }
     }

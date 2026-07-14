@@ -48,6 +48,20 @@ function othersInOrder(view: GameView, me: PlayerView): PlayerView[] {
     .filter((p) => p.alive);
 }
 
+// Hand SIZE is public even when contents aren't (PlayerView.hand is
+// {count} for non-self players) — enough to predict ขงเบ้ง's "กลเมืองร้าง"
+// (handless -> immune to สังหาร/ดวล) without seeing anyone's actual cards.
+function isHandEmpty(p: PlayerView): boolean {
+  return Array.isArray(p.hand) ? p.hand.length === 0 : p.hand.count === 0;
+}
+
+// ขงเบ้ง's immunity is the one canBeTargetedBy restriction that isn't
+// tied to a single card type (unlike ลกซุน's, special-cased at each call
+// site below) — สังหาร and ดวล both need it, so it's centralised here.
+function immuneToShaOrDuel(p: PlayerView): boolean {
+  return p.generalId === "zhugeliang" && isHandEmpty(p);
+}
+
 export function simpleBotAnswer(session: GameSession): PlayerAnswer {
   const pending = session.state.pendingDecision;
   if (!pending) throw new Error("simpleBotAnswer: no pending decision");
@@ -74,7 +88,9 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       if (me.shaUsedThisTurn < 1) {
         const sha = find("sha");
         if (sha) {
-          const inRange = othersInOrder(view, me).filter((p) => inAttackRange(view, me, p));
+          const inRange = othersInOrder(view, me).filter(
+            (p) => inAttackRange(view, me, p) && !immuneToShaOrDuel(p),
+          );
           if (inRange.length > 0) {
             const isLastCard = hand.length === 1;
             const n = isLastCard && me.equipment.weapon?.typeKey === "fangtian" ? 3 : 1;
@@ -111,8 +127,9 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       // 6. Single-target tricks against the nearest opponent.
       const others = othersInOrder(view, me);
       const juedou = find("juedou");
-      if (juedou && others[0]) {
-        return { ...base, choice: "playCard", cardIds: [juedou.id], targetIds: [others[0].id] };
+      const duelTarget = others.find((p) => !immuneToShaOrDuel(p));
+      if (juedou && duelTarget) {
+        return { ...base, choice: "playCard", cardIds: [juedou.id], targetIds: [duelTarget.id] };
       }
       // shunshou has a fixed range-1 rule independent of the actor's weapon
       // — unlike สังหาร, do NOT use inAttackRange (which is weapon-aware).

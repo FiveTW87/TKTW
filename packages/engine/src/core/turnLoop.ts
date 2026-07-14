@@ -17,6 +17,7 @@ import { makeEvent } from "./eventStack";
 import { resolveWithWuxieWindow } from "./wuxieWindow";
 import { canAttack, distanceNet } from "./distance";
 import { useActiveSkill } from "./activeSkill";
+import { countsAsType } from "./cardChecks";
 
 function activePlayerId(ctx: Ctx): string {
   const p = ctx.state.players.find((pp) => pp.seat === ctx.state.currentSeat);
@@ -88,7 +89,12 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
 
   state.phase = "discard";
   yield* fireTrigger(ctx, "DiscardPhaseStart", { playerId: activeId });
-  yield* runDiscardPhase(ctx, activeId);
+  if (state.skipDiscardPhase) {
+    delete state.skipDiscardPhase;
+    log(state, `${activeId} ข้ามเฟสทิ้งการ์ด (ข่มใจตนเอง)`);
+  } else {
+    yield* runDiscardPhase(ctx, activeId);
+  }
   if (state.finished) return;
 
   state.phase = "end";
@@ -135,7 +141,7 @@ function* runPlayPhase(ctx: Ctx, activeId: string): EngineGenerator {
     } satisfies Decision;
     if (answer.pass || answer.choice === "endPhase") return;
     if (answer.choice === "playCard") {
-      yield* playCard(ctx, activeId, answer.cardIds ?? [], answer.targetIds ?? []);
+      yield* playCard(ctx, activeId, answer.cardIds ?? [], answer.targetIds ?? [], answer.asType);
       if (state.finished) return;
     } else if (answer.choice === "useSkill" && answer.skillId) {
       yield* useActiveSkill(ctx, activeId, answer.skillId, answer.cardIds ?? [], answer.targetIds ?? []);
@@ -193,6 +199,7 @@ function* playCard(
   playerId: string,
   cardIds: string[],
   targetIds: string[],
+  asType?: string,
 ): EngineGenerator {
   const { state } = ctx;
 
@@ -207,10 +214,27 @@ function* playCard(
 
   const firstId = cardIds[0];
   if (!firstId) return;
-  const card = cardById(firstId);
-  const def = cardDef(card.typeKey);
+  const literalCard = cardById(firstId);
 
-  if (card.typeKey === "sha") {
+  // Card-conversion skills (Guan Yu's red-card-as-สังหาร, Zhao Yun's
+  // interchangeable สังหาร/หลบ, Gan Ning's black-as-guohe, ...) are only
+  // meaningful here for cards actually playable as a main action — shan and
+  // wuxie conversions are already covered at their own reactive accept
+  // points (respondShan/askWuxie) and never reach this function.
+  let typeKey = literalCard.typeKey;
+  if (asType && asType !== typeKey) {
+    if (!countsAsType(state, playerId, firstId, asType, "mainAction")) {
+      throw new Error(`${playerId}: cannot play ${firstId} as ${asType}`);
+    }
+    typeKey = asType;
+  }
+  // "card" from here on means "the card as it's being played" — same id,
+  // possibly reinterpreted typeKey. suit/rank stay the physical card's own
+  // (correct: a converted card's colour still matters to e.g. renwang).
+  const card = typeKey === literalCard.typeKey ? literalCard : { ...literalCard, typeKey };
+  const def = cardDef(typeKey);
+
+  if (typeKey === "sha") {
     // Base limit 1/turn; crossbow/locked skills raise this — see P1.7/P2.
     const bonus = queryHook<number>(
       state,
@@ -273,13 +297,34 @@ function* playCard(
       if (!canAttack(state, playerId, targetId)) {
         throw new Error(`${playerId}: target ${targetId} is out of range for ${card.typeKey}`);
       }
+      const allowed = queryHook<boolean>(
+        state,
+        "canBeTargetedBy",
+        { cardTypeKey: card.typeKey, sourceId: playerId, targetId },
+        (rs) => rs.every(Boolean),
+        true,
+      );
+      if (!allowed) {
+        throw new Error(`${playerId}: ${targetId} cannot be targeted by ${card.typeKey}`);
+      }
     }
   } else if (typeof def.range === "number") {
     // Fixed-distance restriction unrelated to the player's weapon (e.g.
     // shunshou range:1) — uses seat distance directly, not canAttack().
+    // Pang Tong's "อัจฉริยะพิสดาร" bypasses this entirely.
+    const ignoresRange = queryHook<boolean>(
+      state,
+      "ignoresCardRange",
+      { playerId },
+      (rs) => rs.some(Boolean),
+      false,
+    );
     const targetId = targetIds[0];
-    if (!targetId || distanceNet(state, playerId, targetId) > def.range) {
-      throw new Error(`${playerId}: target ${targetId ?? "?"} is out of range for ${card.typeKey}`);
+    if (!targetId) {
+      throw new Error(`${playerId}: ${card.typeKey} needs a target`);
+    }
+    if (!ignoresRange && distanceNet(state, playerId, targetId) > def.range) {
+      throw new Error(`${playerId}: target ${targetId} is out of range for ${card.typeKey}`);
     }
   }
 
@@ -319,6 +364,12 @@ function* playCard(
   const effect = CARD_EFFECTS[card.typeKey];
   if (!effect?.play) throw new Error(`no play effect registered for ${card.typeKey}`);
   yield* effect.play({ ...ctx, playerId, cardIds, targetIds });
+
+  // Pang Tong's "รวบรวมปัญญา": ordinary (non-converted) trick cards only.
+  if (def.category === "trick") {
+    const wasConverted = !!asType && asType !== literalCard.typeKey;
+    yield* fireTrigger(ctx, "OnUseTrick", { playerId, cardTypeKey: card.typeKey, wasConverted });
+  }
 }
 
 function* runDiscardPhase(ctx: Ctx, activeId: string): EngineGenerator {
