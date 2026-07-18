@@ -89,20 +89,24 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
   const taoName = cardDisplay("tao").name;
   const wuxieName = cardDisplay("wuxie").name;
 
-  // "(ใบที่ 2/2)" suffix when more than one card is required in a row —
-  // e.g. Lu Bu's wushuang makes his สังหาร need 2 หลบ; the target must know.
+  // Lu Bu's wushuang makes his สังหาร need 2 หลบ (and his duel 2 สังหาร); both
+  // are asked as one all-or-nothing pick of `needed` cards.
   const needed = typeof data.needed === "number" ? data.needed : 1;
-  const index = typeof data.index === "number" ? data.index : 0;
-  const stackSuffix = needed > 1 ? ` (ใบที่ ${index + 1}/${needed})` : "";
 
   switch (pending.kind) {
     case "respondShan":
-      return {
-        icon: "閃",
-        title: `โดน "${shaName}" จาก ${name(data.sourceId)} — จะลง "${shanName}" ไหม?${stackSuffix}`,
-        ...(needed > 1 ? { hint: `ต้องลง "${shanName}" ${needed} ใบถึงจะรอด` } : {}),
-        shape: { kind: "card", neededType: "shan", declineLabel: "ยอมโดน", confirmLabel: "ลงหลบ" },
-      };
+      return needed > 1
+        ? {
+            icon: "閃",
+            title: `โดน "${shaName}" จาก ${name(data.sourceId)} — ต้องลง "${shanName}" ${needed} ใบถึงจะรอด`,
+            hint: `เลือก ${needed} ใบพร้อมกัน — ลงไม่ครบไม่เสียการ์ด แต่โดนดาเมจ`,
+            shape: { kind: "card", neededType: "shan", requiredCount: needed, declineLabel: "ยอมโดน", confirmLabel: `ลงหลบ ${needed} ใบ` },
+          }
+        : {
+            icon: "閃",
+            title: `โดน "${shaName}" จาก ${name(data.sourceId)} — จะลง "${shanName}" ไหม?`,
+            shape: { kind: "card", neededType: "shan", declineLabel: "ยอมโดน", confirmLabel: "ลงหลบ" },
+          };
     case "respondSha":
       if (data.reason === "nanman") {
         return {
@@ -111,12 +115,18 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
           shape: { kind: "card", neededType: "sha", declineLabel: "ยอมโดนดาเมจ", confirmLabel: "ลงสังหาร" },
         };
       }
-      return {
-        icon: "決",
-        title: `ดวลกับ ${name(data.opponentId)} — จะลง "${shaName}" ไหม?${stackSuffix} (ไม่ลงจะแพ้ดวล)`,
-        ...(needed > 1 ? { hint: `ต้องลง "${shaName}" ${needed} ใบในตานี้` } : {}),
-        shape: { kind: "card", neededType: "sha", declineLabel: "ยอมแพ้ดวล", confirmLabel: "ลงสังหาร" },
-      };
+      return needed > 1
+        ? {
+            icon: "決",
+            title: `ดวลกับ ${name(data.opponentId)} — ต้องลง "${shaName}" ${needed} ใบถึงจะชนะรอบนี้`,
+            hint: `เลือก ${needed} ใบพร้อมกัน — ลงไม่ครบไม่เสียการ์ด แต่แพ้ดวล`,
+            shape: { kind: "card", neededType: "sha", requiredCount: needed, declineLabel: "ยอมแพ้ดวล", confirmLabel: `ลงสังหาร ${needed} ใบ` },
+          }
+        : {
+            icon: "決",
+            title: `ดวลกับ ${name(data.opponentId)} — จะลง "${shaName}" ไหม? (ไม่ลงจะแพ้ดวล)`,
+            shape: { kind: "card", neededType: "sha", declineLabel: "ยอมแพ้ดวล", confirmLabel: "ลงสังหาร" },
+          };
     case "respondTao":
       return {
         icon: "桃",

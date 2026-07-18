@@ -1072,14 +1072,15 @@ describe("Table: single-target cap (the reported freeze)", () => {
 });
 
 describe("Table: Lu Bu needed-count", () => {
-  it("respondShan with needed=2 tells the target they must dodge twice", async () => {
+  it("respondShan with needed=2 tells the target to play both หลบ at once", async () => {
     const me = player("p0", { generalId: "zhaoyun", faction: "shu", hand: [{ id: "heart_2_1", typeKey: "shan", suit: "heart", rank: 2 }] });
     const rest = [player("p1", { name: "Lu Bu", generalId: "lubu", faction: "qun" }), player("p2")];
     await enterGame("LUBU01", me, rest);
 
-    fireView(me, rest, { id: "dec_shan2", kind: "respondShan", playerId: "p0", data: { sourceId: "p1", index: 0, needed: 2 } });
+    fireView(me, rest, { id: "dec_shan2", kind: "respondShan", playerId: "p0", data: { sourceId: "p1", needed: 2 } });
 
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/ใบที่ 1\/2/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/2 ใบถึงจะรอด/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/เลือก 2 ใบพร้อมกัน/)).toBeInTheDocument();
   });
 });

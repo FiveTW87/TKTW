@@ -240,7 +240,7 @@ function CardShape({
         </div>
       ) : (
         <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
-          {(shape.requiredCount || shape.multi ? myHand : pool).map((c) => (
+          {((shape.requiredCount || shape.multi) && !shape.neededType ? myHand : pool).map((c) => (
             <HandCard key={c.id} card={c} selected={selectedCardIds.includes(c.id)} onClick={() => toggle(c.id)} />
           ))}
         </div>

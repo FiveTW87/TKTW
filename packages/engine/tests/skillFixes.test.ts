@@ -24,7 +24,7 @@ describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)",
     return { state, session };
   }
 
-  it("his สังหาร is NOT dodged by a single หลบ", () => {
+  it("asks for BOTH หลบ at once, and committing only one is not wasted", () => {
     const { state, session } = setup(41);
     const main = session.state.pendingDecision!;
     expect(main.kind).toBe("mainAction");
@@ -32,24 +32,23 @@ describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)",
     forceIntoHand(state, "p0", "spade_1_2"); // a สังหาร
     const p1 = getPlayer(state, "p1");
     p1.hand = [];
-    forceIntoHand(state, "p1", "heart_1_2"); // exactly ONE หลบ
+    forceIntoHand(state, "p1", "heart_1_2"); // exactly ONE หลบ — not enough
     const before = p1.hp;
 
     respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: ["spade_1_2"], targetIds: ["p1"] });
 
-    const shan1 = session.state.pendingDecision!;
-    expect(shan1.kind).toBe("respondShan");
-    expect((shan1.data as { needed: number }).needed).toBe(2); // ← wushuang
-    respond(session, { decisionId: shan1.id, playerId: "p1", cardIds: ["heart_1_2"] });
+    const shan = session.state.pendingDecision!;
+    expect(shan.kind).toBe("respondShan");
+    expect((shan.data as { needed: number }).needed).toBe(2); // ← one prompt, needs 2
+    // submit the single หลบ we have — the engine can't complete the 2-หลบ dodge
+    respond(session, { decisionId: shan.id, playerId: "p1", cardIds: ["heart_1_2"] });
 
-    const shan2 = session.state.pendingDecision!;
-    expect(shan2.kind).toBe("respondShan"); // asked a SECOND time
-    respond(session, { decisionId: shan2.id, playerId: "p1", pass: true });
-
-    expect(p1.hp).toBe(before - 1); // one หลบ wasn't enough → hit
+    expect(p1.hp).toBe(before - 1); // one หลบ can never dodge Lu Bu → hit
+    expect(p1.hand.some((c) => c.id === "heart_1_2")).toBe(true); // ← NOT wasted
+    expect(state.discardPile.some((c) => c.id === "heart_1_2")).toBe(false);
   });
 
-  it("his สังหาร IS dodged by two หลบ", () => {
+  it("his สังหาร IS dodged by two หลบ played together", () => {
     const { state, session } = setup(42);
     const main = session.state.pendingDecision!;
     forceIntoHand(state, "p0", "spade_1_2");
@@ -60,12 +59,12 @@ describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)",
     const before = p1.hp;
 
     respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: ["spade_1_2"], targetIds: ["p1"] });
-    const s1 = session.state.pendingDecision!;
-    respond(session, { decisionId: s1.id, playerId: "p1", cardIds: ["heart_1_2"] });
-    const s2 = session.state.pendingDecision!;
-    respond(session, { decisionId: s2.id, playerId: "p1", cardIds: ["heart_2_2"] });
+    const shan = session.state.pendingDecision!;
+    expect(shan.kind).toBe("respondShan");
+    respond(session, { decisionId: shan.id, playerId: "p1", cardIds: ["heart_1_2", "heart_2_2"] });
 
-    expect(p1.hp).toBe(before); // dodged
+    expect(p1.hp).toBe(before); // both committed → dodged
+    expect(state.discardPile.some((c) => c.id === "heart_1_2")).toBe(true); // spent
   });
 
   it("in a ดวล against Lu Bu, the opponent must play 2 สังหาร per exchange", () => {
@@ -83,6 +82,29 @@ describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)",
     const resp = session.state.pendingDecision!;
     expect(resp.kind).toBe("respondSha");
     expect((resp.data as { needed: number }).needed).toBe(2); // ← wushuang duel
+  });
+
+  it("in a ดวล, committing only 1 of the 2 required สังหาร wastes nothing", () => {
+    const { state, session } = setup(44);
+    const main = session.state.pendingDecision!;
+    forceIntoHand(state, "p0", "club_6_1"); // a ดวล
+    const p1 = getPlayer(state, "p1");
+    p1.hand = [];
+    forceIntoHand(state, "p1", "spade_1_2"); // only ONE สังหาร to answer with
+    const before = p1.hp;
+
+    respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: ["club_6_1"], targetIds: ["p1"] });
+    for (let i = 0; i < 6; i++) {
+      const d = session.state.pendingDecision!;
+      if (d.kind !== "askWuxie") break;
+      respond(session, { decisionId: d.id, playerId: d.playerId, pass: true });
+    }
+    const resp = session.state.pendingDecision!;
+    expect(resp.kind).toBe("respondSha");
+    respond(session, { decisionId: resp.id, playerId: "p1", cardIds: ["spade_1_2"] }); // 1 of 2
+
+    expect(p1.hp).toBe(before - 1); // lost the exchange
+    expect(getPlayer(state, "p1").hand.some((c) => c.id === "spade_1_2")).toBe(true); // ← not wasted
   });
 });
 

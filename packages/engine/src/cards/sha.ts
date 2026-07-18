@@ -148,30 +148,45 @@ function* attemptSha(
     1,
   );
 
-  let dodged = true;
+  let dodged: boolean;
   if (targetedBox.blockedFromDodge) {
     dodged = false;
-  }
-  for (let i = 0; dodged && i < needed; i++) {
-    const box = { autoDodged: false };
-    yield* fireTrigger(ctx, "OnNeedDodge", { sourceId, targetId, box, card: shaCard });
-    if (box.autoDodged) continue;
+  } else {
+    // Resolve auto-dodges (ค่ายกลแปดทิศ) and lord cover (คุ้มกันราชา) for each
+    // required slot first, so we know how many หลบ the TARGET must still play.
+    let playerNeed = 0;
+    for (let i = 0; i < needed; i++) {
+      const box = { autoDodged: false };
+      yield* fireTrigger(ctx, "OnNeedDodge", { sourceId, targetId, box, card: shaCard });
+      if (!box.autoDodged) playerNeed++;
+    }
 
-    const answer = yield {
-      kind: "respondShan",
-      playerId: targetId,
-      data: { sourceId, index: i, needed },
-    };
-    const offered = !answer.pass && (answer.cardIds?.length ?? 0) > 0;
-    if (offered) {
-      const cid = answer.cardIds![0]!;
-      if (!countsAsType(state, targetId, cid, "shan")) {
-        throw new Error(`respondShan: ${cid} does not count as shan`);
+    dodged = true;
+    if (playerNeed > 0) {
+      // Ask for the whole set of หลบ in ONE all-or-nothing decision. Lu Bu's
+      // wushuang needs 2 — playing just 1 can never dodge, so we must never let
+      // the target waste it: they either commit every required หลบ (dodge) or
+      // spend nothing (take the hit). No card is lost on a doomed partial dodge.
+      const answer = yield {
+        kind: "respondShan",
+        playerId: targetId,
+        data: { sourceId, needed: playerNeed },
+      };
+      const ids = answer.pass ? [] : (answer.cardIds ?? []);
+      if (ids.length < playerNeed) {
+        dodged = false; // not enough หลบ committed → hit, and nothing is spent
+      } else {
+        const chosen = ids.slice(0, playerNeed);
+        if (new Set(chosen).size !== chosen.length) {
+          throw new Error(`respondShan: duplicate card id in a multi-หลบ dodge`);
+        }
+        for (const cid of chosen) {
+          if (!countsAsType(state, targetId, cid, "shan")) {
+            throw new Error(`respondShan: ${cid} does not count as shan`);
+          }
+        }
+        for (const cid of chosen) discardFromHand(state, targetId, cid);
       }
-      discardFromHand(state, targetId, cid);
-    } else {
-      dodged = false;
-      break;
     }
   }
 
