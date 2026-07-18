@@ -44,6 +44,15 @@ body {
   background-image: radial-gradient(60% 50% at 50% 0%, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-3) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* the board reflows on mobile — never scroll sideways */
+}
+
+/* On phones, a full-viewport-height flex container can't vertically center the
+   (taller-than-screen) board, so let it scroll from the top. */
+@media (max-width: 560px) {
+  .panel-plain {
+    border-radius: 10px;
+  }
 }
 
 button {

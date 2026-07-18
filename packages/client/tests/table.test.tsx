@@ -368,7 +368,8 @@ describe("Table: role reveal", () => {
     });
 
     await waitFor(() => expect(screen.getByText("บทบาทของคุณ")).toBeInTheDocument());
-    expect(screen.getByText("เจ้าเมือง")).toBeInTheDocument();
+    // role name shows in the reveal modal (and now also on the character card)
+    expect(screen.getAllByText("เจ้าเมือง").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: /เริ่มศึก/ }));
     expect(screen.queryByText("บทบาทของคุณ")).not.toBeInTheDocument();
@@ -616,6 +617,19 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { targetIds: string[] };
     expect(payload.targetIds).toEqual(["p1"]);
+  });
+
+  it("respondTao auto-passes when you hold nothing that counts as ท้อ", async () => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true, hand: [{ id: "x1", typeKey: "sha", suit: "spade", rank: 5 }] });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    await enterGame("TAOPASS", me, rest);
+
+    fireView(me, rest, { id: "dec_rt", kind: "respondTao", playerId: "p0", data: { dyingId: "p1", hp: 0 } }, { currentSeat: 1 });
+
+    await waitFor(() =>
+      expect(sentEvents.some((e) => e.event === "game:answer" && (e.payload as { pass?: boolean }).pass === true)).toBe(true),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(); // no prompt shown
   });
 
   it("clicking the discard pile opens a browser of the discarded cards", async () => {

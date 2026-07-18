@@ -111,6 +111,23 @@ function orderTriggerHandlers(state: GameState, handlers: BoundTrigger[]): Bound
   });
 }
 
+// Phase points belong to ONE player's turn (the active player). A skill hooked
+// on these only ever acts for its own owner (every handler guards
+// ownerId===playerId), so only the active player's handlers should even be
+// considered — otherwise every owner gets asked "use it?" on everyone's turn
+// (e.g. Cao Ren's ถอดเสื้อรบ popping on every opponent's draw phase). Reactive
+// points (OnNeedDodge/OnDamaged/…) legitimately fire across players — not here.
+const ACTIVE_PLAYER_POINTS = new Set<TriggerPoint>([
+  "TurnStart",
+  "JudgePhaseStart",
+  "DrawPhaseStart",
+  "DrawPhaseEnd",
+  "PlayPhaseStart",
+  "PlayPhaseEnd",
+  "DiscardPhaseStart",
+  "TurnEnd",
+]);
+
 /**
  * Fire every registered handler for `point`, in priority order. Optional
  * (non-locked) skills ask their owner first via an "activateSkill" decision.
@@ -120,7 +137,11 @@ export function* fireTrigger(
   point: TriggerPoint,
   payload: Record<string, unknown> = {},
 ): EngineGenerator {
-  const ordered = orderTriggerHandlers(ctx.state, collectTriggerHandlers(ctx.state, point));
+  let ordered = orderTriggerHandlers(ctx.state, collectTriggerHandlers(ctx.state, point));
+  if (ACTIVE_PLAYER_POINTS.has(point)) {
+    const activeId = payload.playerId as string | undefined;
+    ordered = ordered.filter((h) => h.ownerId === activeId);
+  }
   for (const h of ordered) {
     if (!h.locked) {
       const answer = yield {

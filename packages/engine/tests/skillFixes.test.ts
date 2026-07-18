@@ -390,3 +390,42 @@ describe("weapon riders", () => {
     expect(p1.hp).toBe(before - 1);
   });
 });
+
+// ── เคาทู / caoren tuoyi: phase-trigger prompts only on the owner's own turn ──
+describe("phase-trigger prompt targeting (caoren tuoyi)", () => {
+  it("does NOT ask Cao Ren on another player's draw phase", () => {
+    const rng = createRng(131);
+    const state = createInitialState({ playerCount: 3, seed: 131 }, rng);
+    assignGeneral(state, "p0", "sunquan", true); // active player, not Cao Ren
+    assignGeneral(state, "p1", "caoren");
+    assignGeneral(state, "p2", "sunquan");
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    const session = createSession(runGame(ctx), state, rng);
+
+    const first = session.state.pendingDecision!;
+    expect(first.kind).toBe("mainAction"); // no activateSkill(caoren_tuoyi) for p1
+    expect(first.playerId).toBe("p0");
+  });
+
+  it("asks Cao Ren on his OWN draw phase, and drawing fewer applies", () => {
+    const rng = createRng(132);
+    const state = createInitialState({ playerCount: 3, seed: 132 }, rng);
+    assignGeneral(state, "p0", "caoren", true);
+    assignGeneral(state, "p1", "sunquan");
+    assignGeneral(state, "p2", "sunquan");
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    const session = createSession(runGame(ctx), state, rng);
+
+    const prompt = session.state.pendingDecision!;
+    expect(prompt.kind).toBe("activateSkill");
+    expect((prompt.data as { skillId: string }).skillId).toBe("caoren_tuoyi");
+    expect(prompt.playerId).toBe("p0");
+
+    const handBefore = getPlayer(state, "p0").hand.length; // pre-draw
+    respond(session, { decisionId: prompt.id, playerId: "p0" }); // accept ถอดเสื้อรบ
+
+    // drew 1 instead of 2 (drawAmountModifier -1)
+    expect(getPlayer(state, "p0").hand.length).toBe(handBefore + 1);
+    expect(session.state.pendingDecision!.kind).toBe("mainAction");
+  });
+});

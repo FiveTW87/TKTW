@@ -14,8 +14,10 @@ import { generalDisplay, factionColor, factionLabel } from "../data/generalNames
 import { generalSkills, skillById } from "../data/generalSkills";
 import { cardMeta, needsManualTarget, targetCount, playableAsMainAction, type EquipSlot } from "../data/cardMeta";
 import { skillInteraction, sameFactionTeammateAlive, activeSkillSpec } from "../data/skillInteraction";
-import { mainActionPlays, type MainActionPlay } from "../data/conversions";
+import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/conversions";
 import { attackDistance, weaponRange } from "../data/distance";
+import { roleDisplay } from "../data/roles";
+import { useIsNarrow } from "../lib/useIsNarrow";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -42,6 +44,7 @@ export function Table() {
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const debug = useGameStore((s) => s.debug);
   const [showDebug, setShowDebug] = useState(false);
+  const narrow = useIsNarrow(); // mobile / small-tablet: stack the layout
 
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
@@ -147,6 +150,15 @@ export function Table() {
       if (!hand.some((c) => c.typeKey === "wuxie")) pass();
       return;
     }
+    // ท้อ (dying rescue): if the player holds nothing that counts as ท้อ, they
+    // can't help — skip the prompt instead of asking. (หัวโต๋ can turn a red
+    // card into ท้อ off-turn, so use the conversion-aware check.)
+    if (pending.kind === "respondTao") {
+      const hand = Array.isArray(me.hand) ? me.hand : [];
+      const isOwnTurn = gameView.currentSeat === me.seat;
+      if (!hand.some((c) => clientCountsAs(c, "tao", me.generalId, isOwnTurn))) pass();
+      return;
+    }
     if (pending.kind === "activateSkill") {
       const sid = String((pending.data as { skillId?: string }).skillId ?? "");
       const mode = skillInteraction(sid);
@@ -240,11 +252,13 @@ export function Table() {
 
   // Modal only for reactive decisions that aren't auto-handled / inline.
   const noWuxieInHand = !myHand.some((c) => c.typeKey === "wuxie");
+  const canRespondTao = myHand.some((c) => clientCountsAs(c, "tao", me.generalId, gameView.currentSeat === me.seat));
   let showDecisionModal = false;
   if (pending && isMyDecision && !isMainAction && !isDiscardTo) {
     // judgmentReveal is handled on the board (tap the draw pile), not a modal.
     if (pending.kind === "fankuiPick" || pending.kind === "judgmentReveal") showDecisionModal = false;
     else if (pending.kind === "askWuxie") showDecisionModal = !noWuxieInHand; // auto-passed otherwise
+    else if (pending.kind === "respondTao") showDecisionModal = canRespondTao; // auto-passed otherwise
     else if (pending.kind === "activateSkill") {
       // hujia shows a dialog only when a teammate can actually help; unknown
       // skills fall back to a dialog; auto*/inline never show a modal.
@@ -511,9 +525,9 @@ export function Table() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: 20, paddingBottom: 110, position: "relative" }}>
-      <div style={{ display: "flex", gap: 16, width: "100%", maxWidth: 1360, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap", margin: "0 auto" }}>
-      <div className="panel-plain" style={{ flex: "1 1 720px", maxWidth: 1040, minWidth: 0, padding: 22, position: "relative" }}>
+    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: narrow ? "flex-start" : "center", padding: narrow ? 8 : 20, paddingBottom: 110, position: "relative" }}>
+      <div style={{ display: "flex", gap: narrow ? 10 : 16, width: "100%", maxWidth: 1360, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap", margin: "0 auto" }}>
+      <div className="panel-plain" style={{ flex: "1 1 720px", maxWidth: 1040, minWidth: 0, padding: narrow ? 12 : 22, position: "relative" }}>
         {/* opponents row */}
         <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
           {others.map((p) => {
@@ -527,6 +541,7 @@ export function Table() {
                 selected={selectedTargetIds.includes(p.id)}
                 distance={dist}
                 inRange={dist <= weaponRange(me)}
+                compact={narrow}
                 onClick={() => onTapTarget(p.id)}
                 onInspect={() => setInspecting(p)}
               />
@@ -629,7 +644,7 @@ export function Table() {
         </div>
 
         {/* your area */}
-        <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
+        <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", gap: narrow ? 10 : 14, alignItems: "stretch" }}>
           {/* LEFT: character details (+ pending judgment cards) — also a
               ท้อ self-target when helping. glow-target is a CHILD overlay (not
               the class on this box) so the box stays in flow / clickable. */}
@@ -637,7 +652,7 @@ export function Table() {
             onClick={selfTargetable ? () => toggleTarget(me.id) : undefined}
             style={{
               position: "relative",
-              width: 230,
+              width: narrow ? "100%" : 230,
               flexShrink: 0,
               background: "var(--card-bg-2)",
               border: `2px solid ${selectedTargetIds.includes(me.id) ? "var(--gold)" : factionColor(me.faction)}`,
@@ -652,7 +667,12 @@ export function Table() {
             <div style={{ height: 28, background: factionColor(me.faction), display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px" }}>
               <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "rgba(255,255,255,.95)" }}>{generalDisplay(me.generalId).glyph}</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, color: "rgba(255,255,255,.95)" }}>
-                {me.role === "lord" && <span style={{ background: "var(--gold)", color: "#5a3d0a", fontWeight: 700, borderRadius: 8, padding: "1px 7px" }}>主公</span>}
+                {roleDisplay(me.role) && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(0,0,0,.28)", borderRadius: 8, padding: "1px 7px", fontWeight: 700 }}>
+                    <span className={`seal ${roleDisplay(me.role)!.cls}`} style={{ width: 14, height: 14, fontSize: 9 }}>{roleDisplay(me.role)!.cn}</span>
+                    {roleDisplay(me.role)!.name}
+                  </span>
+                )}
                 คุณ
               </span>
             </div>
@@ -766,7 +786,7 @@ export function Table() {
             </div>
 
           {/* RIGHT: equipment zone + phase + end-turn */}
-          <div style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ width: narrow ? "100%" : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
               <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5 }}>เขตอุปกรณ์</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -840,7 +860,7 @@ export function Table() {
       {/* RIGHT: game history / log */}
       <aside
         className="panel-plain"
-        style={{ width: 300, flexShrink: 0, maxHeight: "82vh", display: "flex", flexDirection: "column", padding: "14px 16px" }}
+        style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : "82vh", display: "flex", flexDirection: "column", padding: "14px 16px" }}
       >
         <div style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>ประวัติการเล่น</div>
         <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {gameView.log.length} เหตุการณ์</div>

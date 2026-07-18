@@ -1,12 +1,17 @@
-import type { PlayerView } from "@tktw/shared";
+import { useState } from "react";
+import type { Card, PlayerView } from "@tktw/shared";
 import { generalDisplay, factionColor } from "../data/generalNames";
-import { cardDisplay } from "../data/cardNames";
+import { cardDisplay, cardInfo } from "../data/cardNames";
+import { CardTooltip } from "./HandCard";
+import { roleDisplay } from "../data/roles";
 
-const ROLE_SEAL: Record<string, { cn: string; cls: string }> = {
-  lord: { cn: "主", cls: "seal-lord" },
-  loyalist: { cn: "忠", cls: "seal-loyalist" },
-  rebel: { cn: "反", cls: "seal-rebel" },
-  traitor: { cn: "内", cls: "seal-traitor" },
+// A recognizable icon per equipment slot — clearer at a glance than the card's
+// Chinese glyph (and the two horse slots share 馬, so this also tells − from +).
+const SLOT_ICON: Record<string, string> = {
+  weapon: "⚔️",
+  armor: "🛡️",
+  horseMinus: "🐎−",
+  horsePlus: "🐎+",
 };
 
 export function PlayerTile({
@@ -16,6 +21,7 @@ export function PlayerTile({
   selected,
   distance,
   inRange,
+  compact,
   onClick,
   onInspect,
 }: {
@@ -27,15 +33,17 @@ export function PlayerTile({
   distance?: number;
   /** True if within the viewer's current weapon range. */
   inRange?: boolean;
+  /** Narrow layout (mobile) — tighter min width. */
+  compact?: boolean;
   onClick?: () => void;
   onInspect?: () => void;
 }) {
   const d = generalDisplay(player.generalId);
   const color = factionColor(player.faction);
   const handCount = Array.isArray(player.hand) ? player.hand.length : player.hand.count;
-  const equipEntries = Object.entries(player.equipment).filter(([, c]) => c);
+  const equipEntries = Object.entries(player.equipment).filter(([, c]) => c) as [string, Card][];
   // Role seal shows only when publicly known (lord, or a revealed/dead player).
-  const seal = player.role && (player.roleRevealed || player.role === "lord") ? ROLE_SEAL[player.role] : undefined;
+  const role = player.role && (player.roleRevealed || player.role === "lord") ? roleDisplay(player.role) : undefined;
 
   return (
     <div
@@ -43,7 +51,7 @@ export function PlayerTile({
       style={{
         position: "relative",
         flex: 1,
-        minWidth: 150,
+        minWidth: compact ? 118 : 150,
         background: "var(--card-bg-2)",
         border: "1px solid var(--card-border-2)",
         borderRadius: 6,
@@ -55,7 +63,7 @@ export function PlayerTile({
     >
       <div style={{ height: 24, background: color, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 7px" }}>
         <span style={{ fontFamily: "var(--font-glyph)", fontSize: 14, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>
-        {seal ? <span className={`seal ${seal.cls}`}>{seal.cn}</span> : <span className="seal seal-unknown">?</span>}
+        {role ? <span className={`seal ${role.cls}`} title={role.name}>{role.cn}</span> : <span className="seal seal-unknown">?</span>}
       </div>
       <div style={{ display: "flex", gap: 8, padding: 8 }}>
         <div
@@ -92,25 +100,7 @@ export function PlayerTile({
               {handCount}
             </span>
             {equipEntries.map(([slot, card]) => (
-              <span
-                key={slot}
-                title={cardDisplay(card!.typeKey).name}
-                style={{
-                  width: 15,
-                  height: 15,
-                  borderRadius: 2,
-                  background: "#efe4c8",
-                  border: "1px solid var(--panel-border-2)",
-                  fontFamily: "var(--font-glyph-2)",
-                  fontSize: 9,
-                  color: "#7a5f27",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {cardDisplay(card!.typeKey).glyph}
-              </span>
+              <EquipChip key={slot} slot={slot} card={card} />
             ))}
           </div>
           {player.judgmentZone.length > 0 && (
@@ -211,9 +201,40 @@ export function PlayerTile({
           }}
         >
           <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 22, color: "rgba(246,236,210,.9)", fontWeight: 900 }}>陣亡</span>
-          {player.role && <span style={{ fontSize: 10, color: "rgba(246,236,210,.85)" }}>{ROLE_SEAL[player.role]?.cn}</span>}
+          {roleDisplay(player.role) && <span style={{ fontSize: 11, color: "rgba(246,236,210,.9)", fontWeight: 700 }}>{roleDisplay(player.role)!.name}</span>}
         </div>
       )}
     </div>
+  );
+}
+
+// One equipped item on an opponent's tile: a slot icon, with a hover tooltip
+// naming the actual card and what it does.
+function EquipChip({ slot, card }: { slot: string; card: Card }) {
+  const [hovered, setHovered] = useState(false);
+  const info = cardInfo(card.typeKey);
+  return (
+    <span
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={cardDisplay(card.typeKey).name}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: 16,
+        padding: "0 3px",
+        borderRadius: 3,
+        background: "#efe4c8",
+        border: "1px solid var(--panel-border-2)",
+        fontSize: 10,
+        lineHeight: 1,
+        cursor: "help",
+      }}
+    >
+      {SLOT_ICON[slot] ?? cardDisplay(card.typeKey).glyph}
+      {hovered && info && <CardTooltip name={cardDisplay(card.typeKey).name} info={info} />}
+    </span>
   );
 }
