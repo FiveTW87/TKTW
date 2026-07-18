@@ -98,18 +98,42 @@ function classifySeat0(pending: PendingDecision, view: GameView, me: GameView["p
 function runOneGame(general: string, seed: number, f: Findings): void {
   const rnd = mulberry32(seed);
   const playerCount = 3 + Math.floor(rnd() * 8); // 3..10
-  const session: GameSession = createGame({ playerCount, seed });
-  const state = session.state;
 
   // Force the target general into seat 0 as lord (so lordOnly skills fire),
-  // random real generals elsewhere.
-  assignGeneral(state, "p0", general, true);
-  state.players[0]!.role = "lord";
+  // random real generals elsewhere. Computed ONCE so a rebuild re-applies the
+  // exact same generals — the decision log was recorded under these generals,
+  // so replaying it on a default deal would diverge or reject.
+  const seatGenerals = [general];
+  const seatRoles = ["lord"];
   for (let s = 1; s < playerCount; s++) {
-    const g = REAL_GENERALS[Math.floor(rnd() * REAL_GENERALS.length)]!;
-    assignGeneral(state, `p${s}`, g, false);
-    state.players[s]!.role = s % 2 === 0 ? "loyalist" : "rebel";
+    seatGenerals.push(REAL_GENERALS[Math.floor(rnd() * REAL_GENERALS.length)]!);
+    seatRoles.push(s % 2 === 0 ? "loyalist" : "rebel");
   }
+  const applyForcedSetup = (st: GameSession["state"]): void => {
+    for (let s = 0; s < playerCount; s++) {
+      assignGeneral(st, `p${s}`, seatGenerals[s]!, s === 0);
+      st.players[s]!.role = seatRoles[s]!;
+    }
+  };
+  const buildFresh = (): GameSession => {
+    const s = createGame({ playerCount, seed });
+    applyForcedSetup(s.state); // before any decision — matches the original game
+    s.rebuild = undefined; // the outer closure owns rebuild; keep replay flat
+    return s;
+  };
+
+  const session = buildFresh();
+  // A rejected move kills the live generator (JS generators can't resume after
+  // their body throws). Resurrect it by replaying the log with the SAME forced
+  // generals re-applied, so a faulted probe game still runs to a real finish
+  // instead of silently stranding (the freeze bug this probe exists to catch).
+  session.rebuild = () => {
+    const fresh = buildFresh();
+    for (const entry of session.decisionLog) {
+      respond(fresh, { ...entry.answer, decisionId: fresh.state.pendingDecision!.id });
+    }
+    return fresh;
+  };
 
   const bot = makeRandomBot({ seed: seed ^ 0x9e3779b9 });
   const pg = (f.perGeneralPrompts[general] ??= { games: 0, dialogs: 0, clicks: 0 });
@@ -117,17 +141,19 @@ function runOneGame(general: string, seed: number, f: Findings): void {
   f.gamesRun += 1;
 
   let steps = 0;
-  while (state.pendingDecision) {
+  // Read session.state FRESH every iteration: a rebuild swaps in a new state
+  // object, so a cached reference would go stale.
+  while (session.state.pendingDecision) {
     if (steps++ > MAX_STEPS) {
       f.hangs.push({ general, seed });
       return;
     }
-    const pending = state.pendingDecision;
+    const pending = session.state.pendingDecision;
 
     // Record card-type coverage: peek the responder's hand before they answer.
     // Record seat-0 flow classification.
     if (pending.playerId === "p0") {
-      const view = projectFor(state, "p0");
+      const view = projectFor(session.state, "p0");
       const me = view.players.find((p) => p.id === "p0")!;
       const c = classifySeat0(pending, view, me);
       f.channelCounts[c.channel] = (f.channelCounts[c.channel] ?? 0) + 1;
@@ -151,7 +177,7 @@ function runOneGame(general: string, seed: number, f: Findings): void {
 
     // coverage: a playCard / useSkill answer that names a card in hand
     if (answer.choice === "playCard" || answer.choice === "useSkill") {
-      const view = projectFor(state, pending.playerId);
+      const view = projectFor(session.state, pending.playerId);
       const p = view.players.find((pp) => pp.id === pending.playerId);
       const hand: Card[] = p && Array.isArray(p.hand) ? p.hand : [];
       for (const id of answer.cardIds ?? []) {
@@ -174,15 +200,18 @@ function runOneGame(general: string, seed: number, f: Findings): void {
     try {
       respond(session, answer);
     } catch (err) {
-      // A rejected move (often a deliberate fault) — atomicity guarantees the
-      // state is intact, so recover with a guaranteed-terminating answer.
+      // A rejected move (often a deliberate fault). The engine has already
+      // resurrected the generator at the same decision (session.rebuild), so
+      // now feed a guaranteed-legal answer to make progress instead of letting
+      // the bot re-fault the same decision.
       f.rejectedInputs += 1;
       void err;
       try {
+        const pid = session.state.pendingDecision!.id;
         const recover =
           pending.kind === "mainAction"
-            ? { decisionId: pending.id, playerId: pending.playerId, choice: "endPhase" }
-            : { decisionId: pending.id, playerId: pending.playerId, pass: true };
+            ? { decisionId: pid, playerId: pending.playerId, choice: "endPhase" }
+            : { decisionId: pid, playerId: pending.playerId, pass: true };
         respond(session, recover);
       } catch (err2) {
         // Even the safe fallback threw — that IS a real engine bug.
@@ -196,6 +225,12 @@ function runOneGame(general: string, seed: number, f: Findings): void {
       }
     }
   }
+
+  // The loop only exits when nothing is pending. If the game isn't actually
+  // finished, the generator ended without a winner — the dead-generator freeze.
+  // (Before the GameSession.rebuild fix this went undetected: a stranded game
+  // just looked like a completed one.)
+  if (!session.state.finished) f.hangs.push({ general, seed });
 }
 
 function mulberry32(seed: number) {

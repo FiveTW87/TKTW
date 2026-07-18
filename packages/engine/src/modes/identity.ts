@@ -191,7 +191,10 @@ export function createIdentityGame(opts: IdentityGameOptions): GameSession {
   const config: GameConfig = { checkGameEnd: identityCheckGameEnd, onDeath: identityOnDeath };
   const ctx = makeCtx(state, rng, config);
 
-  return createSession(identityRootGen(ctx), state, rng);
+  const session = createSession(identityRootGen(ctx), state, rng);
+  // Resurrect the generator from the log if a rejected answer kills it.
+  session.rebuild = () => recoverIdentityGame(opts, session.decisionLog);
+  return session;
 }
 
 function* identityRootGen(ctx: Ctx): EngineGenerator {

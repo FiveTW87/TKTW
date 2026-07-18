@@ -22,7 +22,10 @@ export function createGame(opts: CreateGameOptions): GameSession {
   const rng = createRng(opts.seed);
   const state = createInitialState(opts, rng);
   const config: GameConfig = { checkGameEnd: opts.checkGameEnd ?? lastAliveWins };
-  return createSession(runGame(makeCtx(state, rng, config)), state, rng);
+  const session = createSession(runGame(makeCtx(state, rng, config)), state, rng);
+  // Resurrect the generator from the log if a rejected answer kills it.
+  session.rebuild = () => recoverGame(opts, session.decisionLog);
+  return session;
 }
 
 /** Recover a session after a process restart from (opts, decisionLog) —

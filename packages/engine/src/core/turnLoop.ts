@@ -265,6 +265,15 @@ function* playCard(
   const def = cardDef(typeKey);
 
   // ── validation only, below — nothing here may mutate state ──
+  // Reactive-only cards (หลบ/ไร้ช่องโหว่) have no proactive play effect — they
+  // can only be used at their own response windows, never as a main action.
+  // Reject up front, before any mutation or the wuxie window opens: playing
+  // one otherwise fell through to line ~412 and threw only AFTER discarding the
+  // card and yielding an askWuxie window (a mutate-then-throw mid-resolution
+  // bug), which stranded the room via the dead-generator freeze.
+  if (def.category !== "equipment" && def.category !== "delayedTrick" && !CARD_EFFECTS[typeKey]?.play) {
+    throw new Error(`${playerId}: ${typeKey} ใช้เป็นแอ็กชันไม่ได้ (การ์ดตอบโต้เท่านั้น)`);
+  }
   if (typeKey === "sha") {
     // Base limit 1/turn; crossbow/locked skills raise this — see P1.7/P2.
     const bonus = queryHook<number>(

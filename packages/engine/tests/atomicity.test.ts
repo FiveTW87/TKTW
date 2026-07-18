@@ -73,6 +73,11 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     const activeId = pending.playerId;
     forceIntoHand(session.state, activeId, "spade_1_1");
     forceIntoHand(session.state, activeId, "heart_1_1");
+    // These cards were injected out-of-band (not via a logged decision), and
+    // this test guards playCard's own mutate-after-validate discipline — so
+    // disable the session's replay-rebuild, which would otherwise reconstruct
+    // a clean state from the log and mask a premature mutation in playCard.
+    delete session.rebuild;
     const before = structuredClone(session.state);
 
     expect(() =>
@@ -97,6 +102,9 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     p.equipment.weapon = cardById("spade_12_1"); // zhangba
     forceIntoHand(session.state, activeId, "heart_1_1");
     const targetId = session.state.players.find((x) => x.id !== activeId)!.id;
+    // Out-of-band setup (see note above) — disable replay-rebuild so the
+    // assertion observes playZhangbaSha's own atomicity, not a reconstruction.
+    delete session.rebuild;
     const before = structuredClone(session.state);
 
     expect(() =>

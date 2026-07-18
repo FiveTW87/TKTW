@@ -22,6 +22,20 @@ export interface GameSession {
   rng: Rng;
   decisionLog: DecisionLogEntry[];
   gen: EngineGenerator;
+  /**
+   * Rebuild a fresh, LIVE session at the current decision by replaying
+   * `decisionLog` from the seed. Set by createGame/createIdentityGame.
+   *
+   * Why this exists: a validation error thrown from *inside* an effect
+   * generator (an illegal target/range on playCard, etc.) completes the
+   * generator permanently — JS generators can't resume after their body
+   * throws. Without recovery, the very next respond() would call .next() on
+   * a dead generator, get {done:true}, and silently clear pendingDecision
+   * (with finished still false) → the room hangs forever. respond() uses
+   * this to resurrect the generator so a rejected answer is genuinely
+   * safe to retry, which the whole server/client retry path assumes.
+   */
+  rebuild?: () => GameSession;
 }
 
 function advance(session: GameSession, answer?: PlayerAnswer): void {
@@ -52,13 +66,27 @@ export function respond(session: GameSession, answer: PlayerAnswer): void {
   if (answer.decisionId !== pending.id) {
     throw new Error(`stale decision id: expected ${pending.id}, got ${answer.decisionId}`);
   }
-  // Log only after advance() succeeds: pendingDecision is left untouched by
-  // a throw inside advance() (same id, safe to retry), so an answer that
-  // gets rejected must not end up in decisionLog — otherwise a later,
-  // successful retry logs a second entry under that same decision id, and
-  // replaying the log deterministically re-throws on the first (bad) one
-  // before ever reaching the second.
-  advance(session, answer);
+  // Log only after advance() succeeds: an answer that gets rejected must not
+  // end up in decisionLog — otherwise a later, successful retry logs a second
+  // entry under that same decision id, and replaying the log deterministically
+  // re-throws on the first (bad) one before ever reaching the second.
+  try {
+    advance(session, answer);
+  } catch (err) {
+    // The generator threw during validation and is now dead (see the note on
+    // GameSession.rebuild). pendingDecision was left untouched by the throw,
+    // but the generator behind it is gone — so resurrect it by replaying the
+    // log (which does NOT contain this rejected answer). Determinism (see
+    // determinism.test.ts) guarantees the fresh run stops at the very same
+    // decision with the same id, so the caller's retry lines up exactly.
+    if (session.rebuild) {
+      const fresh = session.rebuild();
+      session.state = fresh.state;
+      session.rng = fresh.rng;
+      session.gen = fresh.gen;
+    }
+    throw err;
+  }
   session.decisionLog.push({ decisionId: pending.id, answer });
 }
 
