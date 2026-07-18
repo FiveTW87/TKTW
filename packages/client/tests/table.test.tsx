@@ -780,6 +780,16 @@ describe("Table: card conversion + distance", () => {
     expect(payload.targetIds).toEqual(["p1"]);
   });
 
+  it("the ดูกฎ button opens the rules modal", async () => {
+    const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterGame("RULES1", me, rest);
+
+    await user.click(screen.getByRole("button", { name: /วิธีเล่น & กติกา/ }));
+    expect(await screen.findByText("บทบาท & เงื่อนไขชนะ")).toBeInTheDocument();
+    expect(screen.getByText("เข้าใจแล้ว")).toBeInTheDocument();
+  });
+
   it("opponent tiles show the attack-distance badge", async () => {
     const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
     const rest = [player("p1", { name: "Bob" }), player("p2")];

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
+import { RulesButton } from "../components/RulesModal";
 
 const panelStyle: React.CSSProperties = {
   width: 560,
@@ -182,10 +183,14 @@ function CreateJoinForm() {
         </div>
 
         {error && <div style={{ color: "var(--target-red)", fontSize: 13 }}>{error}</div>}
+
+        <RulesButton label="วิธีเล่น & กติกา" style={rulesBtnStyle} />
       </div>
     </div>
   );
 }
+
+const rulesBtnStyle: React.CSSProperties = { width: "100%", padding: "11px", fontSize: 14, borderRadius: 7 };
 
 function WaitingRoom() {
   const roomCode = useGameStore((s) => s.roomCode);
@@ -290,6 +295,10 @@ function WaitingRoom() {
             ต้องมีผู้เล่นอย่างน้อย 3 คน
           </div>
         )}
+
+        <div style={{ marginTop: 14 }}>
+          <RulesButton label="วิธีเล่น & กติกา" style={rulesBtnStyle} />
+        </div>
 
         <button
           onClick={leaveRoom}

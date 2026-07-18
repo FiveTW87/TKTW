@@ -18,6 +18,7 @@ import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/co
 import { attackDistance, weaponRange } from "../data/distance";
 import { roleDisplay } from "../data/roles";
 import { useIsNarrow } from "../lib/useIsNarrow";
+import { RulesButton } from "../components/RulesModal";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -821,6 +822,8 @@ export function Table() {
                   จบเทิร์น
                 </button>
               )}
+              {/* Rules — sits right by the phase indicator, always reachable */}
+              <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
             </div>
           </div>
         </div>
