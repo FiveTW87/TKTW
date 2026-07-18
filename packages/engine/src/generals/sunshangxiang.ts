@@ -16,7 +16,7 @@ registerGeneral({
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];
-        if (!targetId || cardIds.length < 2) return;
+        if (!targetId || targetId === ownerId || cardIds.length < 2) return; // another player
         const p = getPlayer(state, targetId);
         if (p.hp >= p.maxHp) return; // must be injured
         discardCardsFromHand(state, ownerId, cardIds.slice(0, 2));

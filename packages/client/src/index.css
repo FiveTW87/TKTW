@@ -1,0 +1,259 @@
+:root {
+  --bg-1: #e2d3af;
+  --bg-2: #d8c7a0;
+  --bg-3: #cbb88f;
+  --ink: #2e2519;
+  --ink-muted: #6b5b3d;
+  --ink-faint: #7a6a48;
+  --red: #a8322a;
+  --red-dark: #7d231d;
+  --red-deep: #8f2a22;
+  --target-red: #b0402c;
+  --gold: #d9a531;
+  --gold-light: #e6c063;
+  --green: #3c7d52;
+  --card-bg: #f8f1da;
+  --card-bg-2: #f4ead0;
+  --card-border: #c3ad78;
+  --card-border-2: #cbb98d;
+  --panel-bg: #f6eed4;
+  --panel-bg-2: #f2e6c9;
+  --panel-border: #d3c199;
+  --panel-border-2: #b6a074;
+  --font-body: 'Sarabun', sans-serif;
+  --font-display: 'Chonburi', serif;
+  --font-glyph: 'Ma Shan Zheng', cursive;
+  --font-glyph-2: 'Noto Serif SC', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg-2);
+  background-image: radial-gradient(60% 50% at 50% 0%, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-3) 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+a {
+  color: var(--red);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--red-dark);
+}
+
+/* ── Keyframes (ported from the design's dc* animations) ───────────── */
+@keyframes dcDrawIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-90px) scale(0.6) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+@keyframes dcPilePulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 3px rgba(230, 192, 99, 0.3), 0 0 0 0 rgba(217, 165, 49, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px rgba(230, 192, 99, 0.55), 0 0 22px 4px rgba(217, 165, 49, 0.65);
+  }
+}
+@keyframes dcPop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes dcFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dcRise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ── Panels ───────────────────────────────────────────────────────── */
+.panel {
+  background: radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6 55%, #e6d7b4 100%);
+  border: 1px solid var(--panel-border-2);
+  border-radius: 8px;
+  box-shadow:
+    0 22px 60px rgba(60, 40, 15, 0.28),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.28),
+    inset 0 0 0 8px rgba(166, 129, 47, 0.35);
+}
+.panel-plain {
+  background: radial-gradient(120% 100% at 50% 0%, #f7f0dc, #efe3c6 55%, #e6d7b4 100%);
+  border: 1px solid var(--panel-border-2);
+  border-radius: 8px;
+  box-shadow:
+    0 22px 60px rgba(60, 40, 15, 0.28),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.26),
+    inset 0 0 0 7px rgba(166, 129, 47, 0.32);
+}
+.mat {
+  border-radius: 8px;
+  background: radial-gradient(75% 95% at 50% 40%, #ecdcb6, #d9c496 100%);
+  border: 2px solid var(--panel-border-2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), inset 0 3px 22px rgba(90, 60, 20, 0.22);
+}
+
+/* ── Seals (role indicators 主/忠/反/内) ──────────────────────────── */
+.seal {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-family: var(--font-glyph-2);
+  font-weight: 700;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+.seal-lord {
+  background: var(--gold);
+  color: #5a3d0a;
+}
+.seal-loyalist {
+  background: #d8e6d0;
+  color: #2f5d3a;
+}
+.seal-rebel {
+  background: #e6cfc9;
+  color: #8f2a22;
+}
+.seal-traitor {
+  background: #d8d2e6;
+  color: #4a3a70;
+}
+.seal-unknown {
+  background: #e3d7b8;
+  color: #7a6a48;
+}
+
+/* ── HP dots ──────────────────────────────────────────────────────── */
+.hp-dot {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--ink-faint);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(#c0463a, #9a3128);
+  color: #f6ecd2;
+  border: 1px solid var(--gold-light);
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(90, 30, 20, 0.3);
+  transition: filter 0.12s, transform 0.12s;
+}
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-primary:disabled {
+  background: #c9b789;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-secondary {
+  background: var(--card-bg-2);
+  color: var(--ink-muted);
+  border: 1px solid var(--panel-border-2);
+  border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.btn-secondary:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Glows (turn / targetable) ────────────────────────────────────── */
+.glow-turn {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  box-shadow: 0 0 14px rgba(217, 165, 49, 0.6), inset 0 0 10px rgba(217, 165, 49, 0.22);
+  pointer-events: none;
+}
+.glow-target {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--target-red);
+  border-radius: 6px;
+  box-shadow: 0 0 14px rgba(176, 64, 44, 0.65), inset 0 0 10px rgba(176, 64, 44, 0.25);
+  pointer-events: none;
+}
+
+/* ── Card faces + hand ────────────────────────────────────────────── */
+.card-back {
+  background: repeating-linear-gradient(48deg, rgba(60, 40, 15, 0.07) 0 6px, transparent 6px 12px), #ece0c2;
+  border: 1px solid var(--card-border-2);
+}
+.anim-draw {
+  animation: dcDrawIn 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.anim-pop {
+  animation: dcPop 0.16s ease-out both;
+}
+.anim-fade {
+  animation: dcFadeIn 0.18s ease-out both;
+}
+.anim-rise {
+  animation: dcRise 0.2s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.pile-pulse {
+  animation: dcPilePulse 2.4s ease-in-out infinite;
+}
+.hand-card[style*="pointer"]:hover {
+  filter: brightness(1.03);
+}

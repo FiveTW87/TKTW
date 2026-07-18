@@ -2,7 +2,7 @@
 import { registerGeneral } from "./registry";
 import type { Card } from "../types";
 import type { JudgmentBox } from "../core/judgment";
-import { getPlayer, log } from "../core/state";
+import { getPlayer, log, popCard } from "../core/state";
 
 registerGeneral({
   id: "guojia",
@@ -31,12 +31,12 @@ registerGeneral({
       // is exactly SPEC's "เสีย 2 HP = ทำงาน 2 ครั้ง" — no looping needed here.
       triggers: {
         OnHPLost: function* (ctx) {
-          const { state, ownerId, payload } = ctx;
+          const { state, rng, ownerId, payload } = ctx;
           const { targetId } = payload as { targetId: string };
           if (ownerId !== targetId) return;
           const revealed: Card[] = [];
           for (let i = 0; i < 2; i++) {
-            const c = state.drawPile.pop();
+            const c = popCard(state, rng);
             if (c) revealed.push(c);
           }
           if (revealed.length === 0) return;

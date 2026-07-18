@@ -229,3 +229,37 @@ Standard Edition, Identity Mode, 3–10 players. Card/general data was
 redesigned from scratch (not copied from any existing implementation) so
 the 104-card deck's probabilities land on clean numbers and there's no
 GPL entanglement — see `tests/balance.test.ts` for the verified structure.
+
+## Deploy (single service — put it online for people to try)
+
+The whole game runs as **one service**: the Node/Socket.IO server also serves
+the built client, so there's a single URL, no CORS, and **no reverse proxy
+needed** (the platform terminates TLS and routes to your app's port).
+
+**Constraints to know first:**
+- Game state is **in-memory (no DB)** → run **exactly one instance** (no
+  autoscaling / multiple replicas), and **a restart or redeploy drops every
+  in-progress game** (players just start a new room). Fine for a "try it" demo.
+- The server needs a host that keeps a **long-lived process + WebSockets** —
+  **Railway / Render / Fly.io / a VPS**. Serverless (Vercel/Netlify functions)
+  will *not* work for the server.
+
+### Deploy to Railway or Render (Dockerfile)
+1. Push this repo to GitHub.
+2. Create a new service from the repo; pick **Docker / Dockerfile** as the build.
+3. No env vars are required. (Optional: set `CLIENT_ORIGIN` to lock CORS to your
+   domain. `PORT` is injected by the platform automatically.)
+4. Deploy → you get a URL like `https://tktw-xxxx.up.railway.app`. Share it.
+
+### Test the single-service build locally
+```bash
+pnpm --filter @tktw/client build          # → packages/client/dist
+CLIENT_DIST=packages/client/dist PORT=3001 pnpm --filter @tktw/server start
+# open http://localhost:3001 — the page AND the socket both come from :3001
+```
+
+### Split hosting (alternative)
+Client on a static host (Cloudflare Pages / Netlify / Vercel) + server on
+Railway/Render:
+- Build the client with `VITE_SERVER_URL=https://your-server pnpm --filter @tktw/client build`.
+- Run the server with `CLIENT_ORIGIN=https://your-client-domain` (CORS).

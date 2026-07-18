@@ -1,6 +1,6 @@
-// All client->server socket payloads, validated at the door before anything
-// touches a GameRoom or the engine. No shared `packages/shared` yet — there's
-// no client package to justify the split, so these live directly here.
+// All client<->server socket payloads, validated at the door before anything
+// touches a GameRoom or the engine on the server side, and used by the
+// client to know exactly what shape each event expects.
 import { z } from "zod";
 
 // 6 chars, uppercase, no 0/O/1/I — avoids the pairs people misread out loud.
@@ -36,6 +36,13 @@ export const startGameSchema = z.object({
   roomCode: roomCodeSchema,
 });
 
+// One-click solo test mode: create a room, fill it with bot seats, and
+// start immediately — no join step, no waiting on other humans.
+export const quickstartWithBotsSchema = z.object({
+  playerName: playerNameSchema,
+  botCount: z.number().int().min(2).max(9),
+});
+
 // Mirrors engine's PlayerAnswer (types.ts) minus playerId/decisionId, which
 // the server fills in itself from the room seat / current pendingDecision —
 // a client is never trusted to say who it's answering as.
@@ -55,3 +62,4 @@ export type JoinRoomInput = z.infer<typeof joinRoomSchema>;
 export type RejoinRoomInput = z.infer<typeof rejoinRoomSchema>;
 export type StartGameInput = z.infer<typeof startGameSchema>;
 export type AnswerInput = z.infer<typeof answerSchema>;
+export type QuickstartWithBotsInput = z.infer<typeof quickstartWithBotsSchema>;

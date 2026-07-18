@@ -202,15 +202,26 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       // falls back to a random hand card when we pass.
       return { ...base, pass: true };
     case "wuguPick": {
-      const options = (pending.data as { options: string[] }).options;
-      return { ...base, cardIds: options.length > 0 ? [options[0]!] : [] };
+      // options are now full card faces, not bare ids.
+      const options = (pending.data as { options: { id: string }[] }).options;
+      return { ...base, cardIds: options.length > 0 ? [options[0]!.id] : [] };
     }
+    case "tuxiTargets": {
+      // Steal from the first up-to-2 eligible players.
+      const eligible = (pending.data as { eligible: { id: string }[] }).eligible ?? [];
+      return { ...base, targetIds: eligible.slice(0, 2).map((e) => e.id) };
+    }
+    case "judgmentReveal":
+      // A judgment can't be declined — any answer just flips the card.
+      return { ...base, choice: "reveal" };
     case "pickGeneral": {
       const options = (pending.data as { options: string[] }).options;
       return options[0] ? { ...base, choice: options[0] } : { ...base, pass: true };
     }
     case "swordIceChoice":
       return { ...base, choice: "damage" };
+    case "qilinDestroyHorse":
+      return { ...base, choice: "horseMinus" }; // destroy the defensive (−1) horse
     case "guanshiForce":
       return { ...base, pass: true }; // never pay 2 cards to force it through
     case "qinglongReplay":

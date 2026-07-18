@@ -1,0 +1,153 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+const { fakeSocket, sentEvents, respondTo, clearSent } = vi.hoisted(() => {
+  type Handler = (...args: unknown[]) => void;
+  const handlers: Record<string, Handler[]> = {};
+  const sentEvents: Array<{ event: string; payload: unknown; ack?: (res: unknown) => void }> = [];
+  const fakeSocket = {
+    connected: false,
+    on(event: string, handler: Handler) {
+      (handlers[event] ??= []).push(handler);
+    },
+    emit(event: string, payload: unknown, ack?: (res: unknown) => void) {
+      sentEvents.push({ event, payload, ack });
+    },
+    fire(event: string, ...args: unknown[]) {
+      (handlers[event] ?? []).forEach((h) => h(...args));
+    },
+  };
+  function respondTo(event: string, response: unknown) {
+    const entry = [...sentEvents].reverse().find((e) => e.event === event && e.ack);
+    entry?.ack?.(response);
+  }
+  function clearSent() {
+    sentEvents.length = 0;
+  }
+  return { fakeSocket, sentEvents, respondTo, clearSent };
+});
+
+vi.mock("socket.io-client", () => ({ io: () => fakeSocket }));
+
+import App from "../src/App";
+import { useGameStore } from "../src/store/gameStore";
+
+beforeEach(() => {
+  clearSent();
+  useGameStore.setState({
+    connected: false,
+    initialized: false,
+    roomCode: null,
+    sessionToken: null,
+    seatIndex: null,
+    roomState: null,
+    gameView: null,
+    error: null,
+    answeringId: null,
+  });
+});
+
+function basePlayer(id: string, seat: number) {
+  return {
+    id,
+    seat,
+    name: id,
+    role: id === "p0" ? "lord" : undefined,
+    roleRevealed: id === "p0",
+    generalId: "none",
+    faction: "qun",
+    gender: "male",
+    hp: 4,
+    maxHp: 4,
+    alive: true,
+    hand: id === "p0" ? [] : { count: 0 },
+    equipment: {},
+    judgmentZone: [],
+    shaUsedThisTurn: 0,
+    skillUsedThisTurn: {},
+  };
+}
+
+async function enterRoom(roomCode: string) {
+  const user = userEvent.setup();
+  render(<App />);
+  fakeSocket.fire("connect");
+  await waitFor(() => expect(screen.getByPlaceholderText("ใส่ชื่อของคุณ")).toBeInTheDocument());
+  await user.type(screen.getByPlaceholderText("ใส่ชื่อของคุณ"), "Alice");
+  await user.click(screen.getByRole("button", { name: "สร้างห้องใหม่" }));
+  await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
+  respondTo("room:create", { ok: true, roomCode, sessionToken: "c".repeat(20), seatIndex: 0 });
+  await waitFor(() => expect(screen.getByText(roomCode)).toBeInTheDocument());
+  return user;
+}
+
+describe("General select screen", () => {
+  it("picking a general and confirming sends game:answer with that choice", async () => {
+    const user = await enterRoom("PICKME");
+
+    fakeSocket.fire("game:view", {
+      viewerId: "p0",
+      players: [basePlayer("p0", 0), basePlayer("p1", 1), basePlayer("p2", 2)],
+      currentSeat: 0,
+      turnNumber: 0,
+      phase: "prepare",
+      drawPile: { count: 90 },
+      discardPile: [],
+      eventStack: [],
+      pendingDecision: {
+        id: "dec_1",
+        kind: "pickGeneral",
+        playerId: "p0",
+        data: { options: ["caocao", "liubei", "sunquan", "guanyu", "zhaoyun"] },
+      },
+      finished: false,
+      log: [],
+    });
+
+    await waitFor(() => expect(screen.getByText("เลือกนายพลของคุณ")).toBeInTheDocument());
+    expect(screen.getByText("โจโฉ")).toBeInTheDocument();
+    expect(screen.getByText("เล่าปี่")).toBeInTheDocument();
+    // skills are narrated on each general card now
+    expect(screen.getByText("วีรบุรุษเจ้าเล่ห์")).toBeInTheDocument(); // caocao_jianxiong
+    expect(screen.getByText("เมตตาธรรม")).toBeInTheDocument(); // liubei_rende
+
+    const confirmBtn = screen.getByRole("button", { name: "ยืนยัน" });
+    expect(confirmBtn).toBeDisabled();
+
+    await user.click(screen.getByText("โจโฉ"));
+    expect(confirmBtn).toBeEnabled();
+
+    await user.click(confirmBtn);
+
+    await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
+    const answerCall = sentEvents.find((e) => e.event === "game:answer")!;
+    expect(answerCall.payload).toEqual({ roomCode: "PICKME", decisionId: "dec_1", choice: "caocao" });
+  });
+
+  it("shows a waiting indicator (not the picker) when it's someone else's pick", async () => {
+    await enterRoom("WAITED");
+
+    fakeSocket.fire("game:view", {
+      viewerId: "p0",
+      players: [basePlayer("p0", 0), basePlayer("p1", 1), basePlayer("p2", 2)],
+      currentSeat: 0,
+      turnNumber: 0,
+      phase: "prepare",
+      drawPile: { count: 90 },
+      discardPile: [],
+      eventStack: [],
+      pendingDecision: {
+        id: "dec_2",
+        kind: "pickGeneral",
+        playerId: "p1",
+        data: { options: ["huanggai", "sunshangxiang", "zhouyu"] },
+      },
+      finished: false,
+      log: [],
+    });
+
+    await waitFor(() => expect(screen.getByText(/รอ p1 เลือกนายพล/)).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
+  });
+});

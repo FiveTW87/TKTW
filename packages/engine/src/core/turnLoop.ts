@@ -14,6 +14,7 @@ import {
 } from "./state";
 import { cardDef, isCancelable } from "./cardData";
 import { CARD_EFFECTS } from "../cards/index";
+import { forwardShandian } from "../cards/shandian";
 import { makeEvent } from "./eventStack";
 import { resolveWithWuxieWindow } from "./wuxieWindow";
 import { canAttack, distanceNet } from "./distance";
@@ -119,7 +120,14 @@ function* runJudgePhase(ctx: Ctx, activeId: string): EngineGenerator {
     const event = makeEvent(state, card.typeKey, activeId, [activeId], { delayedCardId: card.id });
     const resolved = yield* resolveWithWuxieWindow(ctx, event);
     if (!resolved) {
-      state.discardPile.push(card);
+      // House rule: ไร้ช่องโหว่ cancelling สายฟ้า doesn't destroy it — it moves
+      // on to the next player. Other delayed tricks (lebusishu) are discarded.
+      if (card.typeKey === "shandian") {
+        log(state, `"สายฟ้า" ถูก "ไร้ช่องโหว่" กัน — ส่งต่อคนถัดไป`);
+        forwardShandian(state, activeId, card);
+      } else {
+        state.discardPile.push(card);
+      }
       continue;
     }
     const def = CARD_EFFECTS[card.typeKey];
@@ -270,8 +278,16 @@ function* playCard(
       throw new Error(`${playerId}: สังหาร usage limit reached`);
     }
   }
-  if (card.typeKey === "tao" && getPlayer(state, playerId).hp >= getPlayer(state, playerId).maxHp) {
-    throw new Error(`${playerId}: cannot play tao at full hp`);
+  if (def.targetRule === "selfOrDying") {
+    // tao (main action): heal self by default, or one injured *other* player
+    // ("help a hurt ally" house rule). The dying-rescue path is separate.
+    if (targetIds.length > 1) {
+      throw new Error(`${playerId}: ${card.typeKey} takes at most 1 target`);
+    }
+    const targetId = targetIds[0] ?? playerId;
+    const t = getPlayer(state, targetId);
+    if (!t.alive) throw new Error(`${playerId}: ${card.typeKey} target must be alive`);
+    if (t.hp >= t.maxHp) throw new Error(`${playerId}: cannot ${card.typeKey} a full-hp target`);
   }
   if (def.targetRule === "singleArmed") {
     const targetId = targetIds[0];
@@ -349,7 +365,10 @@ function* playCard(
     }
   }
   if (def.category === "delayedTrick") {
-    const targetId = targetIds[0] ?? playerId;
+    // สายฟ้า (shandian) is always placed on the caster themselves (SPEC 8.3);
+    // lebusishu targets a chosen player. Forcing self here keeps the rule even
+    // if a client/bot mistakenly sends a target.
+    const targetId = card.typeKey === "shandian" ? playerId : (targetIds[0] ?? playerId);
     if (getPlayer(state, targetId).judgmentZone.some((c) => c.typeKey === card.typeKey)) {
       throw new Error(`${targetId} already has a ${card.typeKey} in their judgment zone`);
     }
@@ -367,7 +386,7 @@ function* playCard(
   }
 
   if (def.category === "delayedTrick") {
-    const targetId = targetIds[0] ?? playerId;
+    const targetId = card.typeKey === "shandian" ? playerId : (targetIds[0] ?? playerId);
     removeFromHand(state, playerId, firstId);
     getPlayer(state, targetId).judgmentZone.push(card);
     log(state, `${playerId} วาง ${card.typeKey} ในเขตตัดสินของ ${targetId}`);

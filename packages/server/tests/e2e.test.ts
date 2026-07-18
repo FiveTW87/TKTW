@@ -39,6 +39,22 @@ function waitForEvent<T = unknown>(socket: ClientSocket, event: string): Promise
   });
 }
 
+function waitUntilView<T>(socket: ClientSocket, predicate: (v: T) => boolean, timeoutMs = 10_000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off("game:view", handler);
+      reject(new Error("waitUntilView: timed out waiting for a matching game:view"));
+    }, timeoutMs);
+    function handler(v: T) {
+      if (!predicate(v)) return;
+      clearTimeout(timer);
+      socket.off("game:view", handler);
+      resolve(v);
+    }
+    socket.on("game:view", handler);
+  });
+}
+
 async function createAndFillRoom(names: string[]) {
   const sockets: ClientSocket[] = [];
   for (const name of names) sockets.push(await connectClient());
@@ -258,5 +274,55 @@ describe("room garbage collection", () => {
     await new Promise((r) => setTimeout(r, 150));
 
     expect(server.rooms.getRoom(createAck.roomCode)).toBeUndefined();
+  });
+});
+
+describe("quickstart with bots", () => {
+  it("starts immediately, and the bot seats resolve their own decisions with no client input", async () => {
+    const socket = await connectClient();
+
+    // Registered before the emit so no broadcast can slip past unheard.
+    const firstPick = waitUntilView<{ pendingDecision?: { id: string; playerId: string; kind: string } }>(
+      socket,
+      (v) => v.pendingDecision?.playerId === "p0" && v.pendingDecision?.kind === "pickGeneral",
+      5_000,
+    );
+    const backToMainAction = waitUntilView<{ pendingDecision?: { id: string; playerId: string; kind: string } }>(
+      socket,
+      (v) => v.pendingDecision?.playerId === "p0" && v.pendingDecision?.kind === "mainAction",
+      10_000,
+    );
+
+    const ack = await emitAck<{ ok: boolean; roomCode: string; seatIndex: number }>(
+      socket,
+      "room:quickstartWithBots",
+      { playerName: "Solo", botCount: 2 },
+    );
+    expect(ack.ok).toBe(true);
+    expect(ack.seatIndex).toBe(0);
+
+    const first = await firstPick;
+    expect(first.pendingDecision?.playerId).toBe("p0"); // seat 0 is always the lord, picks first
+
+    // Answer only my own pick. From here nobody else answers anything —
+    // both bot seats (p1, p2) must resolve their own pickGeneral decisions
+    // unattended for control to ever cycle back to p0's first mainAction.
+    await emitAck(socket, "game:answer", {
+      roomCode: ack.roomCode,
+      decisionId: first.pendingDecision!.id,
+      pass: true,
+    });
+
+    const final = await backToMainAction;
+    expect(final.pendingDecision?.playerId).toBe("p0");
+  });
+
+  it("rejects an out-of-range bot count", async () => {
+    const socket = await connectClient();
+    const ack = await emitAck<{ ok: boolean; error?: string }>(socket, "room:quickstartWithBots", {
+      playerName: "Solo",
+      botCount: 0,
+    });
+    expect(ack.ok).toBe(false);
   });
 });

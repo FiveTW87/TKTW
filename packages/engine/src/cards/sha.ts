@@ -2,7 +2,7 @@
 // a sha's own resolution (qinglong/guanshi/qilin/sword_ice). Armor
 // (bagua/renwang, SPEC 8.5) hooks in via OnNeedDodge / armorIgnored instead
 // of living here — see equipment/bagua.ts, equipment/renwang.ts.
-import type { Card } from "../types";
+import { colorOf, type Card } from "../types";
 import type { CardDef } from "../core/cardEffects";
 import type { Ctx } from "../core/ctx";
 import type { EngineGenerator } from "../core/decisions";
@@ -23,7 +23,10 @@ function* resolveShaHit(
 ): EngineGenerator {
   const { state } = ctx;
 
-  if (weaponOf(ctx, sourceId) === "sword_ice") {
+  // กระบี่น้ำแข็ง: the target may discard 2 to avoid the damage — but only
+  // offer/honor that when they actually hold ≥2 cards, otherwise it falls
+  // through to normal damage (rather than getting stuck / throwing).
+  if (weaponOf(ctx, sourceId) === "sword_ice" && getPlayer(state, targetId).hand.length >= 2) {
     const answer = yield { kind: "swordIceChoice", playerId: sourceId, data: { targetId } };
     if (answer.choice === "discard2") {
       const pick = yield { kind: "discardChosenBy", playerId: targetId, data: { count: 2 } };
@@ -41,12 +44,23 @@ function* resolveShaHit(
 
   if (weaponOf(ctx, sourceId) === "qilin" && getPlayer(state, targetId).alive) {
     const p = getPlayer(state, targetId);
-    const slot = p.equipment.horseMinus ? "horseMinus" : p.equipment.horsePlus ? "horsePlus" : undefined;
+    const hasMinus = !!p.equipment.horseMinus;
+    const hasPlus = !!p.equipment.horsePlus;
+    // With both horses, the attacker chooses which to destroy; with one, auto.
+    let slot: "horseMinus" | "horsePlus" | undefined;
+    if (hasMinus && hasPlus) {
+      const answer = yield { kind: "qilinDestroyHorse", playerId: sourceId, data: { targetId } };
+      slot = answer.choice === "horsePlus" ? "horsePlus" : "horseMinus";
+    } else if (hasMinus) {
+      slot = "horseMinus";
+    } else if (hasPlus) {
+      slot = "horsePlus";
+    }
     if (slot) {
       const c = p.equipment[slot]!;
       delete p.equipment[slot];
       state.discardPile.push(c);
-      log(state, `${targetId} ถูกทำลายม้าด้วยธนูกิเลน`);
+      log(state, `${targetId} ถูกทำลาย${slot === "horseMinus" ? "ม้า−1" : "ม้า+1"}ด้วยธนูกิเลน`);
     }
   }
 }
@@ -94,6 +108,19 @@ function* attemptSha(
   const targetedBox = { targetId, blockedFromDodge: false };
   yield* fireTrigger(ctx, "OnShaTargeted", { sourceId, box: targetedBox, card: shaCard });
   targetId = targetedBox.targetId;
+
+  // Armor: โล่ราชันย์ (renwang) negates a BLACK สังหาร entirely. This is
+  // immunity, NOT a dodge, so unlike a หลบ it must still apply even when
+  // machao's tieqi has blocked dodging (targetedBox.blockedFromDodge). กระบี่
+  // ชิงกัง (armorIgnored) still pierces it.
+  if (
+    getPlayer(state, targetId).equipment.armor?.typeKey === "renwang" &&
+    colorOf(shaCard.suit) === "black" &&
+    !queryHook<boolean>(state, "armorIgnored", { playerId: sourceId }, (rs) => rs.some(Boolean), false)
+  ) {
+    log(state, `"สังหาร" ดอกดำจาก ${sourceId} ไม่มีผลกับ ${targetId} (โล่ราชันย์)`);
+    return;
+  }
 
   if (
     weaponOf(ctx, sourceId) === "sword_yy" &&

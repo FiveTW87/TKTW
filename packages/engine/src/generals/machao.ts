@@ -23,21 +23,26 @@ registerGeneral({
     },
     {
       id: "machao_tieqi",
+      // Locked: the judgment only benefits the attacker, and (being optional)
+      // it used to prompt Ma Chao even when he was the DEFENDER (guard then
+      // returns). Locked = only the attacker's tieqi runs, no misfired prompt.
+      locked: true,
       triggers: {
         OnShaTargeted: function* (ctx) {
           const { state, ownerId, payload } = ctx;
-          const { sourceId, targetId, box } = payload as {
+          // The real target lives in `box.targetId` — the OnShaTargeted payload
+          // itself carries no top-level targetId (see cards/sha.ts).
+          const { sourceId, box } = payload as {
             sourceId: string;
-            targetId: string;
-            box: { blockedFromDodge: boolean };
+            box: { targetId: string; blockedFromDodge: boolean };
           };
           if (ownerId !== sourceId) return;
-          const judged = yield* runJudgment(ctx, ownerId);
+          const judged = yield* runJudgment(ctx, ownerId, { interactive: true, reason: "machao_tieqi" });
           if (colorOf(judged.suit) === "red") {
             box.blockedFromDodge = true;
             log(
               state,
-              `${ownerId} ตัดสิน "ทหารม้าเหล็ก" ${judged.suit}${judged.rank} — ${targetId} ลง "หลบ" ไม่ได้`,
+              `${ownerId} ตัดสิน "ทหารม้าเหล็ก" ${judged.suit}${judged.rank} — ${box.targetId} ลง "หลบ" ไม่ได้`,
             );
           }
         },

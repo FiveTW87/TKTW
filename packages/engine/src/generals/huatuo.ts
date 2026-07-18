@@ -1,7 +1,8 @@
-// SPEC 11 — ฮัวโต๋ (Qun). jiuxing's conversion is scoped to reactive use
-// only (`context !== "mainAction"`) — otherwise he could top himself up
-// with tao on his own turn using any red card, which SPEC's "นอกเทิร์นตัวเอง"
-// wording explicitly rules out.
+// SPEC 11 — ฮัวโต๋ (Qun). jiuxing's red→tao conversion is scoped to when it
+// is NOT Hua Tuo's own turn ("นอกเทิร์นตัวเอง"). We check the active turn
+// player rather than the play-context tag, because the reactive dying-rescue
+// path can still happen on his own turn (e.g. losing a duel he started) and
+// SPEC forbids converting then too.
 import { registerGeneral } from "./registry";
 import { colorOf, type Card } from "../types";
 import { heal } from "../core/damage";
@@ -32,15 +33,16 @@ registerGeneral({
       id: "huatuo_jiuxing",
       queries: {
         canConvertCard: (ctx) => {
-          const { playerId, card, asType, context } = ctx.payload as {
+          const { playerId, card, asType } = ctx.payload as {
             playerId: string;
             card: Card;
             asType: string;
-            context: string;
           };
           if (ctx.ownerId !== playerId) return false;
           if (asType !== "tao" || colorOf(card.suit) !== "red") return false;
-          return context !== "mainAction";
+          // Only when it isn't Hua Tuo's own turn.
+          const activeId = ctx.state.players.find((p) => p.seat === ctx.state.currentSeat)?.id;
+          return activeId !== ctx.ownerId;
         },
       },
     },

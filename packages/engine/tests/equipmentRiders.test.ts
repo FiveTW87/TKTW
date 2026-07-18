@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import "../src/equipment/index"; // side-effect: registers bagua/renwang/crossbow/sword_qinggang
+import "../src/generals/index"; // side-effect: registers all 25 generals
 import { createRng } from "../src/core/rng";
 import { createInitialState } from "../src/core/setup";
 import { makeCtx, lastAliveWins } from "../src/core/ctx";
 import { runGame } from "../src/core/turnLoop";
 import { createSession, respond } from "../src/core/decisions";
 import { getPlayer } from "../src/core/state";
+import { assignGeneral } from "../src/core/generalAssign";
 import { forceIntoHand } from "./_testUtils";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 
@@ -90,10 +92,13 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
       targetIds: ["p1"],
     });
 
-    const activatePrompt = session.state.pendingDecision!;
-    expect(activatePrompt.kind).toBe("activateSkill");
-    expect(activatePrompt.playerId).toBe("p1");
-    respond(session, { decisionId: activatePrompt.id, playerId: "p1", pass: false });
+    // bagua is locked now — no "use it?" prompt. It goes straight to the
+    // interactive judgment: p1 "flips" the card themselves (the rigged red
+    // card stays on top until this tap).
+    const reveal = session.state.pendingDecision!;
+    expect(reveal.kind).toBe("judgmentReveal");
+    expect(reveal.playerId).toBe("p1");
+    respond(session, { decisionId: reveal.id, playerId: "p1", choice: "reveal" });
 
     expect(p1.hp).toBe(p1.maxHp);
     expect(state.log.some((l) => l.text.includes('นับเป็นลง "หลบ" อัตโนมัติ'))).toBe(true);
@@ -127,10 +132,8 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
       targetIds: ["p1"],
     });
 
-    const activatePrompt = session.state.pendingDecision!;
-    expect(activatePrompt.kind).toBe("activateSkill");
-    respond(session, { decisionId: activatePrompt.id, playerId: "p1", pass: false });
-
+    // bagua locked → straight to the judgment (no activateSkill). Let the loop
+    // below resolve the reveal + the failed dodge.
     // no shan in hand -> should now hit for 1 damage. Stop the instant
     // control returns to p0's next mainAction (same reasoning as the
     // zhangba test above).
@@ -140,5 +143,49 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
       respond(session, simpleBotAnswer(session));
     }
     expect(p1.hp).toBe(before - 1);
+  });
+});
+
+// The flow probe flagged this OnEquipmentLost path as one random play almost
+// never reaches (the attacker must specifically strip her *equipment*, not a
+// hand card), so it's pinned here directly.
+describe("sunshangxiang jiehun: draw 2 when equipment is lost (OnEquipmentLost)", () => {
+  it("draws 2 after an opponent removes her equipped horse via ข้ามสะพานแล้วรื้อทิ้ง", () => {
+    const rng = createRng(11);
+    const state = createInitialState({ playerCount: 3, seed: 11 }, rng);
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    assignGeneral(state, "p1", "sunshangxiang", false);
+
+    const p0 = getPlayer(state, "p0");
+    const p1 = getPlayer(state, "p1");
+    p1.equipment.horseMinus = { id: "heart_5_2", typeKey: "horse_chitu", suit: "heart", rank: 5 };
+    p0.hand = p0.hand.filter((c) => c.typeKey !== "sha"); // avoid the bot detouring into an attack
+    forceIntoHand(state, "p0", "club_3_1"); // a real ข้ามสะพานแล้วรื้อทิ้ง (guohe)
+
+    const session = createSession(runGame(ctx), state, rng);
+    const before = p1.hand.length;
+
+    const pending = session.state.pendingDecision!;
+    expect(pending.kind).toBe("mainAction");
+    respond(session, { decisionId: pending.id, playerId: "p0", choice: "playCard", cardIds: ["club_3_1"], targetIds: ["p1"] });
+
+    // Resolve the guohe: p0 chooses her visible horse; p1 then accepts jiehun.
+    let jiehunFired = false;
+    for (let i = 0; i < 16; i++) {
+      const d = session.state.pendingDecision;
+      if (!d || (d.kind === "mainAction" && d.playerId === "p0")) break;
+      if (d.kind === "pickCardFromPlayer" && d.playerId === "p0") {
+        respond(session, { decisionId: d.id, playerId: "p0", cardIds: ["heart_5_2"] });
+      } else if (d.kind === "activateSkill" && d.playerId === "p1") {
+        jiehunFired = true;
+        respond(session, { decisionId: d.id, playerId: "p1", pass: false });
+      } else {
+        respond(session, simpleBotAnswer(session));
+      }
+    }
+
+    expect(jiehunFired).toBe(true);
+    expect(p1.hand.length).toBe(before + 2);
+    expect(state.log.some((l) => l.text.includes("สตรีอาจหาญ"))).toBe(true);
   });
 });

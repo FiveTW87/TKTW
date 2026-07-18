@@ -6,7 +6,7 @@ import { log } from "../core/state";
 
 export const lebusishuCard: CardDef = {
   judge: function* (ctx) {
-    const judged = yield* runJudgment(ctx, ctx.ownerId);
+    const judged = yield* runJudgment(ctx, ctx.ownerId, { interactive: true, reason: "lebusishu" });
     if (judged.suit === "heart") {
       log(ctx.state, `${ctx.ownerId} ตัดสิน "เพลินจนลืมแคว้นสู่" ${judged.suit}${judged.rank} — รอด`);
     } else {

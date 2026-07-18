@@ -27,6 +27,10 @@ registerGeneral({
     },
     {
       id: "daiqiao_huibi",
+      // Locked: only the DEFENDER redirects, and the redirect prompt itself has
+      // a decline. Being optional it used to also prompt Da Qiao when she was
+      // the ATTACKER (guard then returns). Locked = no misfired "use it?" prompt.
+      locked: true,
       triggers: {
         OnShaTargeted: function* (ctx) {
           const { state, ownerId, payload } = ctx;

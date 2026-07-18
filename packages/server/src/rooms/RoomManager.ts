@@ -10,9 +10,9 @@
 // that harder problem but isn't wired in here; see gameFlow.ts.
 import { randomUUID } from "node:crypto";
 import { createIdentityGame, type GameSession } from "@tktw/engine";
-import { ROOM_CODE_ALPHABET } from "../protocol/schema";
+import { ROOM_CODE_ALPHABET, type RoomPhase } from "@tktw/shared";
 
-export type RoomPhase = "lobby" | "playing" | "ended";
+export type { RoomPhase };
 
 export interface SeatSlot {
   name: string;
@@ -20,6 +20,10 @@ export interface SeatSlot {
   socketId?: string;
   connected: boolean;
   isHost: boolean;
+  /** Bot seats never have a real socket; their decisions are auto-answered
+   *  by gameFlow.ts shortly after they become pending (see BOT_ANSWER_DELAY_MS)
+   *  instead of waiting on the AFK timeout. */
+  isBot: boolean;
 }
 
 export interface GameRoom {
@@ -70,7 +74,7 @@ export class RoomManager {
     const room: GameRoom = {
       code,
       phase: "lobby",
-      seats: [{ name: hostName, sessionToken, connected: true, isHost: true }],
+      seats: [{ name: hostName, sessionToken, connected: true, isHost: true, isBot: false }],
       seed: Math.floor(Math.random() * 1_000_000_000),
       createdAt: Date.now(),
       emptySince: null,
@@ -85,9 +89,30 @@ export class RoomManager {
     if (room.phase !== "lobby") throw new RoomError("game already started");
     if (room.seats.length >= MAX_PLAYERS) throw new RoomError("room is full");
     const sessionToken = randomUUID();
-    room.seats.push({ name, sessionToken, connected: true, isHost: false });
+    room.seats.push({ name, sessionToken, connected: true, isHost: false, isBot: false });
     room.emptySince = null;
     return { room, sessionToken, seatIndex: room.seats.length - 1 };
+  }
+
+  /** One-click solo test mode (SPEC's own testing needs, not from the client
+   *  spec): create a room, fill the rest of the seats with bots, and start
+   *  immediately — no join step, no waiting on other humans. */
+  quickstartWithBots(
+    hostName: string,
+    botCount: number,
+  ): { room: GameRoom; sessionToken: string; seatIndex: number } {
+    const { room, sessionToken, seatIndex } = this.createRoom(hostName);
+    for (let i = 1; i <= botCount; i++) {
+      room.seats.push({
+        name: `บอท ${i}`,
+        sessionToken: randomUUID(),
+        connected: true,
+        isHost: false,
+        isBot: true,
+      });
+    }
+    this.startGame(room, seatIndex);
+    return { room, sessionToken, seatIndex };
   }
 
   /** Presenting a valid session token re-attaches a (possibly new) socket
@@ -114,7 +139,9 @@ export class RoomManager {
     if (!seat) return;
     seat.connected = false;
     delete seat.socketId;
-    if (room.seats.every((s) => !s.connected)) {
+    // Bot seats don't count toward "someone's here" — a room left with only
+    // bots in it after the last human leaves must still be reclaimable.
+    if (room.seats.every((s) => s.isBot || !s.connected)) {
       room.emptySince = Date.now();
     }
     // Host auto-transfer is lobby-only: mid-game there's no "host" action

@@ -6,8 +6,11 @@ import {
   rejoinRoomSchema,
   startGameSchema,
   answerSchema,
+  quickstartWithBotsSchema,
+  ClientEvents,
+  ServerEvents,
   type AnswerInput,
-} from "./protocol/schema";
+} from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom } from "./rooms/RoomManager";
 import { afterRespond } from "./rooms/gameFlow";
 
@@ -31,16 +34,16 @@ function fail(ack: Ack, err: unknown, fallback: string): void {
 }
 
 function broadcastLobby(io: Server, room: GameRoom): void {
-  io.to(room.code).emit("room:state", {
+  io.to(room.code).emit(ServerEvents.RoomState, {
     code: room.code,
     phase: room.phase,
-    seats: room.seats.map((s) => ({ name: s.name, connected: s.connected, isHost: s.isHost })),
+    seats: room.seats.map((s) => ({ name: s.name, connected: s.connected, isHost: s.isHost, isBot: s.isBot })),
   });
 }
 
 function sendViewTo(room: GameRoom, seatIndex: number, socket: Socket): void {
   if (!room.session) return;
-  socket.emit("game:view", projectFor(room.session.state, seatPlayerId(seatIndex)));
+  socket.emit(ServerEvents.GameView, projectFor(room.session.state, seatPlayerId(seatIndex)));
 }
 
 // zod's .optional() yields `T | undefined` keys that are always *present*,
@@ -76,7 +79,7 @@ export function registerSocketHandlers(
   io.on("connection", (socket: Socket) => {
     const data = socket.data as SocketData;
 
-    socket.on("room:create", (raw: unknown, ack: Ack) => {
+    socket.on(ClientEvents.RoomCreate, (raw: unknown, ack: Ack) => {
       const parsed = createRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
@@ -90,7 +93,28 @@ export function registerSocketHandlers(
       broadcastLobby(io, room);
     });
 
-    socket.on("room:join", (raw: unknown, ack: Ack) => {
+    socket.on(ClientEvents.RoomQuickstartWithBots, (raw: unknown, ack: Ack) => {
+      const parsed = quickstartWithBotsSchema.safeParse(raw);
+      if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+
+      let result: ReturnType<RoomManager["quickstartWithBots"]>;
+      try {
+        result = rooms.quickstartWithBots(parsed.data.playerName, parsed.data.botCount);
+      } catch (err) {
+        return fail(ack, err, "failed to start");
+      }
+      const { room, sessionToken, seatIndex } = result;
+      rooms.attachSocket(room, seatIndex, socket.id);
+      data.roomCode = room.code;
+      data.seatIndex = seatIndex;
+      void socket.join(room.code);
+
+      ok(ack, { roomCode: room.code, sessionToken, seatIndex });
+      broadcastLobby(io, room);
+      runAfterRespond(room); // the room is already "playing" — broadcast the first game:view
+    });
+
+    socket.on(ClientEvents.RoomJoin, (raw: unknown, ack: Ack) => {
       const parsed = joinRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
@@ -111,7 +135,7 @@ export function registerSocketHandlers(
       }
     });
 
-    socket.on("room:rejoin", (raw: unknown, ack: Ack) => {
+    socket.on(ClientEvents.RoomRejoin, (raw: unknown, ack: Ack) => {
       const parsed = rejoinRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
@@ -130,7 +154,7 @@ export function registerSocketHandlers(
       }
     });
 
-    socket.on("room:start", (raw: unknown, ack: Ack) => {
+    socket.on(ClientEvents.RoomStart, (raw: unknown, ack: Ack) => {
       const parsed = startGameSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
@@ -150,7 +174,7 @@ export function registerSocketHandlers(
       runAfterRespond(room); // broadcasts the first game:view, arms the first timeout
     });
 
-    socket.on("game:answer", (raw: unknown, ack: Ack) => {
+    socket.on(ClientEvents.GameAnswer, (raw: unknown, ack: Ack) => {
       const parsed = answerSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 

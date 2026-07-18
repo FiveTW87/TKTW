@@ -5,19 +5,24 @@ import type { Card, PlayerAnswer } from "../types";
 import type { Decision } from "./decisions";
 import type { Ctx } from "./ctx";
 import { fireTrigger } from "./triggers";
-import { log } from "./state";
+import { popCard } from "./state";
 
 export type JudgmentGenerator = Generator<Decision, Card, PlayerAnswer>;
 
 function drawOneForJudgment(ctx: Ctx): Card {
-  const { state, rng } = ctx;
-  if (state.drawPile.length === 0) {
-    if (state.discardPile.length === 0) throw new Error("no cards left to judge with");
-    state.drawPile = rng.shuffle(state.discardPile);
-    state.discardPile = [];
-    log(state, `กองจั่วหมด — สับกองทิ้งเป็นกองจั่วใหม่ ${state.drawPile.length} ใบ`);
-  }
-  return state.drawPile.pop()!;
+  const c = popCard(ctx.state, ctx.rng);
+  if (!c) throw new Error("no cards left to judge with");
+  return c;
+}
+
+/** Options for a judgment. `interactive` makes the judged player "flip" the
+ *  card themselves — a `judgmentReveal` decision is yielded before the card
+ *  is drawn, so it feels like they draw their own fate (SPEC/UX request).
+ *  Bots/AFK answer it automatically; the answer content is ignored — a
+ *  judgment can never be declined. `reason` labels the source for the UI. */
+export interface JudgmentOptions {
+  interactive?: boolean;
+  reason?: string;
 }
 
 /** Mutable box passed through the trigger payload — BeforeJudgeEffect
@@ -27,7 +32,12 @@ export interface JudgmentBox {
   card: Card;
 }
 
-export function* runJudgment(ctx: Ctx, playerId: string): JudgmentGenerator {
+export function* runJudgment(ctx: Ctx, playerId: string, opts?: JudgmentOptions): JudgmentGenerator {
+  // Draw the card only AFTER the reveal tap, so the value isn't decided until
+  // the player commits to flipping — that's what makes it feel like drawing.
+  if (opts?.interactive) {
+    yield { kind: "judgmentReveal", playerId, data: { reason: opts.reason ?? "" } };
+  }
   const judgment: JudgmentBox = { card: drawOneForJudgment(ctx) };
   yield* fireTrigger(ctx, "OnJudgeCardRevealed", { playerId, judgment });
   yield* fireTrigger(ctx, "BeforeJudgeEffect", { playerId, judgment });

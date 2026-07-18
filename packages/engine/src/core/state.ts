@@ -72,16 +72,28 @@ export function discardCardsFromHand(state: GameState, playerId: string, cardIds
   for (const cid of cardIds) discardFromHand(state, playerId, cid);
 }
 
+/** Pop one card off the top of the draw pile, reshuffling the discard pile
+ *  into it first when it's empty. This is the single chokepoint for the
+ *  "draw pile ran out -> shuffle discards into a fresh draw pile" rule — any
+ *  path that takes a card off the top (draw, judgment, wugu reveal, yiji)
+ *  should go through here so none of them can silently under-deliver. Returns
+ *  undefined only when BOTH piles are exhausted (extremely rare). */
+export function popCard(state: GameState, rng: Rng): Card | undefined {
+  if (state.drawPile.length === 0) {
+    if (state.discardPile.length === 0) return undefined; // truly out of cards
+    state.drawPile = rng.shuffle(state.discardPile);
+    state.discardPile = [];
+    log(state, `กองจั่วหมด — สับกองทิ้งเป็นกองจั่วใหม่ ${state.drawPile.length} ใบ`);
+  }
+  return state.drawPile.pop()!;
+}
+
 export function drawCards(state: GameState, rng: Rng, playerId: string, n: number): Card[] {
   const drawn: Card[] = [];
   for (let i = 0; i < n; i++) {
-    if (state.drawPile.length === 0) {
-      if (state.discardPile.length === 0) break; // truly out of cards, extremely rare
-      state.drawPile = rng.shuffle(state.discardPile);
-      state.discardPile = [];
-      log(state, `กองจั่วหมด — สับกองทิ้งเป็นกองจั่วใหม่ ${state.drawPile.length} ใบ`);
-    }
-    drawn.push(state.drawPile.pop()!);
+    const c = popCard(state, rng);
+    if (!c) break;
+    drawn.push(c);
   }
   getPlayer(state, playerId).hand.push(...drawn);
   return drawn;
