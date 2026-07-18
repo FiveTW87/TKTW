@@ -111,22 +111,30 @@ function orderTriggerHandlers(state: GameState, handlers: BoundTrigger[]): Bound
   });
 }
 
-// Phase points belong to ONE player's turn (the active player). A skill hooked
-// on these only ever acts for its own owner (every handler guards
-// ownerId===playerId), so only the active player's handlers should even be
-// considered — otherwise every owner gets asked "use it?" on everyone's turn
-// (e.g. Cao Ren's ถอดเสื้อรบ popping on every opponent's draw phase). Reactive
-// points (OnNeedDodge/OnDamaged/…) legitimately fire across players — not here.
-const ACTIVE_PLAYER_POINTS = new Set<TriggerPoint>([
-  "TurnStart",
-  "JudgePhaseStart",
-  "DrawPhaseStart",
-  "DrawPhaseEnd",
-  "PlayPhaseStart",
-  "PlayPhaseEnd",
-  "DiscardPhaseStart",
-  "TurnEnd",
-]);
+// Some points concern exactly ONE player, named by a payload field. Only that
+// player's handlers should be considered — otherwise an owner gets asked "use
+// it?" for an event that can't involve them:
+//  - phase points (TurnStart…TurnEnd): the active player (`playerId`). Every
+//    handler guards ownerId===playerId (e.g. Cao Ren's ถอดเสื้อรบ must not pop
+//    on an opponent's draw phase).
+//  - OnNeedDodge: the หลบ is the TARGET's (`targetId`) — Cao Cao's คุ้มกันราชา
+//    must ask allies only when HE is being attacked, never when HE attacks.
+//  - OnNeedSha: the สังหาร is the responder's (`playerId`) — same for Liu Bei's
+//    ปลุกใจนักรบ vs ศึกชนเผ่าใต้.
+// Other reactive points (OnDamaged/OnShaTargeted/…) legitimately fire across
+// players and are left unfiltered.
+const OWNER_FILTER_FIELD: Partial<Record<TriggerPoint, string>> = {
+  TurnStart: "playerId",
+  JudgePhaseStart: "playerId",
+  DrawPhaseStart: "playerId",
+  DrawPhaseEnd: "playerId",
+  PlayPhaseStart: "playerId",
+  PlayPhaseEnd: "playerId",
+  DiscardPhaseStart: "playerId",
+  TurnEnd: "playerId",
+  OnNeedDodge: "targetId",
+  OnNeedSha: "playerId",
+};
 
 /**
  * Fire every registered handler for `point`, in priority order. Optional
@@ -138,9 +146,10 @@ export function* fireTrigger(
   payload: Record<string, unknown> = {},
 ): EngineGenerator {
   let ordered = orderTriggerHandlers(ctx.state, collectTriggerHandlers(ctx.state, point));
-  if (ACTIVE_PLAYER_POINTS.has(point)) {
-    const activeId = payload.playerId as string | undefined;
-    ordered = ordered.filter((h) => h.ownerId === activeId);
+  const filterField = OWNER_FILTER_FIELD[point];
+  if (filterField) {
+    const relevantId = payload[filterField] as string | undefined;
+    ordered = ordered.filter((h) => h.ownerId === relevantId);
   }
   for (const h of ordered) {
     if (!h.locked) {

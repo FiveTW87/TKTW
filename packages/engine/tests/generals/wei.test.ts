@@ -66,7 +66,20 @@ describe("Wei generals", () => {
     expect(getPlayer(state, "p1").hand.some((c) => c.id === CID.blackSha)).toBe(true);
   });
 
-  it("โจโฉ คุ้มกันราชา (hujia): a Wei ally plays หลบ for the lord", () => {
+  it("โจโฉ คุ้มกันราชา (hujia): does NOT prompt when Cao Cao is the ATTACKER", () => {
+    const { state, session } = gameWith(4021, 3, [["p0", "caocao", true], ["p1", "sunquan"], ["p2", "sunquan"]]);
+    getPlayer(state, "p0").role = "lord";
+    forceIntoHand(state, "p0", CID.blackSha);
+    getPlayer(state, "p1").hand = [];
+    const main = session.state.pendingDecision!;
+    respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: [CID.blackSha], targetIds: ["p1"] });
+    // Cao Cao is attacking — hujia must never be offered to him here.
+    const pd = session.state.pendingDecision;
+    const isHujiaPrompt = pd?.kind === "activateSkill" && (pd.data as { skillId?: string }).skillId === "caocao_hujia";
+    expect(isHujiaPrompt).toBe(false);
+  });
+
+  it("โจโฉ คุ้มกันราชา (hujia): a Wei ally plays หลบ for the lord when HE is attacked", () => {
     const { state, session } = gameWith(402, 3, [["p0", "sunquan", true], ["p1", "caocao"], ["p2", "zhangliao"]]);
     getPlayer(state, "p1").role = "lord";
     getPlayer(state, "p1").hand = []; // caocao has no หลบ of his own
