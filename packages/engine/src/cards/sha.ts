@@ -86,10 +86,20 @@ function* resolveShaDodged(
   }
 
   if (allowQinglongReplay && weaponOf(ctx, sourceId) === "qinglong") {
+    // ง้าวมังกรเขียว's replay is playing ANOTHER "สังหาร" at the same target —
+    // only offer it when the attacker actually holds a card that counts as
+    // สังหาร, and spend that card on the replay. (Bug: it used to re-fire the
+    // already-spent shaCard for free even with no second สังหาร in hand.)
+    const replaySha = getPlayer(state, sourceId).hand.find((c) =>
+      countsAsType(state, sourceId, c.id, "sha"),
+    );
+    if (!replaySha) return;
     const answer = yield { kind: "qinglongReplay", playerId: sourceId, data: { targetId } };
     if (!answer.pass && answer.choice === "replay") {
+      const nextSha = { ...replaySha, typeKey: "sha" };
+      discardFromHand(state, sourceId, replaySha.id);
       log(state, "qinglongReplay", { actorId: sourceId, targetIds: [targetId], cardType: "qinglong" });
-      yield* attemptSha(ctx, sourceId, targetId, shaCard, false);
+      yield* attemptSha(ctx, sourceId, targetId, nextSha, false);
     }
   }
 }
