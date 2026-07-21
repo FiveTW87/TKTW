@@ -29,8 +29,18 @@ registerGeneral({
             data: { options: revealed.map((c) => c.id) },
           };
           // cardIds = final top-of-deck order (first = drawn first later);
-          // anything not listed goes to the bottom in original order.
-          const topOrder = (answer.cardIds ?? []).filter((id) => revealed.some((c) => c.id === id));
+          // anything not listed goes to the bottom in original order. ENG-007:
+          // validate the ordering — no duplicates and no card outside the
+          // revealed set (a timeout default simply sends none = keep order).
+          const topOrder = answer.cardIds ?? [];
+          if (new Set(topOrder).size !== topOrder.length) {
+            throw new Error(`${ownerId}: duplicate card id in guandou ordering`);
+          }
+          for (const id of topOrder) {
+            if (!revealed.some((c) => c.id === id)) {
+              throw new Error(`${ownerId}: ${id} is not one of the revealed cards`);
+            }
+          }
           const chosen = topOrder.map((id) => revealed.find((c) => c.id === id)!);
           const rest = revealed.filter((c) => !topOrder.includes(c.id));
           // drawPile.pop() reads the END, so push bottom-bound cards first,

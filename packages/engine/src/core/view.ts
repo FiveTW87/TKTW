@@ -78,6 +78,19 @@ function projectPlayer(p: Player, viewerId: string): PlayerView {
   };
 }
 
+// ENG-007: decisions whose `data` carries information only the responder is
+// allowed to see (ขงเบ้ง's peeked card ids, a player's private general options).
+// For everyone else the data is redacted so the card ids never leave the wire
+// to non-responders. Public decisions (respondShan's sourceId, etc.) stay.
+const PRIVATE_DECISION_KINDS = new Set<string>(["guandouOrder", "pickGeneral"]);
+
+function projectDecision(pd: NonNullable<GameState["pendingDecision"]>, viewerId: string) {
+  if (pd.playerId !== viewerId && PRIVATE_DECISION_KINDS.has(pd.kind)) {
+    return { ...pd, data: {} };
+  }
+  return { ...pd };
+}
+
 export function projectFor(state: GameState, viewerId: string): GameView {
   return {
     viewerId,
@@ -88,7 +101,7 @@ export function projectFor(state: GameState, viewerId: string): GameView {
     drawPile: { count: state.drawPile.length },
     discardPile: state.discardPile.slice(),
     eventStack: state.eventStack.map((e) => ({ ...e })),
-    ...(state.pendingDecision ? { pendingDecision: { ...state.pendingDecision } } : {}),
+    ...(state.pendingDecision ? { pendingDecision: projectDecision(state.pendingDecision, viewerId) } : {}),
     finished: state.finished,
     ...(state.winners ? { winners: [...state.winners] } : {}),
     log: state.log.slice(),
