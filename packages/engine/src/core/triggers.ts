@@ -135,6 +135,12 @@ const OWNER_FILTER_FIELD: Partial<Record<TriggerPoint, string>> = {
   TurnEnd: "playerId",
   OnNeedDodge: "targetId",
   OnNeedSha: "playerId",
+  // ENG-006/OD-006: these fire for the DAMAGED player's own skills only
+  // (โจโฉ's พลิกภัยเป็นกล, สุมาอี้'s โต้กลับ, กุยแก's แผนสุดท้าย, แฮหัวตุ้น's
+  // พลังเดือด — all guard ownerId===targetId). Restricting the prompt to that
+  // player stops โจโฉ being asked "use it?" when a same-faction ally is hurt.
+  OnDamaged: "targetId",
+  OnHPLost: "targetId",
 };
 
 /**
