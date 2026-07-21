@@ -10,7 +10,7 @@ import { getPlayer, drawCards, popCard } from "../src/core/state";
 import { runJudgment } from "../src/core/judgment";
 import { shandianCard } from "../src/cards/shandian";
 import type { Card } from "../src/types";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 // Drive shandian's judge generator, answering the interactive reveal.
 function resolveShandianJudge(ctx: ReturnType<typeof makeCtx>, ownerId: string, card: Card) {
@@ -30,6 +30,7 @@ describe("สายฟ้า (shandian) is always placed on the caster", () => {
     forceIntoHand(state, "p0", "spade_9_2"); // the single shandian in the deck
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const main = session.state.pendingDecision!;
     expect(main.kind).toBe("mainAction");
     // deliberately aim it at p1 — the engine must ignore that and self-place
@@ -63,6 +64,7 @@ describe("สายฟ้า (shandian) is always placed on the caster", () => {
     forceIntoHand(state, "p1", "heart_13_1"); // a real ไร้ช่องโหว่
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     // resolve the wuxie window: p1 cancels the shandian, others pass
     for (let i = 0; i < 8; i++) {
       const d = session.state.pendingDecision!;
@@ -130,6 +132,7 @@ describe("P6: wugu carries full card faces (not just ids)", () => {
     forceIntoHand(state, "p0", "heart_10_1"); // a real wugu
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const main = session.state.pendingDecision!;
     expect(main.kind).toBe("mainAction");
     respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: ["heart_10_1"], targetIds: [] });

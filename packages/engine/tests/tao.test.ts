@@ -8,7 +8,7 @@ import { runGame } from "../src/core/turnLoop";
 import { createSession, respond } from "../src/core/decisions";
 import { getPlayer } from "../src/core/state";
 import { dealDamage } from "../src/core/damage";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 // heart_3_1 is a real ท้อ (tao) in the deck.
 const TAO_ID = "heart_3_1";
@@ -23,6 +23,7 @@ describe("ท้อ (tao) proactive main-action heal", () => {
     forceIntoHand(state, "p0", TAO_ID);
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const main = session.state.pendingDecision!;
     expect(main.kind).toBe("mainAction");
     const before = p1.hp;
@@ -43,6 +44,7 @@ describe("ท้อ (tao) proactive main-action heal", () => {
     forceIntoHand(state, "p0", TAO_ID);
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const main = session.state.pendingDecision!;
     expect(() =>
       respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: [TAO_ID], targetIds: ["p1"] }),
@@ -63,6 +65,7 @@ describe("ท้อ (tao) proactive main-action heal", () => {
     forceIntoHand(state, "p0", TAO_ID);
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const main = session.state.pendingDecision!;
     const before = p0.hp;
     respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: [TAO_ID], targetIds: [] });

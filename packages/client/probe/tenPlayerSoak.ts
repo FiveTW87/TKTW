@@ -60,6 +60,7 @@ function runOne(general: string, seed: number, f: F): void {
     if (pending.kind === "activateSkill" && !answer.pass) f.skillsFired.add(String((pending.data as { skillId?: string }).skillId ?? ""));
     if (pending.kind === "judgmentReveal") f.skillsFired.add(String((pending.data as { reason?: string }).reason ?? ""));
     if (pending.kind === "huibiRedirect") f.skillsFired.add("daiqiao_huibi");
+    if (pending.kind === "drawCard") for (const s of (pending.data as { skills?: string[] }).skills ?? []) f.skillsFired.add(s);
     try {
       respond(session, answer);
     } catch {

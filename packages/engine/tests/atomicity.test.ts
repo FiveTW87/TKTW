@@ -8,11 +8,12 @@ import { describe, it, expect } from "vitest";
 import { createGame } from "../src/index";
 import { respond } from "../src/core/decisions";
 import { getPlayer, discardCardsFromHand, cardById } from "../src/core/state";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 describe("discardCardsFromHand is atomic", () => {
   it("discards nothing if any id is a duplicate", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const p = getPlayer(session.state, "p0");
     forceIntoHand(session.state, "p0", "spade_1_1");
     const before = p.hand.map((c) => c.id);
@@ -22,6 +23,7 @@ describe("discardCardsFromHand is atomic", () => {
 
   it("discards nothing if any id is missing from hand, even when earlier ids are valid", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const p = getPlayer(session.state, "p0");
     forceIntoHand(session.state, "p0", "spade_1_1");
     const before = p.hand.map((c) => c.id);
@@ -35,6 +37,7 @@ describe("discardCardsFromHand is atomic", () => {
 
   it("discards all ids when the whole batch is valid", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     forceIntoHand(session.state, "p0", "spade_1_1");
     forceIntoHand(session.state, "p0", "heart_1_1");
     discardCardsFromHand(session.state, "p0", ["spade_1_1", "heart_1_1"]);
@@ -49,8 +52,10 @@ describe("discardCardsFromHand is atomic", () => {
 describe("respond() leaves state and decisionLog untouched on a rejected answer", () => {
   it("playing a card that isn't in hand throws and changes nothing", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
     const before = structuredClone(session.state);
+    const logLenBefore = session.decisionLog.length; // the draw answer is already logged
 
     expect(() =>
       respond(session, {
@@ -64,11 +69,12 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
 
     expect(session.state).toEqual(before);
     expect(session.state.pendingDecision).toEqual(pending);
-    expect(session.decisionLog).toEqual([]);
+    expect(session.decisionLog).toHaveLength(logLenBefore); // the rejected answer was not logged
   });
 
   it("submitting 2 non-zhangba cards to playCard throws and changes nothing", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
     const activeId = pending.playerId;
     forceIntoHand(session.state, activeId, "spade_1_1");
@@ -79,6 +85,7 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     // a clean state from the log and mask a premature mutation in playCard.
     delete session.rebuild;
     const before = structuredClone(session.state);
+    const logLenBefore = session.decisionLog.length; // the draw answer is already logged
 
     expect(() =>
       respond(session, {
@@ -91,11 +98,12 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     ).toThrow();
 
     expect(session.state).toEqual(before);
-    expect(session.decisionLog).toEqual([]);
+    expect(session.decisionLog).toHaveLength(logLenBefore); // the rejected answer was not logged
   });
 
   it("ทวนงูจั้งปา substitute with a duplicated card id throws before shaUsedThisTurn is bumped", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
     const activeId = pending.playerId;
     const p = getPlayer(session.state, activeId);
@@ -106,6 +114,7 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     // assertion observes playZhangbaSha's own atomicity, not a reconstruction.
     delete session.rebuild;
     const before = structuredClone(session.state);
+    const logLenBefore = session.decisionLog.length; // the draw answer is already logged
 
     expect(() =>
       respond(session, {
@@ -119,12 +128,14 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
 
     expect(session.state).toEqual(before);
     expect(getPlayer(session.state, activeId).shaUsedThisTurn).toBe(0);
-    expect(session.decisionLog).toEqual([]);
+    expect(session.decisionLog).toHaveLength(logLenBefore); // the rejected answer was not logged
   });
 
   it("a rejected answer doesn't consume the pending decision — a valid retry on the same id still works", () => {
     const session = createGame({ playerCount: 4, seed: 1 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
+    const logLenBefore = session.decisionLog.length;
 
     expect(() =>
       respond(session, {
@@ -141,7 +152,7 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
       respond(session, { decisionId: pending.id, playerId: pending.playerId, choice: "endPhase" }),
     ).not.toThrow();
 
-    expect(session.decisionLog).toHaveLength(1);
-    expect(session.decisionLog[0]!.decisionId).toBe(pending.id);
+    expect(session.decisionLog).toHaveLength(logLenBefore + 1); // only the successful retry was logged
+    expect(session.decisionLog[session.decisionLog.length - 1]!.decisionId).toBe(pending.id);
   });
 });

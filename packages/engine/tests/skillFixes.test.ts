@@ -9,7 +9,7 @@ import { createSession, respond } from "../src/core/decisions";
 import { assignGeneral } from "../src/core/generalAssign";
 import { getPlayer } from "../src/core/state";
 import { countsAsType } from "../src/core/cardChecks";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 // ── ลิโป้ / wushuang: สังหาร needs 2 หลบ, ดวล needs 2 สังหาร ──────────────
 describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)", () => {
@@ -21,6 +21,7 @@ describe("Lu Bu wushuang (คู่ควรไร้เทียมทาน)",
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
     return { state, session };
   }
 
@@ -118,6 +119,7 @@ describe("Xiahoudun ganglie (พลังเดือด)", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const main = session.state.pendingDecision!;
     forceIntoHand(state, "p0", "spade_1_2"); // สังหาร
@@ -171,6 +173,7 @@ describe("Guan Yu wusheng (เทพศาสตรา)", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const main = session.state.pendingDecision!;
     forceIntoHand(state, "p0", "heart_1_2"); // a red หลบ
@@ -222,6 +225,7 @@ describe("Zhang Liao tuxi (จู่โจมสายฟ้าแลบ)", () =
     assignGeneral(state, "p0", "zhangliao", true);
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const activate = session.state.pendingDecision!;
     expect(activate.kind).toBe("activateSkill");
@@ -260,6 +264,7 @@ describe("Diaochan lijian (ยุแยง)", () => {
     assignGeneral(state, "p2", "zhaoyun"); // male
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const main = session.state.pendingDecision!;
     expect(main.kind).toBe("mainAction");
@@ -287,6 +292,7 @@ describe("Diaochan lijian (ยุแยง)", () => {
     assignGeneral(state, "p2", "zhaoyun"); // male
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const main = session.state.pendingDecision!;
     forceIntoHand(state, "p0", "heart_1_2");
@@ -309,6 +315,7 @@ describe("renwang armor", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const p1 = getPlayer(state, "p1");
     p1.equipment.armor = { ...RENWANG };
@@ -331,6 +338,7 @@ describe("renwang armor", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const p1 = getPlayer(state, "p1");
     p1.equipment.armor = { ...RENWANG };
@@ -363,6 +371,7 @@ describe("weapon riders", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     getPlayer(state, "p0").equipment.weapon = { id: "w1", typeKey: "qilin", suit: "spade", rank: 1 };
     const p1 = getPlayer(state, "p1");
@@ -394,6 +403,7 @@ describe("weapon riders", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     getPlayer(state, "p0").equipment.weapon = { id: "w2", typeKey: "sword_ice", suit: "spade", rank: 2 };
     const p1 = getPlayer(state, "p1");
@@ -423,6 +433,7 @@ describe("phase-trigger prompt targeting (caoren tuoyi)", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const first = session.state.pendingDecision!;
     expect(first.kind).toBe("mainAction"); // no activateSkill(caoren_tuoyi) for p1
@@ -437,6 +448,7 @@ describe("phase-trigger prompt targeting (caoren tuoyi)", () => {
     assignGeneral(state, "p2", "sunquan");
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate (no-op if a draw-phase opt-in fires first)
 
     const prompt = session.state.pendingDecision!;
     expect(prompt.kind).toBe("activateSkill");
@@ -445,8 +457,12 @@ describe("phase-trigger prompt targeting (caoren tuoyi)", () => {
 
     const handBefore = getPlayer(state, "p0").hand.length; // pre-draw
     respond(session, { decisionId: prompt.id, playerId: "p0" }); // accept ถอดเสื้อรบ
+    // tuoyi set the -1 modifier; the gated draw now pulls the reduced count.
+    const draw = session.state.pendingDecision!;
+    expect(draw.kind).toBe("drawCard");
+    expect((draw.data as { count: number }).count).toBe(1); // 2 base − 1 tuoyi
+    passDraw(session);
 
-    // drew 1 instead of 2 (drawAmountModifier -1)
     expect(getPlayer(state, "p0").hand.length).toBe(handBefore + 1);
     expect(session.state.pendingDecision!.kind).toBe("mainAction");
   });

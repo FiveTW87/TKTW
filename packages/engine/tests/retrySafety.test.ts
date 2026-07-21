@@ -7,7 +7,7 @@ import { makeCtx, lastAliveWins } from "../src/core/ctx";
 import { runGame } from "../src/core/turnLoop";
 import { createSession, respond } from "../src/core/decisions";
 import { createGame } from "../src/index";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 // A real สังหาร (sha) that exists in the deck.
 const SHA_ID = "spade_7_1";
@@ -22,6 +22,7 @@ const SHA_ID = "spade_7_1";
 describe("rejected answers are retry-safe (no dead-generator hang)", () => {
   it("a bogus card-id reject leaves the SAME decision live to retry", () => {
     const session = createGame({ playerCount: 3, seed: 4242 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const first = session.state.pendingDecision!;
     expect(first.kind).toBe("mainAction");
     const me = first.playerId;
@@ -46,6 +47,7 @@ describe("rejected answers are retry-safe (no dead-generator hang)", () => {
   it("an out-of-range สังหาร reject (image #4) still lets the turn continue", () => {
     // 5 players → seat 0 to seat 2 is distance 2, out of base สังหาร range 1.
     const session = createGame({ playerCount: 5, seed: 909 });
+    passDraw(session); // advance past the ENG-004 draw gate
     const state = session.state;
     const pd = state.pendingDecision!;
     expect(pd.kind).toBe("mainAction");
@@ -73,6 +75,7 @@ describe("rejected answers are retry-safe (no dead-generator hang)", () => {
     const state = createInitialState({ playerCount: 3, seed: 4242 }, rng);
     const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const first = session.state.pendingDecision!;
 
     expect(() =>

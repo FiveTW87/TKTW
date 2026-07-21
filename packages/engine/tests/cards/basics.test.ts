@@ -4,7 +4,7 @@ import "../../src/generals/index";
 import { createGame } from "../../src/index";
 import { respond, type GameSession } from "../../src/core/decisions";
 import { getPlayer } from "../../src/core/state";
-import { forceIntoHand } from "../_testUtils";
+import { forceIntoHand, passDraw } from "../_testUtils";
 
 const SHAN = "heart_1_2"; // a real หลบ
 const WUXIE = "club_13_1"; // a real ไร้ช่องโหว่
@@ -12,6 +12,7 @@ const SHUNSHOU = "spade_11_1"; // range-1 trick
 
 function atP0(playerCount: number, seed: number): GameSession {
   const session = createGame({ playerCount, seed });
+  passDraw(session); // advance past the ENG-004 draw gate
   delete session.rebuild; // out-of-band forceIntoHand below; keep it stable
   expect(session.state.pendingDecision!.kind).toBe("mainAction");
   expect(session.state.pendingDecision!.playerId).toBe("p0");
@@ -52,6 +53,7 @@ describe("ฉวยโอกาสลักแกะ (shunshou) out-of-range rej
   it("stealing from a distance-2 target throws, then a retry continues", () => {
     // 5 players → seat 0 to seat 2 is distance 2; shunshou range is 1.
     const session = createGame({ playerCount: 5, seed: 505 });
+    passDraw(session); // advance past the ENG-004 draw gate
     forceIntoHand(session.state, "p0", SHUNSHOU);
     const pd = session.state.pendingDecision!;
 

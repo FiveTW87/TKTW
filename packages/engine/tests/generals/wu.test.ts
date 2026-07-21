@@ -5,6 +5,8 @@ import { createInitialState } from "../../src/core/setup";
 import { makeCtx, lastAliveWins } from "../../src/core/ctx";
 import { assignGeneral } from "../../src/core/generalAssign";
 import { dealDamage } from "../../src/core/damage";
+import { runGame } from "../../src/core/turnLoop";
+import { createSession } from "../../src/core/decisions";
 
 describe("Wu generals", () => {
   it("ซุนกวน ถ่วงดุลอำนาจ (zhiheng): discard N, draw N", () => {
@@ -47,15 +49,22 @@ describe("Wu generals", () => {
     expect(getPlayer(state, "p1").hp).toBe(2);
   });
 
-  it("จิวยี่ สง่างามผงาด (yingzi): draws 1 extra in the draw phase", () => {
-    const { state, session } = gameWith(303, 3, [["p0", "zhouyu", true]]);
-    // DrawPhaseStart opt-in fires BEFORE the draw → hand is still the deal here.
-    const act = session.state.pendingDecision!;
-    expect(act.kind).toBe("activateSkill");
-    expect((act.data as { skillId: string }).skillId).toBe("zhouyu_yingzi");
+  it("จิวยี่ สง่างามผงาด (yingzi): mandatory +1 folded into the single draw, with a banner signal", () => {
+    // Build raw (no passDraw) so we can inspect the draw gate itself.
+    const rng = createRng(303);
+    const state = createInitialState({ playerCount: 3, seed: 303 }, rng);
+    assignGeneral(state, "p0", "zhouyu", true);
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    const session = createSession(runGame(ctx), state, rng);
+
+    const draw = session.state.pendingDecision!;
+    expect(draw.kind).toBe("drawCard"); // no prompt — yingzi is mandatory
+    const data = draw.data as { count: number; base: number; modifier: number; skills: string[] };
+    expect(data.count).toBe(3); // 2 base + 1 yingzi, in ONE transaction
+    expect(data.skills).toContain("zhouyu_yingzi"); // banner signal
     const start = getPlayer(state, "p0").hand.length;
-    respond(session, { decisionId: act.id, playerId: "p0" }); // accept
-    expect(getPlayer(state, "p0").hand.length).toBe(start + 3); // +1 yingzi, +2 normal
+    respond(session, { decisionId: draw.id, playerId: "p0", choice: "draw" });
+    expect(getPlayer(state, "p0").hand.length).toBe(start + 3);
     expect(session.state.pendingDecision!.kind).toBe("mainAction");
   });
 

@@ -64,7 +64,14 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
   if (!getPlayer(state, activeId).alive) return advanceSeat(ctx);
 
   state.phase = "draw";
+  // Optional draw-phase skills (เตียวเลี้ยว/เคาทู) ask first and set their draw
+  // modifier; mandatory ones (จิวยี่) contribute silently via the query below.
   yield* fireTrigger(ctx, "DrawPhaseStart", { playerId: activeId });
+  if (state.finished) return;
+  // ENG-004: compute the final count AFTER modifiers, then draw the whole lot
+  // in ONE transaction gated behind an explicit จั่วการ์ด decision. Any answer
+  // (button press or timeout default) draws; a stale/duplicate answer can't
+  // re-draw because the decision resolves exactly once.
   const drawBonus = queryHook<number>(
     state,
     "drawAmountModifier",
@@ -72,8 +79,23 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
     (rs) => rs.reduce((a, b) => a + b, 0),
     0,
   );
-  const drawn = drawCards(state, ctx.rng, activeId, Math.max(0, 2 + drawBonus));
-  log(state, `${activeId} จั่ว ${drawn.length} ใบ`);
+  const drawCount = Math.max(0, 2 + drawBonus);
+  if (drawCount > 0) {
+    const skills = queryHook<string[]>(
+      state,
+      "drawNotifications",
+      { playerId: activeId },
+      (rs) => rs.flat(),
+      [],
+    );
+    yield {
+      kind: "drawCard",
+      playerId: activeId,
+      data: { count: drawCount, base: 2, modifier: drawBonus, skills },
+    } satisfies Decision;
+    const drawn = drawCards(state, ctx.rng, activeId, drawCount);
+    log(state, `${activeId} จั่ว ${drawn.length} ใบ`);
+  }
   yield* fireTrigger(ctx, "DrawPhaseEnd", { playerId: activeId });
   if (state.finished) return;
 

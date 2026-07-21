@@ -9,7 +9,7 @@ import "../src/generals/index";
 import { GENERALS } from "../src/generals/registry";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 import { runUntilEnd } from "../src/bots/runner";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 
 const REAL_GENERALS = Object.keys(GENERALS).filter((id) => id !== "none");
 
@@ -75,6 +75,7 @@ describe("active skill dispatch (SPEC 12.1 third hook shape)", () => {
     const before = p1.hp;
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     skipOptionalPrompts(session);
     const pending = session.state.pendingDecision!;
     expect(pending.kind).toBe("mainAction");
@@ -111,6 +112,7 @@ describe("active skill dispatch (SPEC 12.1 third hook shape)", () => {
     const before = p1.hp;
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     skipOptionalPrompts(session);
     const pending = session.state.pendingDecision!;
     respond(session, {
@@ -136,6 +138,7 @@ describe("active skill dispatch (SPEC 12.1 third hook shape)", () => {
     p0.skillUsedThisTurn["zhouyu_fanjian"] = 1; // simulate already-used this turn
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     skipOptionalPrompts(session);
     const pending = session.state.pendingDecision!;
     expect(() =>
@@ -167,6 +170,7 @@ describe("card conversion applies to main-action plays, not just reactive respon
     const before = p1.hp;
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
     expect(pending.kind).toBe("mainAction");
     respond(session, {
@@ -197,6 +201,7 @@ describe("card conversion applies to main-action plays, not just reactive respon
     forceIntoHand(state, "p0", "heart_9_1"); // real card, typeKey "wuzhong", not สังหาร
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const pending = session.state.pendingDecision!;
     expect(() =>
       respond(session, {

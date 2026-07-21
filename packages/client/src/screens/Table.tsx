@@ -258,6 +258,7 @@ export function Table() {
   if (pending && isMyDecision && !isMainAction && !isDiscardTo) {
     // judgmentReveal is handled on the board (tap the draw pile), not a modal.
     if (pending.kind === "fankuiPick" || pending.kind === "judgmentReveal") showDecisionModal = false;
+    else if (pending.kind === "drawCard") showDecisionModal = false; // a board button, not a modal
     else if (pending.kind === "askWuxie") showDecisionModal = !noWuxieInHand; // auto-passed otherwise
     else if (pending.kind === "respondTao") showDecisionModal = canRespondTao; // auto-passed otherwise
     else if (pending.kind === "activateSkill") {
@@ -490,6 +491,7 @@ export function Table() {
   };
   const submitEndPhase = () => pending && void runAnswer({ decisionId: pending.id, choice: "endPhase" });
   const submitDiscard = () => pending && void runAnswer({ decisionId: pending.id, cardIds: selectedCardIds });
+  const submitDraw = () => pending && void runAnswer({ decisionId: pending.id, choice: "draw" });
   const answerActivate = (accept: boolean) => {
     if (!pending) return;
     autoHandledRef.current = pending.id;
@@ -834,6 +836,22 @@ export function Table() {
             </div>
           </div>
         </div>
+
+        {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
+        {isMyDecision && pending?.kind === "drawCard" && (
+          <div className="anim-rise" style={floatBar}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
+            <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
+              เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
+              {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
+                <span style={{ color: "var(--red)", marginLeft: 8 }}>
+                  ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
+                </span>
+              )}
+            </span>
+            <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
+          </div>
+        )}
 
         {/* confirm bar (tap-select flow) */}
         {showConfirmBar && (

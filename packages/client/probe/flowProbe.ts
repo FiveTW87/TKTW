@@ -51,6 +51,9 @@ function classifySeat0(pending: PendingDecision, view: GameView, me: GameView["p
   switch (pending.kind) {
     case "mainAction":
       return { channel: "turn", clicks: 0, prompt: false, flag: undefined as string | undefined };
+    case "drawCard":
+      // ENG-004: a จั่วการ์ด board button, not a dialog.
+      return { channel: "draw-bar", clicks: 1, prompt: false, flag: undefined };
     case "discardTo":
       // Handled by the dedicated discard bar in Table.tsx (not a modal dialog).
       return { channel: "discard-bar", clicks: 1, prompt: false, flag: undefined };
@@ -196,6 +199,8 @@ function runOneGame(general: string, seed: number, f: Findings): void {
       f.skillsFired.add(String((pending.data as { reason?: string }).reason ?? ""));
     }
     if (pending.kind === "huibiRedirect") f.skillsFired.add("daiqiao_huibi");
+    // ENG-004: mandatory draw skills (จิวยี่'s สง่างามผงาด) surface via the draw decision.
+    if (pending.kind === "drawCard") for (const s of (pending.data as { skills?: string[] }).skills ?? []) f.skillsFired.add(s);
 
     try {
       respond(session, answer);

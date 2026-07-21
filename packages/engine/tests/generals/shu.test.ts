@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gameWith, respond, getPlayer, countsAsType, forceIntoHand, passWuxie, CID } from "./_gh";
+import { gameWith, respond, getPlayer, countsAsType, forceIntoHand, passWuxie, passDraw, CID } from "./_gh";
 
 describe("Shu generals", () => {
   it("เล่าปี่ เมตตาธรรม (rende): giving 2 cards in a turn heals 1", () => {
@@ -139,6 +139,7 @@ describe("Shu generals", () => {
     const options = (pd.data as { options: string[] }).options;
     const wantTop = options[0]!;
     respond(session, { decisionId: pd.id, playerId: "p0", cardIds: [wantTop] }); // put it on top
+    passDraw(session); // now the gated draw pulls the reordered top card
     // guandou reorders, then the draw phase draws it first → it lands in hand.
     expect(getPlayer(state, "p0").hand.some((c) => c.id === wantTop)).toBe(true);
   });

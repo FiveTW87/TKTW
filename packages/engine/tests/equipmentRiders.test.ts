@@ -8,7 +8,7 @@ import { runGame } from "../src/core/turnLoop";
 import { createSession, respond } from "../src/core/decisions";
 import { getPlayer } from "../src/core/state";
 import { assignGeneral } from "../src/core/generalAssign";
-import { forceIntoHand } from "./_testUtils";
+import { forceIntoHand, passDraw } from "./_testUtils";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 
 // These two paths are the least-covered by the fuzz bot: zhangba requires
@@ -31,6 +31,7 @@ describe("zhangba: 2 arbitrary cards substitute for 1 สังหาร (SPEC 8
     forceIntoHand(state, "p0", "heart_4_1"); // tao
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const before = p1.hp;
 
     const pending = session.state.pendingDecision!;
@@ -78,6 +79,7 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
     // reachable — rig the judgment card only *after* that draw has already
     // happened, or it gets consumed by the draw instead of the judgment.
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const redIdx = state.drawPile.findIndex((c) => c.suit === "heart" || c.suit === "diamond");
     const [redCard] = state.drawPile.splice(redIdx, 1);
     state.drawPile.push(redCard!);
@@ -118,6 +120,7 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
     // See the note in the "red judgment" test above — rig only after the
     // session's own creation has already consumed p0's turn-1 draw.
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const blackIdx = state.drawPile.findIndex((c) => c.suit === "spade" || c.suit === "club");
     const [blackCard] = state.drawPile.splice(blackIdx, 1);
     state.drawPile.push(blackCard!);
@@ -163,6 +166,7 @@ describe("sunshangxiang jiehun: draw 2 when equipment is lost (OnEquipmentLost)"
     forceIntoHand(state, "p0", "club_3_1"); // a real ข้ามสะพานแล้วรื้อทิ้ง (guohe)
 
     const session = createSession(runGame(ctx), state, rng);
+    passDraw(session); // advance past the ENG-004 draw gate
     const before = p1.hand.length;
 
     const pending = session.state.pendingDecision!;

@@ -8,12 +8,13 @@ import { runGame } from "../../src/core/turnLoop";
 import { createSession, respond, type GameSession } from "../../src/core/decisions";
 import { assignGeneral } from "../../src/core/generalAssign";
 import { getPlayer } from "../../src/core/state";
+import { passDraw as passDrawGate } from "../_testUtils";
 import type { GameState, PlayerAnswer } from "../../src/types";
 
 export { respond, getPlayer };
 export { cardById } from "../../src/core/state";
 export { countsAsType } from "../../src/core/cardChecks";
-export { forceIntoHand } from "../_testUtils";
+export { forceIntoHand, passDraw } from "../_testUtils";
 
 // Real deck card ids used across the general tests.
 export const CID = {
@@ -45,6 +46,7 @@ export function gameWith(
   state.currentSeat = currentSeat; // whose turn the game opens on
   const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
   const session = createSession(runGame(ctx), state, rng);
+  passDrawGate(session); // advance past the ENG-004 draw gate → first real decision
   return { state, session };
 }
 

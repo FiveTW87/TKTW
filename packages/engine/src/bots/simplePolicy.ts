@@ -211,6 +211,8 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       const eligible = (pending.data as { eligible: { id: string }[] }).eligible ?? [];
       return { ...base, targetIds: eligible.slice(0, 2).map((e) => e.id) };
     }
+    case "drawCard":
+      return { ...base, choice: "draw" };
     case "judgmentReveal":
       // A judgment can't be declined — any answer just flips the card.
       return { ...base, choice: "reveal" };

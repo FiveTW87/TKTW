@@ -64,7 +64,8 @@ export type QueryHookName =
   | "armorIgnored" // (playerId) -> boolean, true if playerId's armor (e.g. bagua) is pierced this sha
   | "drawAmountModifier" // (playerId) -> number, additive to the base 2-card turn draw
   | "damageBonus" // (playerId) -> number, additive to damage playerId deals (simplification: applies to all of their damage this turn, not just สังหาร/ดวล as SPEC's Cao Ren wording says)
-  | "ignoresCardRange"; // (playerId) -> boolean, true bypasses a trick's own fixed `range` (e.g. Pang Tong's "อัจฉริยะพิสดาร" on shunshou)
+  | "ignoresCardRange" // (playerId) -> boolean, true bypasses a trick's own fixed `range` (e.g. Pang Tong's "อัจฉริยะพิสดาร" on shunshou)
+  | "drawNotifications"; // (playerId) -> string[] of skillIds that MANDATORILY changed the draw count (no prompt), so the draw decision can show a banner (e.g. Zhou Yu's สง่างามผงาด)
 
 export interface TriggerCtx extends Ctx {
   point: TriggerPoint;

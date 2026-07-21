@@ -2,7 +2,7 @@
 // กลไส้ศึก is the first active/player-initiated skill (SPEC 12.1's third
 // hook shape — see core/activeSkill.ts).
 import { registerGeneral } from "./registry";
-import { drawCards, getPlayer, removeFromHand, log } from "../core/state";
+import { getPlayer, removeFromHand, log } from "../core/state";
 import { loseHp } from "../core/damage";
 
 registerGeneral({
@@ -13,13 +13,18 @@ registerGeneral({
   skills: [
     {
       id: "zhouyu_yingzi",
-      triggers: {
-        DrawPhaseStart: function* (ctx) {
-          const { state, rng, ownerId, payload } = ctx;
-          const { playerId } = payload as { playerId: string };
-          if (ownerId !== playerId) return;
-          drawCards(state, rng, ownerId, 1);
-          log(state, `${ownerId} จั่วเพิ่ม 1 ใบ (สง่างามผงาด)`);
+      // Mandatory (locked): draws +1 with no prompt. Modelled as a draw-count
+      // modifier so the whole draw happens in the single draw transaction
+      // (ENG-004), plus a notification so the client can banner "สกิลทำงาน".
+      locked: true,
+      queries: {
+        drawAmountModifier: (ctx) => {
+          const { playerId } = ctx.payload as { playerId: string };
+          return ctx.ownerId === playerId ? 1 : 0;
+        },
+        drawNotifications: (ctx) => {
+          const { playerId } = ctx.payload as { playerId: string };
+          return ctx.ownerId === playerId ? ["zhouyu_yingzi"] : [];
         },
       },
     },

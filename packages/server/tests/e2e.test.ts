@@ -287,10 +287,16 @@ describe("quickstart with bots", () => {
       (v) => v.pendingDecision?.playerId === "p0" && v.pendingDecision?.kind === "pickGeneral",
       5_000,
     );
+    // ENG-004: p0's own turn now opens on a จั่วการ์ด decision it must answer.
+    const firstDraw = waitUntilView<{ pendingDecision?: { id: string; playerId: string; kind: string } }>(
+      socket,
+      (v) => v.pendingDecision?.playerId === "p0" && v.pendingDecision?.kind === "drawCard",
+      12_000,
+    );
     const backToMainAction = waitUntilView<{ pendingDecision?: { id: string; playerId: string; kind: string } }>(
       socket,
       (v) => v.pendingDecision?.playerId === "p0" && v.pendingDecision?.kind === "mainAction",
-      10_000,
+      15_000,
     );
 
     const ack = await emitAck<{ ok: boolean; roomCode: string; seatIndex: number }>(
@@ -304,13 +310,20 @@ describe("quickstart with bots", () => {
     const first = await firstPick;
     expect(first.pendingDecision?.playerId).toBe("p0"); // seat 0 is always the lord, picks first
 
-    // Answer only my own pick. From here nobody else answers anything —
-    // both bot seats (p1, p2) must resolve their own pickGeneral decisions
-    // unattended for control to ever cycle back to p0's first mainAction.
+    // Answer only my own decisions (pick, then draw). From here nobody else
+    // answers anything — both bot seats (p1, p2) must resolve their own
+    // decisions unattended for control to ever cycle back to p0's mainAction.
     await emitAck(socket, "game:answer", {
       roomCode: ack.roomCode,
       decisionId: first.pendingDecision!.id,
       pass: true,
+    });
+
+    const draw = await firstDraw;
+    await emitAck(socket, "game:answer", {
+      roomCode: ack.roomCode,
+      decisionId: draw.pendingDecision!.id,
+      choice: "draw",
     });
 
     const final = await backToMainAction;

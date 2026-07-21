@@ -9,7 +9,7 @@ import { runGame } from "../../src/core/turnLoop";
 import { createGame } from "../../src/index";
 import { createSession, respond, type GameSession } from "../../src/core/decisions";
 import { getPlayer, cardById } from "../../src/core/state";
-import { forceIntoHand } from "../_testUtils";
+import { forceIntoHand, passDraw } from "../_testUtils";
 
 // One deck copy of each trick.
 const ID = {
@@ -29,6 +29,7 @@ const ID = {
  *  out-of-band forceIntoHand/equip setup below isn't wiped by a replay. */
 function atP0MainAction(playerCount: number, seed: number): { session: GameSession; state: GameState } {
   const session = createGame({ playerCount, seed });
+  passDraw(session); // advance past the ENG-004 draw gate
   delete session.rebuild;
   const pd = session.state.pendingDecision!;
   expect(pd.kind).toBe("mainAction");
