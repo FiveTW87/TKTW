@@ -8,6 +8,7 @@ import type { Ctx } from "../core/ctx";
 import type { EngineGenerator } from "../core/decisions";
 import { dealDamage } from "../core/damage";
 import { discardFromHand, discardCardsFromHand, getPlayer, log, cardById } from "../core/state";
+import { discardRequest, assertDiscardAnswer } from "../core/discard";
 import { fireTrigger, queryHook } from "../core/triggers";
 import { countsAsType } from "../core/cardChecks";
 
@@ -29,11 +30,10 @@ function* resolveShaHit(
   if (weaponOf(ctx, sourceId) === "sword_ice" && getPlayer(state, targetId).hand.length >= 2) {
     const answer = yield { kind: "swordIceChoice", playerId: sourceId, data: { targetId } };
     if (answer.choice === "discard2") {
-      const pick = yield { kind: "discardChosenBy", playerId: targetId, data: { count: 2 } };
+      const data = discardRequest(state, targetId, { min: 2, max: 2, exact: 2 });
+      const pick = yield { kind: "discardChosenBy", playerId: targetId, data };
       const ids = pick.cardIds ?? [];
-      if (ids.length !== 2) {
-        throw new Error(`${targetId}: discard2 requires exactly 2 card ids, got ${ids.length}`);
-      }
+      assertDiscardAnswer(targetId, ids, data);
       discardCardsFromHand(state, targetId, ids);
       log(state, `${targetId} ทิ้งการ์ด 2 ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`);
       return;

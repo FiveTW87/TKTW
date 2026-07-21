@@ -13,6 +13,7 @@ import {
   cardById,
 } from "./state";
 import { cardDef, isCancelable } from "./cardData";
+import { discardRequest, assertDiscardAnswer } from "./discard";
 import { CARD_EFFECTS } from "../cards/index";
 import { forwardShandian } from "../cards/shandian";
 import { makeEvent } from "./eventStack";
@@ -433,15 +434,10 @@ function* runDiscardPhase(ctx: Ctx, activeId: string): EngineGenerator {
   const p = getPlayer(state, activeId);
   const over = p.hand.length - p.hp;
   if (over <= 0) return;
-  const answer = yield {
-    kind: "discardTo",
-    playerId: activeId,
-    data: { mustDiscard: over },
-  } satisfies Decision;
+  const data = discardRequest(state, activeId, { min: over, max: over, exact: over });
+  const answer = yield { kind: "discardTo", playerId: activeId, data } satisfies Decision;
   const ids = answer.cardIds ?? [];
-  if (ids.length !== over) {
-    throw new Error(`${activeId}: must discard exactly ${over} card(s), got ${ids.length}`);
-  }
+  assertDiscardAnswer(activeId, ids, data);
   discardCardsFromHand(state, activeId, ids);
   log(state, `${activeId} ทิ้งการ์ด ${ids.length} ใบ (เกินเพดาน HP)`);
   if (getPlayer(state, activeId).hand.length === 0) {

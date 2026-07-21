@@ -3,6 +3,7 @@ import { registerGeneral } from "./registry";
 import { runJudgment } from "../core/judgment";
 import { loseHp } from "../core/damage";
 import { getPlayer, discardCardsFromHand } from "../core/state";
+import { discardRequest, assertDiscardAnswer } from "../core/discard";
 
 registerGeneral({
   id: "xiahoudun",
@@ -28,11 +29,10 @@ registerGeneral({
           };
           const attackerHand = getPlayer(state, sourceId).hand.length;
           if (answer.choice === "discard2" && attackerHand >= 2) {
-            const pick = yield { kind: "discardChosenBy", playerId: sourceId, data: { count: 2 } };
+            const data = discardRequest(state, sourceId, { min: 2, max: 2, exact: 2 });
+            const pick = yield { kind: "discardChosenBy", playerId: sourceId, data };
             const ids = pick.cardIds ?? [];
-            if (ids.length !== 2) {
-              throw new Error(`${sourceId}: discard2 requires exactly 2 card ids, got ${ids.length}`);
-            }
+            assertDiscardAnswer(sourceId, ids, data);
             discardCardsFromHand(state, sourceId, ids);
           } else {
             // chose to take the hit (or can't spare 2 cards) → lose 1 HP

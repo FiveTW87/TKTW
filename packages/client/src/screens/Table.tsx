@@ -452,7 +452,14 @@ export function Table() {
   const onTapCard = (card: Card) => {
     if (!pending) return;
     if (skillMode || isDiscardTo || zhangbaMode) {
-      setSelectedCardIds((prev) => (prev.includes(card.id) ? prev.filter((id) => id !== card.id) : [...prev, card.id]));
+      // ENG-002: a discard can't select more than the required count.
+      const selectable = (pending.data as { selectableCardIds?: string[] }).selectableCardIds;
+      setSelectedCardIds((prev) => {
+        if (prev.includes(card.id)) return prev.filter((id) => id !== card.id);
+        if (isDiscardTo && selectable && !selectable.includes(card.id)) return prev; // not discardable
+        if (isDiscardTo && mustDiscard > 0 && prev.length >= mustDiscard) return prev; // at the cap
+        return [...prev, card.id];
+      });
       return;
     }
     if (!isMainAction) return;
