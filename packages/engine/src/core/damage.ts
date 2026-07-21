@@ -47,6 +47,7 @@ export function* dealDamage(
 export function* loseHp(ctx: Ctx, targetId: string, amount: number): EngineGenerator {
   const { state } = ctx;
   const p = getPlayer(state, targetId);
+  if (!p.alive) return; // a corpse can't lose more HP (death happens once)
   p.hp -= amount;
   log(state, `${targetId} เสีย HP ${amount} (ไม่ใช่ดาเมจ, เหลือ ${p.hp})`);
   for (let i = 0; i < amount && p.alive; i++) {
@@ -125,6 +126,7 @@ export function* killPlayer(
 ): EngineGenerator {
   const { state } = ctx;
   const p = getPlayer(state, deadId);
+  if (!p.alive) return; // death fires exactly once, even on a re-entrant kill
   p.alive = false;
   p.roleRevealed = true;
 
