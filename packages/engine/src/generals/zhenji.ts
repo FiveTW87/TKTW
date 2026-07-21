@@ -40,7 +40,7 @@ registerGeneral({
             if (idx < 0) break;
             const [card] = state.discardPile.splice(idx, 1);
             getPlayer(state, ownerId).hand.push(card!);
-            log(state, `${ownerId} เก็บ ${card!.typeKey} จากเทพีลั่วสุ่ย — ตัดสินซ้ำ`);
+            log(state, "skillUse", { actorId: ownerId, skillId: "zhenji_luoshen", cardType: card!.typeKey });
           }
         },
       },

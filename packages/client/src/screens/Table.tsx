@@ -9,6 +9,7 @@ import { InspectModal } from "../components/InspectModal";
 import { ModalOverlay, ModalPanel } from "../components/Modal";
 import { SkillToast, type ToastData } from "../components/SkillToast";
 import { describeDecision } from "../data/decisionCopy";
+import { resolveLogEntry } from "../data/logResolver";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../data/cardNames";
 import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
 import { generalSkills, skillById } from "../data/generalSkills";
@@ -897,7 +898,7 @@ export function Table() {
           {[...gameView.log].reverse().map((entry, i) => (
             <div key={gameView.log.length - i} style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.45, borderLeft: "2px solid var(--card-border-2)", paddingLeft: 8 }}>
               <span style={{ fontSize: 10, color: "var(--ink-faint)", marginRight: 5 }}>รอบ {entry.turn}</span>
-              {entry.text}
+              {resolveLogEntry(entry, gameView)}
             </div>
           ))}
         </div>

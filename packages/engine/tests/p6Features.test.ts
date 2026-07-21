@@ -112,7 +112,7 @@ describe("P6: empty draw pile reshuffles the discard pile", () => {
     expect(getPlayer(state, "p0").hand.length).toBe(before + 2);
     expect(state.discardPile.length).toBe(0); // all 3 shuffled into the draw pile
     expect(state.drawPile.length).toBe(1); // 3 shuffled in, 2 drawn out
-    expect(state.log.some((l) => l.text.includes("สับกองทิ้งเป็นกองจั่วใหม่"))).toBe(true);
+    expect(state.log.some((l) => l.eventType === "reshuffle")).toBe(true);
   });
 
   it("popCard returns undefined only when BOTH piles are exhausted", () => {

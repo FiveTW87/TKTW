@@ -46,7 +46,7 @@ registerGeneral({
           // drawPile.pop() reads the END, so push bottom-bound cards first,
           // then the chosen top order reversed (so chosen[0] pops first).
           state.drawPile.push(...rest, ...chosen.reverse());
-          log(state, `${ownerId} ดูดาว จัดเรียงการ์ดบนกอง ${revealed.length} ใบ`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "zhugeliang_guandou", amount: revealed.length });
         },
       },
     },

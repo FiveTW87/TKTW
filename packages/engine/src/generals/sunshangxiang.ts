@@ -22,7 +22,7 @@ registerGeneral({
         discardCardsFromHand(state, ownerId, cardIds.slice(0, 2));
         yield* heal(ctx, ownerId, 1);
         yield* heal(ctx, targetId, 1);
-        log(state, `${ownerId} และ ${targetId} ฟื้น HP 1 (ผูกสัมพันธ์)`);
+        log(state, "skillUse", { actorId: ownerId, skillId: "sunshangxiang_jieyuan", targetIds: [targetId] });
       },
     },
     {
@@ -33,7 +33,7 @@ registerGeneral({
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           drawCards(state, ctx.rng, ownerId, 2);
-          log(state, `${ownerId} จั่ว 2 ใบ (สตรีอาจหาญ)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "sunshangxiang_jiehun", amount: 2 });
         },
       },
     },

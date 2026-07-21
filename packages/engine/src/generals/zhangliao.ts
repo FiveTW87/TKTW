@@ -40,7 +40,7 @@ registerGeneral({
             const card = yield* pickCardFrom(ctx, ownerId, targetId, "tuxi");
             if (card) {
               getPlayer(state, ownerId).hand.push(card);
-              log(state, `${ownerId} ชิง ${card.typeKey} จาก ${targetId} (จู่โจมสายฟ้าแลบ)`);
+              log(state, "skillUse", { actorId: ownerId, skillId: "zhangliao_tuxi", targetIds: [targetId], cardType: card.typeKey });
             }
           }
         },

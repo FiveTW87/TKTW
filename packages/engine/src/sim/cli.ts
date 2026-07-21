@@ -26,7 +26,10 @@ function runOne(players: number, seed: number, quiet: boolean, identity: boolean
 
   if (!quiet) {
     for (const entry of session.state.log) {
-      console.log(`[T${entry.turn}] ${entry.text}`);
+      const parts = [entry.eventType, entry.actorId, entry.skillId, entry.cardType, entry.amount]
+        .filter((v) => v !== undefined)
+        .join(" ");
+      console.log(`[T${entry.turn}] ${parts}${entry.targetIds ? " -> " + entry.targetIds.join(",") : ""}`);
     }
   }
   if (identity) {

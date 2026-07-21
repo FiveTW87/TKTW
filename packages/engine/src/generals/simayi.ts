@@ -29,7 +29,7 @@ registerGeneral({
           const [card] = attacker.hand.splice(idx >= 0 ? idx : 0, 1);
           if (card) {
             getPlayer(state, ownerId).hand.push(card);
-            log(state, `${ownerId} ชิงการ์ด ${card.typeKey} จาก ${sourceId} (โต้กลับ)`);
+            log(state, "skillUse", { actorId: ownerId, skillId: "simayi_fankui", targetIds: [sourceId], cardType: card.typeKey });
           }
         },
       },
@@ -49,7 +49,7 @@ registerGeneral({
           const card = removeFromHand(state, ownerId, cid);
           state.discardPile.push(judgment.card);
           judgment.card = card;
-          log(state, `${ownerId} ใช้ "อัจฉริยะปีศาจ" แทนที่ไพ่ตัดสินของ ${playerId} ด้วย ${card.typeKey}`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "simayi_guicai", targetIds: [playerId], cardType: card.typeKey });
         },
       },
     },

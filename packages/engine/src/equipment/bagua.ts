@@ -34,9 +34,9 @@ registerEquipment("bagua", {
       const judged = yield* runJudgment(ctx, targetId, { interactive: true, reason: "bagua" });
       if (colorOf(judged.suit) === "red") {
         box.autoDodged = true;
-        log(state, `${targetId} ตัดสิน "ค่ายกลแปดทิศ" ${judged.suit}${judged.rank} — นับเป็นลง "หลบ" อัตโนมัติ`);
+        log(state, "judgment", { actorId: targetId, cardType: "bagua", data: { suit: judged.suit, rank: judged.rank, outcome: "autoDodge" } });
       } else {
-        log(state, `${targetId} ตัดสิน "ค่ายกลแปดทิศ" ${judged.suit}${judged.rank} — ไม่ติด`);
+        log(state, "judgment", { actorId: targetId, cardType: "bagua", data: { suit: judged.suit, rank: judged.rank, outcome: "fail" } });
       }
     },
   },

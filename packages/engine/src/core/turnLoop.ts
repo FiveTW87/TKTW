@@ -94,7 +94,7 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
       data: { count: drawCount, base: 2, modifier: drawBonus, skills },
     } satisfies Decision;
     const drawn = drawCards(state, ctx.rng, activeId, drawCount);
-    log(state, `${activeId} จั่ว ${drawn.length} ใบ`);
+    log(state, "draw", { actorId: activeId, amount: drawn.length, ...(skills.length ? { data: { skills: skills.join(",") } } : {}) });
   }
   yield* fireTrigger(ctx, "DrawPhaseEnd", { playerId: activeId });
   if (state.finished) return;
@@ -102,7 +102,7 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
   state.phase = "play";
   if (state.skipPlayPhase) {
     delete state.skipPlayPhase;
-    log(state, `${activeId} ข้ามเฟสลงการ์ด (เพลินจนลืมแคว้นสู่)`);
+    log(state, "skipPlay", { actorId: activeId, data: { reason: "lebusishu" } });
   } else {
     yield* fireTrigger(ctx, "PlayPhaseStart", { playerId: activeId });
     yield* runPlayPhase(ctx, activeId);
@@ -116,7 +116,7 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
   yield* fireTrigger(ctx, "DiscardPhaseStart", { playerId: activeId });
   if (state.skipDiscardPhase) {
     delete state.skipDiscardPhase;
-    log(state, `${activeId} ข้ามเฟสทิ้งการ์ด (ข่มใจตนเอง)`);
+    log(state, "skipDiscard", { actorId: activeId, skillId: "lumeng_qinxue" });
   } else {
     yield* runDiscardPhase(ctx, activeId);
   }
@@ -146,7 +146,7 @@ function* runJudgePhase(ctx: Ctx, activeId: string): EngineGenerator {
       // House rule: ไร้ช่องโหว่ cancelling สายฟ้า doesn't destroy it — it moves
       // on to the next player. Other delayed tricks (lebusishu) are discarded.
       if (card.typeKey === "shandian") {
-        log(state, `"สายฟ้า" ถูก "ไร้ช่องโหว่" กัน — ส่งต่อคนถัดไป`);
+        log(state, "shandianCancelForward", { cardType: "shandian" });
         forwardShandian(state, activeId, card);
       } else {
         state.discardPile.push(card);
@@ -227,7 +227,7 @@ function* playZhangbaSha(
   // Everything above only reads state. Nothing past this point may throw.
   p.shaUsedThisTurn += 1;
   discardCardsFromHand(state, playerId, cardIds);
-  log(state, `${playerId} ใช้ทวนงูจั้งปา ทิ้งการ์ด 2 ใบแทน "สังหาร"`);
+  log(state, "zhangbaSha", { actorId: playerId, cardType: "zhangba" });
 
   // First spent card stands in as the "reference" sha for color-dependent
   // interactions (renwang) — a documented simplification, real rules treat
@@ -413,7 +413,7 @@ function* playCard(
 
   if (def.category === "equipment") {
     equipCard(state, playerId, removeFromHand(state, playerId, firstId));
-    log(state, `${playerId} สวมอุปกรณ์ ${card.typeKey}`);
+    log(state, "equip", { actorId: playerId, cardId: firstId, cardType: card.typeKey });
     return;
   }
 
@@ -421,7 +421,7 @@ function* playCard(
     const targetId = card.typeKey === "shandian" ? playerId : (targetIds[0] ?? playerId);
     removeFromHand(state, playerId, firstId);
     getPlayer(state, targetId).judgmentZone.push(card);
-    log(state, `${playerId} วาง ${card.typeKey} ในเขตตัดสินของ ${targetId}`);
+    log(state, "placeDelayed", { actorId: playerId, targetIds: [targetId], cardId: firstId, cardType: card.typeKey });
     return; // no wuxie window at play time (SPEC 8.3) — opens at resolution
   }
 
@@ -435,7 +435,7 @@ function* playCard(
     const event = makeEvent(state, card.typeKey, playerId, targetIds, { cardIds });
     const resolved = yield* resolveWithWuxieWindow(ctx, event);
     if (!resolved) {
-      log(state, `${card.typeKey} ของ ${playerId} ถูกยกเลิก`);
+      log(state, "cardCancelled", { actorId: playerId, cardType: card.typeKey });
       return;
     }
   }
@@ -461,7 +461,7 @@ function* runDiscardPhase(ctx: Ctx, activeId: string): EngineGenerator {
   const ids = answer.cardIds ?? [];
   assertDiscardAnswer(activeId, ids, data);
   discardCardsFromHand(state, activeId, ids);
-  log(state, `${activeId} ทิ้งการ์ด ${ids.length} ใบ (เกินเพดาน HP)`);
+  log(state, "discard", { actorId: activeId, amount: ids.length, data: { reason: "overLimit" } });
   if (getPlayer(state, activeId).hand.length === 0) {
     yield* fireTrigger(ctx, "OnHandEmpty", { playerId: activeId });
   }

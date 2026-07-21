@@ -7,15 +7,13 @@ import { log } from "../core/state";
 export const lebusishuCard: CardDef = {
   judge: function* (ctx) {
     const judged = yield* runJudgment(ctx, ctx.ownerId, { interactive: true, reason: "lebusishu" });
-    if (judged.suit === "heart") {
-      log(ctx.state, `${ctx.ownerId} ตัดสิน "เพลินจนลืมแคว้นสู่" ${judged.suit}${judged.rank} — รอด`);
-    } else {
-      ctx.state.skipPlayPhase = true;
-      log(
-        ctx.state,
-        `${ctx.ownerId} ตัดสิน "เพลินจนลืมแคว้นสู่" ${judged.suit}${judged.rank} — ข้ามเฟสลงการ์ด`,
-      );
-    }
+    const survived = judged.suit === "heart";
+    if (!survived) ctx.state.skipPlayPhase = true;
+    log(ctx.state, "judgment", {
+      actorId: ctx.ownerId,
+      cardType: "lebusishu",
+      data: { suit: judged.suit, rank: judged.rank, outcome: survived ? "survive" : "skipPlay" },
+    });
     ctx.state.discardPile.push(ctx.card);
   },
 };

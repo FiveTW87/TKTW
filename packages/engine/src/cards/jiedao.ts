@@ -22,7 +22,7 @@ export const jiedaoCard: CardDef = {
       const cid = answer.cardIds![0]!;
       if (!countsAsType(state, targetId, cid, "sha")) throw new Error(`jiedao: ${cid} does not count as sha`);
       discardFromHand(state, targetId, cid);
-      log(state, `${targetId} ถูกบังคับให้ลง "สังหาร" ใส่ ${victimId} (ยืมดาบฆ่าคน)`);
+      log(state, "jiedaoForce", { actorId: targetId, targetIds: [victimId], cardType: "jiedao" });
       yield* shaCard.play!({ ...ctx, playerId: targetId, cardIds: [cid], targetIds: [victimId] });
     } else {
       const victim = getPlayer(state, targetId);
@@ -30,7 +30,7 @@ export const jiedaoCard: CardDef = {
       if (weapon) {
         delete victim.equipment.weapon;
         equipCard(state, playerId, weapon);
-        log(state, `${playerId} ได้อาวุธ ${weapon.typeKey} จาก ${targetId} (ยืมดาบฆ่าคน)`);
+        log(state, "jiedaoTakeWeapon", { actorId: playerId, targetIds: [targetId], cardType: weapon.typeKey });
       }
     }
   },

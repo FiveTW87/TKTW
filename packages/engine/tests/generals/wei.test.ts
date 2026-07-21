@@ -174,7 +174,7 @@ describe("Wei generals", () => {
     expect(swap.playerId).toBe("p1");
     respond(session, { decisionId: swap.id, playerId: "p1", cardIds: [CID.redShan] });
     expect(getPlayer(state, "p1").hand.some((c) => c.id === CID.redShan)).toBe(false); // spent as the judgment
-    expect(state.log.some((e) => e.text.includes("อัจฉริยะปีศาจ"))).toBe(true);
+    expect(state.log.some((e) => e.eventType === "skillUse" && e.skillId === "simayi_guicai")).toBe(true);
   });
 
   it("เอียนสี โฉมงาม (guose): a black card counts as หลบ", () => {
@@ -195,7 +195,7 @@ describe("Wei generals", () => {
     expect((act.data as { skillId: string }).skillId).toBe("zhenji_luoshen");
     respond(session, { decisionId: act.id, playerId: "p0" }); // accept
 
-    const kept = state.log.filter((e) => e.text.includes("เทพีลั่วสุ่ย")).length;
+    const kept = state.log.filter((e) => e.eventType === "skillUse" && e.skillId === "zhenji_luoshen").length;
     expect(kept).toBe(1); // exactly one black card kept before the red stopped it
     revealAndSettle(session);
   });

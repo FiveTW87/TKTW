@@ -21,7 +21,7 @@ registerGeneral({
           if (idx < 0) return;
           const [card] = state.discardPile.splice(idx, 1);
           getPlayer(state, ownerId).hand.push(card!);
-          log(state, `${ownerId} เก็บไพ่ตัดสิน ${card!.typeKey} (ริษยาฟ้า)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "guojia_yidu", cardType: card!.typeKey });
         },
       },
     },
@@ -48,7 +48,7 @@ registerGeneral({
             };
             const toId = answer.targetIds?.[0] ?? ownerId;
             getPlayer(state, toId).hand.push(card);
-            log(state, `${ownerId} แจก ${card.typeKey} ให้ ${toId} (แผนสุดท้าย)`);
+            log(state, "skillUse", { actorId: ownerId, skillId: "guojia_yiji", targetIds: [toId], cardType: card.typeKey });
           }
         },
       },

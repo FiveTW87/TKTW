@@ -26,7 +26,7 @@ registerGeneral({
         if (target.hp >= target.maxHp) return;
         discardFromHand(state, ownerId, cid);
         yield* heal(ctx, targetId, 1, ownerId);
-        log(state, `${ownerId} ทิ้งการ์ด รักษา ${targetId} 1 HP (ถุงยาเขียว)`);
+        log(state, "skillUse", { actorId: ownerId, skillId: "huatuo_qingnang", targetIds: [targetId], amount: 1 });
       },
     },
     {

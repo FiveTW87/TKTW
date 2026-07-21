@@ -35,7 +35,7 @@ function* resolveShaHit(
       const ids = pick.cardIds ?? [];
       assertDiscardAnswer(targetId, ids, data);
       discardCardsFromHand(state, targetId, ids);
-      log(state, `${targetId} ทิ้งการ์ด 2 ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`);
+      log(state, "swordIceDiscard", { actorId: targetId, cardType: "sword_ice" });
       return;
     }
   }
@@ -60,7 +60,7 @@ function* resolveShaHit(
       const c = p.equipment[slot]!;
       delete p.equipment[slot];
       state.discardPile.push(c);
-      log(state, `${targetId} ถูกทำลาย${slot === "horseMinus" ? "ม้า−1" : "ม้า+1"}ด้วยธนูกิเลน`);
+      log(state, "qilinDestroyHorse", { actorId: targetId, cardType: "qilin", data: { slot } });
     }
   }
 }
@@ -73,13 +73,13 @@ function* resolveShaDodged(
   allowQinglongReplay: boolean,
 ): EngineGenerator {
   const { state } = ctx;
-  log(state, `${targetId} ลง "หลบ" สังหารจาก ${sourceId}`);
+  log(state, "dodge", { actorId: targetId, cardType: "shan", data: { sourceId } });
 
   if (weaponOf(ctx, sourceId) === "guanshi") {
     const answer = yield { kind: "guanshiForce", playerId: sourceId, data: { targetId } };
     if (answer.choice === "force" && (answer.cardIds?.length ?? 0) === 2) {
       discardCardsFromHand(state, sourceId, answer.cardIds!);
-      log(state, `${sourceId} ทิ้งการ์ด 2 ใบ บังคับให้ "สังหาร" โดน (ขวานทะลุศิลา)`);
+      log(state, "guanshiForce", { actorId: sourceId, targetIds: [targetId], cardType: "guanshi" });
       yield* resolveShaHit(ctx, sourceId, targetId, shaCard);
       return;
     }
@@ -88,7 +88,7 @@ function* resolveShaDodged(
   if (allowQinglongReplay && weaponOf(ctx, sourceId) === "qinglong") {
     const answer = yield { kind: "qinglongReplay", playerId: sourceId, data: { targetId } };
     if (!answer.pass && answer.choice === "replay") {
-      log(state, `${sourceId} ใช้ง้าวมังกรเขียว ลง "สังหาร" ซ้ำใส่ ${targetId}`);
+      log(state, "qinglongReplay", { actorId: sourceId, targetIds: [targetId], cardType: "qinglong" });
       yield* attemptSha(ctx, sourceId, targetId, shaCard, false);
     }
   }
@@ -118,7 +118,7 @@ function* attemptSha(
     colorOf(shaCard.suit) === "black" &&
     !queryHook<boolean>(state, "armorIgnored", { playerId: sourceId }, (rs) => rs.some(Boolean), false)
   ) {
-    log(state, `"สังหาร" ดอกดำจาก ${sourceId} ไม่มีผลกับ ${targetId} (โล่ราชันย์)`);
+    log(state, "renwangNegate", { actorId: targetId, cardType: "renwang", data: { sourceId } });
     return;
   }
 
@@ -129,13 +129,13 @@ function* attemptSha(
     const answer = yield { kind: "swordYyChoice", playerId: targetId, data: { sourceId } };
     if (answer.choice === "discard" && (answer.cardIds?.length ?? 0) > 0) {
       discardFromHand(state, targetId, answer.cardIds![0]!);
-      log(state, `${targetId} ทิ้งการ์ด 1 ใบ (กระบี่คู่หยินหยาง)`);
+      log(state, "swordYyDiscard", { actorId: targetId, cardType: "sword_yy", amount: 1 });
     } else {
       const p = getPlayer(state, sourceId);
       const c = state.drawPile.pop();
       if (c) {
         p.hand.push(c);
-        log(state, `${sourceId} จั่ว 1 ใบ (กระบี่คู่หยินหยาง)`);
+        log(state, "swordYyDraw", { actorId: sourceId, cardType: "sword_yy", amount: 1 });
       }
     }
   }

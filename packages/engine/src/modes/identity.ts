@@ -94,7 +94,7 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
   const lord = players.find((p) => p.seat === 0)!;
   lord.role = "lord";
   lord.roleRevealed = true;
-  log(state, `${lord.id} คือเจ้าเมือง`);
+  log(state, "roleReveal", { actorId: lord.id, data: { role: "lord" } });
 
   const others = players.filter((p) => p.id !== lord.id);
   const shuffledRoles = rng.shuffle(roles.filter((r) => r !== "lord"));
@@ -125,7 +125,7 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
     // leftovers go back into the pool and get reshuffled — not queued in
     // order, so the next player isn't guaranteed to see them specifically.
     pool = rng.shuffle([...offered.filter((g) => g !== chosen), ...pool]);
-    log(state, `${p.id} เลือกนายพล ${chosen}`);
+    log(state, "pickGeneral", { actorId: p.id, data: { generalId: chosen } });
   }
 }
 
@@ -169,7 +169,7 @@ export function* identityOnDeath(
 
   if (dead.role === "rebel") {
     drawCards(state, ctx.rng, killerId, 3);
-    log(state, `${killerId} สังหารกบฏสำเร็จ จั่ว 3 ใบ`);
+    log(state, "killReward", { actorId: killerId, targetIds: [deadId], amount: 3 });
   }
 
   if (killer.role === "lord" && dead.role === "loyalist") {
@@ -179,7 +179,7 @@ export function* identityOnDeath(
       if (c) state.discardPile.push(c);
     }
     killer.equipment = {};
-    log(state, `${killerId} (เจ้าเมือง) สังหารขุนนางภักดี ทิ้งการ์ดในมือและอุปกรณ์ทั้งหมด`);
+    log(state, "killPenalty", { actorId: killerId, targetIds: [deadId] });
   }
 }
 

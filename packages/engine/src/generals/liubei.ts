@@ -24,7 +24,7 @@ registerGeneral({
         if (!targetId || !cid) return;
         const card = removeFromHand(state, ownerId, cid);
         getPlayer(state, targetId).hand.push(card);
-        log(state, `${ownerId} ให้การ์ด ${card.typeKey} แก่ ${targetId} (เมตตาธรรม)`);
+        log(state, "skillUse", { actorId: ownerId, skillId: "liubei_rende", targetIds: [targetId], cardType: card.typeKey });
 
         const p = getPlayer(state, ownerId);
         const given = (p.skillUsedThisTurn[GIVEN] ?? 0) + 1;
@@ -55,7 +55,7 @@ registerGeneral({
               }
               discardFromHand(state, pid, cid);
               box.covered = true;
-              log(state, `${pid} ลง "สังหาร" แทนเจ้าเมือง (ปลุกใจนักรบ)`);
+              log(state, "skillUse", { actorId: pid, skillId: "liubei_hujia", targetIds: [ownerId], cardType: "sha" });
               return;
             }
           }

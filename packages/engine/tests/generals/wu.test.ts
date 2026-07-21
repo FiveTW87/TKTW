@@ -84,7 +84,7 @@ describe("Wu generals", () => {
 
     // qinxue set skipDiscardPhase → the turn skipped straight past discard.
     expect(session.state.pendingDecision!.playerId).not.toBe("p0");
-    expect(state.log.some((e) => e.text.includes("ข้ามเฟสทิ้งการ์ด"))).toBe(true);
+    expect(state.log.some((e) => e.eventType === "skipDiscard")).toBe(true);
   });
 
   it("ลกซุน ถ่อมตน (qianxun): cannot be targeted by ฉวยโอกาสลักแกะ", () => {

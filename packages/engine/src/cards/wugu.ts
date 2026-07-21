@@ -12,7 +12,7 @@ export const wuguCard: CardDef = {
       const c = popCard(state, rng);
       if (c) revealed.push(c);
     }
-    log(state, `${playerId} ใช้ "ธัญญาหารบริบูรณ์" เปิด ${revealed.length} ใบ`);
+    log(state, "wuguReveal", { actorId: playerId, cardType: "wugu", amount: revealed.length });
 
     for (const pid of seatOrderFrom(state, playerId)) {
       if (revealed.length === 0) break;
@@ -28,7 +28,7 @@ export const wuguCard: CardDef = {
       const idx = wantedId ? revealed.findIndex((c) => c.id === wantedId) : 0;
       const chosen = revealed.splice(idx >= 0 ? idx : 0, 1)[0]!;
       getPlayer(state, pid).hand.push(chosen);
-      log(state, `${pid} เลือก ${chosen.typeKey} จากธัญญาหารบริบูรณ์`);
+      log(state, "wuguPick", { actorId: pid, cardType: chosen.typeKey });
     }
     state.discardPile.push(...revealed);
   },

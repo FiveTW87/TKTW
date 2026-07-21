@@ -49,7 +49,7 @@ registerGeneral({
 
           discardFromHand(state, ownerId, answer.cardIds[0]!);
           box.targetId = newTargetId;
-          log(state, `${ownerId} ทิ้งการ์ด โอน "สังหาร" ไปที่ ${newTargetId} (หลบลี้ภัย)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "daiqiao_huibi", targetIds: [newTargetId] });
         },
       },
     },

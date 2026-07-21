@@ -17,7 +17,7 @@ registerGeneral({
         yield* loseHp(ctx, ownerId, 1);
         if (getPlayer(state, ownerId).alive) {
           drawCards(state, rng, ownerId, 2);
-          log(state, `${ownerId} จั่ว 2 ใบ (กลลวงทรมานตน)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "huanggai_kurou", amount: 2 });
         }
       },
     },

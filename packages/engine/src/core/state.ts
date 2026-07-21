@@ -36,8 +36,35 @@ export function seatOrderAfter(state: GameState, fromId: string): string[] {
   return seatOrderFrom(state, fromId).slice(1);
 }
 
-export function log(state: GameState, text: string, data?: Record<string, unknown>): void {
-  state.log.push({ turn: state.turnNumber, text, ...(data ? { data } : {}) });
+export interface LogParams {
+  actorId?: string;
+  targetIds?: string[];
+  cardId?: string;
+  cardType?: string;
+  skillId?: string;
+  amount?: number;
+  visibility?: import("../types").LogVisibility;
+  data?: Record<string, string | number | boolean>;
+}
+
+/** ENG-009 — append a structured log entry (eventType + ids). Deterministic
+ *  id/order (no Date.now) so replay reproduces the log. */
+export function log(state: GameState, eventType: string, params: LogParams = {}): void {
+  const { visibility = "public", ...rest } = params;
+  const entry: import("../types").LogEntry = {
+    id: `log_${state.log.length}`,
+    turn: state.turnNumber,
+    eventType,
+    visibility,
+  };
+  if (rest.actorId !== undefined) entry.actorId = rest.actorId;
+  if (rest.targetIds !== undefined) entry.targetIds = rest.targetIds;
+  if (rest.cardId !== undefined) entry.cardId = rest.cardId;
+  if (rest.cardType !== undefined) entry.cardType = rest.cardType;
+  if (rest.skillId !== undefined) entry.skillId = rest.skillId;
+  if (rest.amount !== undefined) entry.amount = rest.amount;
+  if (rest.data !== undefined) entry.data = rest.data;
+  state.log.push(entry);
 }
 
 export function removeFromHand(state: GameState, playerId: string, cardId: string): Card {
@@ -83,7 +110,7 @@ export function popCard(state: GameState, rng: Rng): Card | undefined {
     if (state.discardPile.length === 0) return undefined; // truly out of cards
     state.drawPile = rng.shuffle(state.discardPile);
     state.discardPile = [];
-    log(state, `กองจั่วหมด — สับกองทิ้งเป็นกองจั่วใหม่ ${state.drawPile.length} ใบ`);
+    log(state, "reshuffle", { amount: state.drawPile.length });
   }
   return state.drawPile.pop()!;
 }

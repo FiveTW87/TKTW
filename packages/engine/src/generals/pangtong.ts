@@ -20,7 +20,7 @@ registerGeneral({
           };
           if (ownerId !== playerId || wasConverted) return;
           drawCards(state, rng, ownerId, 1);
-          log(state, `${ownerId} จั่ว 1 ใบ (รวบรวมปัญญา)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "pangtong_juhui", amount: 1 });
         },
       },
     },

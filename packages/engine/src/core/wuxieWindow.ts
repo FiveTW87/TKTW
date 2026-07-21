@@ -25,7 +25,7 @@ function* pollForWuxie(state: GameState, event: GameEvent): PollGenerator {
         throw new Error(`askWuxie: ${cardId} does not count as wuxie`);
       }
       discardFromHand(state, pid, cardId);
-      log(state, `${pid} ลง "ไร้ช่องโหว่" ต่อ ${event.type}`);
+      log(state, "wuxie", { actorId: pid, cardType: "wuxie", data: { targetType: event.type } });
       return pid;
     }
   }

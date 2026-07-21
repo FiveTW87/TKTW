@@ -77,10 +77,26 @@ export interface PendingDecision {
   data: Record<string, unknown>;
 }
 
+export type LogVisibility = "public" | "private";
+
+/** ENG-009 — a structured game-log entry. Stores IDs and parameters, never
+ *  Thai text as identity; the client resolves eventType + ids into a
+ *  localized line. `id`/order are deterministic (no Date.now) so replay
+ *  reproduces the log exactly. matchId/createdAt are added at the server
+ *  layer if needed and intentionally absent here (determinism, SPEC 3.4). */
 export interface LogEntry {
+  id: string;
   turn: number;
-  text: string;
-  data?: Record<string, unknown>;
+  eventType: string;
+  actorId?: string;
+  targetIds?: string[];
+  cardId?: string;
+  cardType?: string;
+  skillId?: string;
+  amount?: number;
+  visibility: LogVisibility;
+  /** Extra scalar params a given event needs (suit, rank, role, generalId, …). */
+  data?: Record<string, string | number | boolean>;
 }
 
 export interface GameState {

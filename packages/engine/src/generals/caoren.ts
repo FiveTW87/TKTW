@@ -21,7 +21,7 @@ registerGeneral({
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           getPlayer(state, ownerId).skillUsedThisTurn[FLAG] = 1;
-          log(state, `${ownerId} ถอดเสื้อรบ — จั่วน้อยลง 1 ใบ แลกดาเมจ +1 เทิร์นนี้`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "caoren_tuoyi" });
         },
       },
       queries: {

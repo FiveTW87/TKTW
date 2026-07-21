@@ -104,6 +104,7 @@ export function projectFor(state: GameState, viewerId: string): GameView {
     ...(state.pendingDecision ? { pendingDecision: projectDecision(state.pendingDecision, viewerId) } : {}),
     finished: state.finished,
     ...(state.winners ? { winners: [...state.winners] } : {}),
-    log: state.log.slice(),
+    // ENG-009: private log entries are only visible to their actor.
+    log: state.log.filter((e) => e.visibility === "public" || e.actorId === viewerId),
   };
 }

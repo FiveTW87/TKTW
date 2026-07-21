@@ -5,6 +5,6 @@ import { drawCards, log } from "../core/state";
 export const wuzhongCard: CardDef = {
   play: function* (ctx) {
     const drawn = drawCards(ctx.state, ctx.rng, ctx.playerId, 2);
-    log(ctx.state, `${ctx.playerId} จั่ว ${drawn.length} ใบ (เนรมิตจากความว่างเปล่า)`);
+    log(ctx.state, "draw", { actorId: ctx.playerId, amount: drawn.length, cardType: "wuzhong" });
   },
 };

@@ -31,7 +31,7 @@ export function* dealDamage(
   const p = getPlayer(state, targetId);
   if (!p.alive) return;
   p.hp -= amount;
-  log(state, `${targetId} ได้รับดาเมจ ${amount} จาก ${sourceId ?? "?"} (เหลือ ${p.hp} HP)`);
+  log(state, "damage", { actorId: targetId, amount, ...(sourceCardId ? { cardId: sourceCardId } : {}), data: { sourceId: sourceId ?? "", hp: p.hp } });
   yield* fireTrigger(ctx, "OnDamaged", { sourceId, targetId, amount, sourceCardId });
   // OnHPLost is a superset of OnDamaged: it fires for ANY hp loss (damage
   // or not), once per point (Guo Jia's "แผนสุดท้าย" explicitly triggers
@@ -49,7 +49,7 @@ export function* loseHp(ctx: Ctx, targetId: string, amount: number): EngineGener
   const p = getPlayer(state, targetId);
   if (!p.alive) return; // a corpse can't lose more HP (death happens once)
   p.hp -= amount;
-  log(state, `${targetId} เสีย HP ${amount} (ไม่ใช่ดาเมจ, เหลือ ${p.hp})`);
+  log(state, "hpLoss", { actorId: targetId, amount, data: { hp: p.hp } });
   for (let i = 0; i < amount && p.alive; i++) {
     yield* fireTrigger(ctx, "OnHPLost", { targetId, amount: 1 });
   }
@@ -67,7 +67,7 @@ export function* heal(
 ): EngineGenerator {
   const { state } = ctx;
   healPlayer(state, targetId, amount);
-  log(state, `${targetId} ฟื้น HP ${amount}`);
+  log(state, "heal", { actorId: targetId, amount, ...(sourceId ? { data: { sourceId } } : {}) });
   yield* fireTrigger(ctx, "OnHealed", { targetId, amount, sourceId });
   if (sourceId && sourceId !== targetId) {
     const source = getPlayer(state, sourceId);
@@ -106,7 +106,7 @@ export function* resolveDying(
           }
         }
         discardCardsFromHand(state, pid, ids);
-        log(state, `${pid} ลง "ท้อ" ช่วย ${dyingId}`);
+        log(state, "tao", { actorId: pid, targetIds: [dyingId], amount: ids.length });
         yield* heal(ctx, dyingId, ids.length, pid);
         anyHelped = true;
       }
@@ -138,10 +138,7 @@ export function* killPlayer(
   p.equipment = {};
   state.discardPile.push(...p.judgmentZone.splice(0));
 
-  log(
-    state,
-    `${deadId} เสียชีวิต (บทบาท: ${p.role})${killerId ? ` — สังหารโดย ${killerId}` : ""}`,
-  );
+  log(state, "death", { actorId: deadId, data: { role: p.role ?? "", ...(killerId ? { killerId } : {}) } });
   yield* fireTrigger(ctx, "OnDeath", { deadId, killerId });
   if (ctx.onDeath) yield* ctx.onDeath(ctx, deadId, killerId);
   ctx.checkGameEnd(state);

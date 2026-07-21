@@ -21,7 +21,7 @@ registerGeneral({
         if (!a || !b || !cid || a === b) return;
         if (getPlayer(state, a).gender !== "male" || getPlayer(state, b).gender !== "male") return;
         discardFromHand(state, ownerId, cid);
-        log(state, `${ownerId} ทิ้งการ์ด บังคับ ${a} ดวลกับ ${b} (ยุแยงตะแคงรั่ว)`);
+        log(state, "skillUse", { actorId: ownerId, skillId: "diaochan_lijian", targetIds: [a, b] });
         if (!juedouCard.play) return;
         yield* juedouCard.play({ ...ctx, playerId: b, cardIds: [], targetIds: [a] });
       },
@@ -34,7 +34,7 @@ registerGeneral({
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           drawCards(state, rng, ownerId, 1);
-          log(state, `${ownerId} จั่ว 1 ใบ (จันทร์อำพราง)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "diaochan_libu", amount: 1 });
         },
       },
     },

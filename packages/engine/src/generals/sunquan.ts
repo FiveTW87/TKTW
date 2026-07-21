@@ -20,7 +20,7 @@ registerGeneral({
         discardCardsFromHand(state, ownerId, cardIds);
         if (cardIds.length > 0) {
           drawCards(state, rng, ownerId, cardIds.length);
-          log(state, `${ownerId} ทิ้ง ${cardIds.length} จั่ว ${cardIds.length} (ถ่วงดุลอำนาจ)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "sunquan_zhiheng", amount: cardIds.length });
         }
       },
     },

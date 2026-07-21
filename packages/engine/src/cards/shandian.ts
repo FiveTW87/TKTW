@@ -13,7 +13,7 @@ export function forwardShandian(state: GameState, fromId: string, card: Card): v
   const nextId = seatOrderAfter(state, fromId)[0];
   if (nextId) {
     getPlayer(state, nextId).judgmentZone.push(card);
-    log(state, `ส่งต่อ "สายฟ้า" ไปยัง ${nextId}`);
+    log(state, "forwardShandian", { targetIds: [nextId], cardType: "shandian" });
   } else {
     state.discardPile.push(card);
   }
@@ -25,11 +25,11 @@ export const shandianCard: CardDef = {
     const hits = judged.suit === "spade" && judged.rank >= 2 && judged.rank <= 9;
 
     if (hits) {
-      log(ctx.state, `${ctx.ownerId} ตัดสิน "สายฟ้า" ${judged.suit}${judged.rank} — โดน 3 ดาเมจ`);
+      log(ctx.state, "judgment", { actorId: ctx.ownerId, cardType: "shandian", amount: 3, data: { suit: judged.suit, rank: judged.rank, outcome: "hit" } });
       ctx.state.discardPile.push(ctx.card);
       yield* dealDamage(ctx, undefined, ctx.ownerId, 3);
     } else {
-      log(ctx.state, `${ctx.ownerId} ตัดสิน "สายฟ้า" ${judged.suit}${judged.rank} — ไม่โดน`);
+      log(ctx.state, "judgment", { actorId: ctx.ownerId, cardType: "shandian", data: { suit: judged.suit, rank: judged.rank, outcome: "miss" } });
       forwardShandian(ctx.state, ctx.ownerId, ctx.card);
     }
   },

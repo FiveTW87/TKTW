@@ -55,7 +55,7 @@ describe("zhangba: 2 arbitrary cards substitute for 1 สังหาร (SPEC 8
     }
 
     expect(p1.hp).toBe(before - 1);
-    expect(state.log.some((l) => l.text.includes("ทวนงูจั้งปา"))).toBe(true);
+    expect(state.log.some((l) => l.eventType === "zhangbaSha")).toBe(true);
     expect(p0.hand.some((c) => c.id === "heart_3_1" || c.id === "heart_4_1")).toBe(false);
     expect(state.discardPile.some((c) => c.id === "heart_3_1")).toBe(true);
     expect(state.discardPile.some((c) => c.id === "heart_4_1")).toBe(true);
@@ -103,7 +103,7 @@ describe("bagua: judge-based auto-dodge, optional skill (SPEC 8.5)", () => {
     respond(session, { decisionId: reveal.id, playerId: "p1", choice: "reveal" });
 
     expect(p1.hp).toBe(p1.maxHp);
-    expect(state.log.some((l) => l.text.includes('นับเป็นลง "หลบ" อัตโนมัติ'))).toBe(true);
+    expect(state.log.some((l) => l.eventType === "judgment" && l.cardType === "bagua" && l.data?.outcome === "autoDodge")).toBe(true);
   });
 
   it("a black judgment fails, and the sha proceeds to ask for a real shan", () => {
@@ -190,6 +190,6 @@ describe("sunshangxiang jiehun: draw 2 when equipment is lost (OnEquipmentLost)"
 
     expect(jiehunFired).toBe(true);
     expect(p1.hand.length).toBe(before + 2);
-    expect(state.log.some((l) => l.text.includes("สตรีอาจหาญ"))).toBe(true);
+    expect(state.log.some((l) => l.eventType === "skillUse" && l.skillId === "sunshangxiang_jiehun")).toBe(true);
   });
 });

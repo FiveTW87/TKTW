@@ -10,7 +10,7 @@ export const guoheCard: CardDef = {
     const card = yield* pickCardFrom(ctx, ctx.playerId, targetId, "guohe");
     if (card) {
       ctx.state.discardPile.push(card);
-      log(ctx.state, `${ctx.playerId} ทิ้งการ์ด ${card.typeKey} ของ ${targetId} (ข้ามสะพานแล้วรื้อทิ้ง)`);
+      log(ctx.state, "guoheDiscard", { actorId: ctx.playerId, targetIds: [targetId], cardType: card.typeKey });
     }
   },
 };

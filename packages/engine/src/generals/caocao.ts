@@ -21,7 +21,7 @@ registerGeneral({
           if (idx < 0) return;
           const [card] = state.discardPile.splice(idx, 1);
           getPlayer(state, ownerId).hand.push(card!);
-          log(state, `${ownerId} เก็บการ์ดที่ทำร้ายตน (วีรบุรุษเจ้าเล่ห์)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "caocao_jianxiong", cardId: card!.id });
         },
       },
     },
@@ -48,7 +48,7 @@ registerGeneral({
               }
               discardFromHand(state, pid, cid);
               box.autoDodged = true;
-              log(state, `${pid} ลง "หลบ" แทนเจ้าเมือง (คุ้มกันราชา)`);
+              log(state, "skillUse", { actorId: pid, skillId: "caocao_hujia", targetIds: [ownerId], cardType: "shan" });
               return;
             }
           }

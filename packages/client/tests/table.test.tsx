@@ -102,7 +102,7 @@ describe("Table: main action card play", () => {
       eventStack: [],
       pendingDecision: { id: "dec_main", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [{ turn: 1, text: "เริ่มเทิร์น p0" }],
+      log: [{ id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } }],
     });
 
     await waitFor(() => expect(screen.getByText("สังหาร")).toBeInTheDocument());
@@ -723,10 +723,16 @@ describe("Table: card conversion + distance", () => {
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("LOG1", me, rest);
 
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { log: [{ turn: 1, text: "p0 เริ่มเทิร์น" }, { turn: 1, text: "p0 จั่ว 2 ใบ" }] });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, {
+      log: [
+        { id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } },
+        { id: "log_1", turn: 1, eventType: "draw", actorId: "p0", amount: 2, visibility: "public" },
+      ],
+    });
 
     expect(await screen.findByText("ประวัติการเล่น")).toBeInTheDocument();
-    expect(screen.getByText("p0 จั่ว 2 ใบ")).toBeInTheDocument();
+    // the structured entries are resolved to Thai by logResolver
+    expect(screen.getByText(/จั่ว 2 ใบ/)).toBeInTheDocument();
   });
 
   it("lijian: discard first, then only male opponents light up, sent in tap order", async () => {

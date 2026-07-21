@@ -46,13 +46,13 @@ registerGeneral({
 
         const card = removeFromHand(state, ownerId, cardId);
         getPlayer(state, targetId).hand.push(card);
-        log(state, `${targetId} ได้การ์ด ${card.typeKey} จาก ${ownerId} (กลไส้ศึก)`);
+        log(state, "skillUse", { actorId: ownerId, skillId: "zhouyu_fanjian", targetIds: [targetId], cardType: card.typeKey });
 
         if (guess !== card.suit) {
-          log(state, `${targetId} ทายดอกผิด (ทาย ${guess ?? "?"}, จริง ${card.suit})`);
+          log(state, "fanjianGuess", { actorId: targetId, data: { correct: false, guess: guess ?? "", actual: card.suit } });
           yield* loseHp(ctx, targetId, 1);
         } else {
-          log(state, `${targetId} ทายดอกถูก`);
+          log(state, "fanjianGuess", { actorId: targetId, data: { correct: true } });
         }
       },
     },

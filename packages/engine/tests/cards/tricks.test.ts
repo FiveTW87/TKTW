@@ -209,7 +209,7 @@ describe("เพลินจนลืมแคว้นสู่ (lebusishu) del
       },
     );
 
-    expect(state.log.some((e) => e.text.includes("ข้ามเฟสลงการ์ด") && e.text.includes("เพลินจนลืมแคว้นสู่"))).toBe(true);
+    expect(state.log.some((e) => e.eventType === "judgment" && e.cardType === "lebusishu" && e.data?.outcome === "skipPlay")).toBe(true);
     expect(sawP0MainAction).toBe(false); // p0's play phase never opened
   });
 });

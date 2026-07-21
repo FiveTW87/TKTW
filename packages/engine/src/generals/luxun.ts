@@ -32,7 +32,7 @@ registerGeneral({
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           drawCards(state, ctx.rng, ownerId, 1);
-          log(state, `${ownerId} จั่ว 1 ใบ (ค่ายเรียงราย)`);
+          log(state, "skillUse", { actorId: ownerId, skillId: "luxun_lianying", amount: 1 });
         },
       },
     },

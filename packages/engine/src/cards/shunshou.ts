@@ -10,7 +10,7 @@ export const shunshouCard: CardDef = {
     const card = yield* pickCardFrom(ctx, ctx.playerId, targetId, "shunshou");
     if (card) {
       getPlayer(ctx.state, ctx.playerId).hand.push(card);
-      log(ctx.state, `${ctx.playerId} ขโมยการ์ด ${card.typeKey} จาก ${targetId} (ฉวยโอกาสลักแกะ)`);
+      log(ctx.state, "shunshouSteal", { actorId: ctx.playerId, targetIds: [targetId], cardType: card.typeKey });
     }
   },
 };

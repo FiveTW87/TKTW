@@ -42,7 +42,7 @@ export const juedouCard: CardDef = {
         if (!countsAsType(state, responder, cid, "sha")) throw new Error(`juedou: ${cid} does not count as sha`);
       }
       for (const cid of chosen) discardFromHand(state, responder, cid);
-      log(state, `${responder} ลง "สังหาร" ตอบโต้ในดวล`);
+      log(state, "juedouSha", { actorId: responder, cardType: "sha", data: { reason: "juedou" } });
       [responder, opponent] = [opponent, responder];
     }
   },
