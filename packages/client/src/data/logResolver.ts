@@ -23,15 +23,17 @@ export function resolveLogEntry(entry: LogEntry, view: GameView): string {
     case "hpLoss":
       return `${actor} เสีย HP ${amt} (เหลือ ${d.hp})`;
     case "heal":
-      return `${actor} ฟื้น HP ${amt}`;
+      return `${actor} ฟื้น HP ${amt}${d.sourceId && d.sourceId !== entry.actorId ? ` (โดย ${name(String(d.sourceId))})` : ""}`;
     case "tao":
       return `${actor} ลง "${card("tao")}" ช่วย ${targets}`;
     case "dodge":
       return `${actor} ลง "${card("shan")}"${d.sourceId ? ` กันสังหารจาก ${name(String(d.sourceId))}` : ""}`;
     case "death":
       return `${actor} เสียชีวิต (บทบาท: ${roleDisplay(String(d.role))?.name ?? d.role})${d.killerId ? ` — สังหารโดย ${name(String(d.killerId))}` : ""}`;
-    case "draw":
-      return `${actor} จั่ว ${amt} ใบ${entry.cardType ? ` ("${card(entry.cardType)}")` : ""}`;
+    case "draw": {
+      const drawSkills = d.skills ? String(d.skills).split(",").map(skill).filter(Boolean).join(", ") : "";
+      return `${actor} จั่ว ${amt} ใบ${entry.cardType ? ` ("${card(entry.cardType)}")` : ""}${drawSkills ? ` (${drawSkills})` : ""}`;
+    }
     case "discard":
       return `${actor} ทิ้งการ์ด ${amt} ใบ${d.reason === "overLimit" ? " (เกินเพดาน HP)" : ""}`;
     case "equip":

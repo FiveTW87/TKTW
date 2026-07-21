@@ -43,9 +43,11 @@ registerGeneral({
           }
           const chosen = topOrder.map((id) => revealed.find((c) => c.id === id)!);
           const rest = revealed.filter((c) => !topOrder.includes(c.id));
-          // drawPile.pop() reads the END, so push bottom-bound cards first,
-          // then the chosen top order reversed (so chosen[0] pops first).
-          state.drawPile.push(...rest, ...chosen.reverse());
+          // drawPile.pop() reads the END (= top of deck). Unlisted cards sink to
+          // the BOTTOM (front of the array); the chosen order goes on top with
+          // chosen[0] popped first (hence reversed at the end).
+          state.drawPile.unshift(...rest);
+          state.drawPile.push(...chosen.reverse());
           log(state, "skillUse", { actorId: ownerId, skillId: "zhugeliang_guandou", amount: revealed.length });
         },
       },

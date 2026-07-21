@@ -13,10 +13,10 @@ registerGeneral({
   skills: [
     {
       id: "zhouyu_yingzi",
-      // Mandatory (locked): draws +1 with no prompt. Modelled as a draw-count
-      // modifier so the whole draw happens in the single draw transaction
-      // (ENG-004), plus a notification so the client can banner "สกิลทำงาน".
-      locked: true,
+      // Mandatory, no prompt: draws +1. Modelled purely as a draw-count query
+      // so the whole draw happens in the single draw transaction (ENG-004),
+      // plus a notification so the client can banner "สกิลทำงาน". (No `locked`
+      // needed — it has no triggers, only queries, which never prompt.)
       queries: {
         drawAmountModifier: (ctx) => {
           const { playerId } = ctx.payload as { playerId: string };

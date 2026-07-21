@@ -125,7 +125,9 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
     // leftovers go back into the pool and get reshuffled — not queued in
     // order, so the next player isn't guaranteed to see them specifically.
     pool = rng.shuffle([...offered.filter((g) => g !== chosen), ...pool]);
-    log(state, "pickGeneral", { actorId: p.id, data: { generalId: chosen } });
+    // Private: a player's own pick must not leak to opponents before the
+    // simultaneous reveal (visibility filtered per viewer in view.ts).
+    log(state, "pickGeneral", { actorId: p.id, visibility: "private", data: { generalId: chosen } });
   }
 }
 
