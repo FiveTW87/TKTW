@@ -130,6 +130,29 @@ describe("สายฟ้า (shandian) resolution", () => {
     expect(getPlayer(state, "p1").judgmentZone.some((c) => c.id === SHANDIAN)).toBe(true);
   });
 
+  it("plays with NO target (self-placed) — the client sends no targetIds", () => {
+    // Regression: engine cardData used targetRule 'single' while the client
+    // (correctly) sends no target for the self-placed สายฟ้า → "needs exactly 1
+    // living target". It must self-place with an empty targetIds.
+    const { state, ctx } = setup(202);
+    strip(state, SHANDIAN);
+    getPlayer(state, "p0").hand.push(cardById(SHANDIAN));
+    const session = createSession(runGame(ctx), state, ctx.rng);
+    // advance to p0's mainAction (past the draw gate)
+    let steps = 0;
+    while (session.state.pendingDecision && session.state.pendingDecision.kind !== "mainAction") {
+      if (steps++ > 40) break;
+      const pd = session.state.pendingDecision;
+      respond(session, { decisionId: pd.id, playerId: pd.playerId, ...(pd.kind === "drawCard" ? { choice: "draw" } : { pass: true }) });
+    }
+    const main = session.state.pendingDecision!;
+    expect(main.kind).toBe("mainAction");
+    expect(() =>
+      respond(session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: [SHANDIAN], targetIds: [] }),
+    ).not.toThrow();
+    expect(getPlayer(state, "p0").judgmentZone.some((c) => c.id === SHANDIAN)).toBe(true);
+  });
+
   // ENG-005 — edge cases around a dead target.
   it("target death: the holder dying to the 3 damage discards สายฟ้า (no forward)", () => {
     const { state, ctx } = setup(404);

@@ -128,7 +128,7 @@
     "wuxie": { "nameKey": "card.wuxie", "category": "trick", "targetRule": "targetTrick", "canTargetSameType": true, "playableAnytime": true },
 
     "lebusishu": { "nameKey": "card.lebusishu", "category": "delayedTrick", "targetRule": "single" },
-    "shandian": { "nameKey": "card.shandian", "category": "delayedTrick", "targetRule": "single" },
+    "shandian": { "nameKey": "card.shandian", "category": "delayedTrick", "targetRule": "self" },
 
     "crossbow": { "nameKey": "equip.crossbow", "category": "equipment", "slot": "weapon", "attackRange": 1 },
     "sword_yy": { "nameKey": "equip.sword_yy", "category": "equipment", "slot": "weapon", "attackRange": 2 },
