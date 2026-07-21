@@ -129,4 +129,30 @@ describe("สายฟ้า (shandian) resolution", () => {
 
     expect(getPlayer(state, "p1").judgmentZone.some((c) => c.id === SHANDIAN)).toBe(true);
   });
+
+  // ENG-005 — edge cases around a dead target.
+  it("target death: the holder dying to the 3 damage discards สายฟ้า (no forward)", () => {
+    const { state, ctx } = setup(404);
+    getPlayer(state, "p0").hp = 3; // exactly lethal
+    placeInJudgmentZone(state, "p0", SHANDIAN);
+    planNextJudgment(state, SPADE_HIT); // spade → hit → 3 damage
+    const session = createSession(runGame(ctx), state, ctx.rng);
+    driveUntil(session, (s) => !getPlayer(s, "p0").alive || s.finished);
+
+    expect(getPlayer(state, "p0").alive).toBe(false); // died to สายฟ้า
+    expect(state.discardPile.some((c) => c.id === SHANDIAN)).toBe(true); // it hit → discarded
+    expect(state.players.every((p) => !p.judgmentZone.some((c) => c.id === SHANDIAN))).toBe(true); // not forwarded
+  });
+
+  it("forwards past a DEAD player to the next living one on a miss", () => {
+    const { state, ctx } = setup(505);
+    getPlayer(state, "p1").alive = false; // p1 is out — must be skipped
+    placeInJudgmentZone(state, "p0", SHANDIAN);
+    planNextJudgment(state, NON_SPADE); // heart → miss → forward
+    const session = createSession(runGame(ctx), state, ctx.rng);
+    driveUntil(session, (s) => getPlayer(s, "p2").judgmentZone.some((c) => c.id === SHANDIAN) || s.finished);
+
+    expect(getPlayer(state, "p2").judgmentZone.some((c) => c.id === SHANDIAN)).toBe(true); // skipped dead p1
+    expect(getPlayer(state, "p1").judgmentZone.some((c) => c.id === SHANDIAN)).toBe(false);
+  });
 });
