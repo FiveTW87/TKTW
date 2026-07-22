@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Card, PlayerView } from "@tktw/shared";
+import type { Card, PlayerView, ConnectionStatus } from "@tktw/shared";
 import { generalDisplay, factionColor } from "../data/generalNames";
 import { cardDisplay, cardInfo } from "../data/cardNames";
 import { CardTooltip } from "./HandCard";
@@ -22,6 +22,7 @@ export function PlayerTile({
   distance,
   inRange,
   compact,
+  connectionStatus,
   onClick,
   onInspect,
 }: {
@@ -35,6 +36,8 @@ export function PlayerTile({
   inRange?: boolean;
   /** Narrow layout (mobile) — tighter min width. */
   compact?: boolean;
+  /** Socket connection status of this seat (from RoomState). */
+  connectionStatus?: ConnectionStatus | undefined;
   onClick?: () => void;
   onInspect?: () => void;
 }) {
@@ -85,6 +88,12 @@ export function PlayerTile({
             {player.name}
           </div>
           <div style={{ fontSize: 10, color: "var(--ink-faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
+          {connectionStatus === "reconnecting" && (
+            <div style={{ fontSize: 9, color: "var(--gold)", whiteSpace: "nowrap" }}>🔌 กำลังเชื่อมต่อกลับ...</div>
+          )}
+          {connectionStatus === "gone" && (
+            <div style={{ fontSize: 9, color: "var(--target-red)", whiteSpace: "nowrap" }}>⚠ หลุดการเชื่อมต่อ</div>
+          )}
           <div style={{ display: "flex", gap: 2, marginTop: 5, flexWrap: "wrap" }}>
             {Array.from({ length: player.maxHp }).map((_, i) => (
               <span

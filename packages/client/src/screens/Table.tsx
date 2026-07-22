@@ -41,6 +41,7 @@ const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
 
 export function Table() {
   const gameView = useGameStore((s) => s.gameView);
+  const roomState = useGameStore((s) => s.roomState);
   const answer = useGameStore((s) => s.answer);
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
@@ -553,6 +554,7 @@ export function Table() {
                 distance={dist}
                 inRange={dist <= weaponRange(me)}
                 compact={narrow}
+                connectionStatus={roomState?.seats[Number(p.id.slice(1))]?.connectionStatus}
                 onClick={() => onTapTarget(p.id)}
                 onInspect={() => setInspecting(p)}
               />

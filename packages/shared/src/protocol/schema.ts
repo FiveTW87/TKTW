@@ -36,6 +36,10 @@ export const startGameSchema = z.object({
   roomCode: roomCodeSchema,
 });
 
+export const leaveRoomSchema = z.object({
+  roomCode: roomCodeSchema,
+});
+
 // One-click solo test mode: create a room, fill it with bot seats, and
 // start immediately — no join step, no waiting on other humans.
 export const quickstartWithBotsSchema = z.object({
@@ -61,5 +65,6 @@ export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type JoinRoomInput = z.infer<typeof joinRoomSchema>;
 export type RejoinRoomInput = z.infer<typeof rejoinRoomSchema>;
 export type StartGameInput = z.infer<typeof startGameSchema>;
+export type LeaveRoomInput = z.infer<typeof leaveRoomSchema>;
 export type AnswerInput = z.infer<typeof answerSchema>;
 export type QuickstartWithBotsInput = z.infer<typeof quickstartWithBotsSchema>;

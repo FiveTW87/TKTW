@@ -51,9 +51,13 @@ interface GameStoreState {
   roomCode: string | null;
   sessionToken: string | null;
   seatIndex: number | null;
+  matchId: string | null;
   roomState: RoomStatePayload | null;
   gameView: GameView | null;
   error: string | null;
+  /** Set when an auto-rejoin fails despite a stored session (grace expired /
+   *  token revoked) — the UI shows "can't return" then sends the user home. */
+  sessionExpired: boolean;
   /** The decisionId we currently have an answer in-flight for (or have
    *  already successfully answered). Guards against double-submitting the
    *  same decision — the class of bug behind "clicked หลบ twice → froze".
@@ -69,8 +73,9 @@ interface GameStoreState {
   quickstartWithBots: (playerName: string, botCount: number) => Promise<void>;
   startGame: () => Promise<void>;
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
-  leaveRoom: () => void;
+  leaveRoom: () => Promise<void>;
   clearError: () => void;
+  dismissSessionExpired: () => void;
 }
 
 export const useGameStore = create<GameStoreState>((set, get) => {
@@ -81,33 +86,58 @@ export const useGameStore = create<GameStoreState>((set, get) => {
   const pushDebug = (msg: string) =>
     set((s) => ({ debug: [...s.debug.slice(-59), `[${clock()}] ${msg}`] }));
 
-  async function attemptAutoRejoin(): Promise<void> {
-    if (get().initialized || get().roomCode) return;
+  // Runs on EVERY (re)connect: re-bind this (possibly brand-new) socket to our
+  // seat via the session token. Handles both the initial page load (from
+  // localStorage) and a live mid-game socket reconnect (from in-memory state).
+  async function attemptRejoin(): Promise<void> {
+    const state = get();
     const stored = loadStoredSession();
-    if (!stored) {
+    const roomCode = state.roomCode ?? stored?.roomCode;
+    const sessionToken = state.sessionToken ?? stored?.sessionToken;
+    if (!roomCode || !sessionToken) {
       set({ initialized: true });
       return;
     }
-    const ack = await emitAck<RejoinRoomAck>(ClientEvents.RoomRejoin, stored);
+    const ack = await emitAck<RejoinRoomAck>(ClientEvents.RoomRejoin, { roomCode, sessionToken });
     if (ack.ok) {
       set({
-        roomCode: stored.roomCode,
-        sessionToken: stored.sessionToken,
+        roomCode,
+        sessionToken,
         seatIndex: ack.seatIndex,
+        matchId: ack.matchId ?? null,
         initialized: true,
+        sessionExpired: false,
       });
     } else {
+      // The server rejected the token (grace expired / revoked / room gone) →
+      // tell the user before dropping them home.
       clearStoredSession();
-      set({ initialized: true });
+      set({
+        roomCode: null,
+        sessionToken: null,
+        seatIndex: null,
+        matchId: null,
+        roomState: null,
+        gameView: null,
+        initialized: true,
+        sessionExpired: true,
+      });
     }
   }
 
   socket.on("connect", () => {
     set({ connected: true });
-    void attemptAutoRejoin();
+    void attemptRejoin();
   });
   socket.on("disconnect", () => set({ connected: false }));
-  socket.on(ServerEvents.RoomState, (payload: RoomStatePayload) => set({ roomState: payload }));
+  socket.on(ServerEvents.RoomState, (payload: RoomStatePayload) =>
+    set({
+      roomState: payload,
+      // yourSeatIndex is authoritative — it survives a lobby re-index.
+      ...(payload.yourSeatIndex !== undefined ? { seatIndex: payload.yourSeatIndex } : {}),
+      ...(payload.matchId ? { matchId: payload.matchId } : {}),
+    }),
+  );
   // A fresh view means the previous decision has advanced — release the
   // double-submit guard so the next decision can be answered.
   socket.on(ServerEvents.GameView, (payload: GameView) => {
@@ -115,7 +145,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     pushDebug(`view → pending: ${pd ? `${pd.kind} @${pd.playerId}` : "none"}${payload.finished ? " (FINISHED)" : ""}`);
     set({ gameView: payload, answeringId: null });
   });
-  if (socket.connected) void attemptAutoRejoin();
+  if (socket.connected) void attemptRejoin();
 
   return {
     connected: socket.connected,
@@ -123,9 +153,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     roomCode: null,
     sessionToken: null,
     seatIndex: null,
+    matchId: null,
     roomState: null,
     gameView: null,
     error: null,
+    sessionExpired: false,
     answeringId: null,
     debug: [],
 
@@ -196,18 +228,27 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       // the decision has actually advanced.
     },
 
-    leaveRoom: () => {
+    leaveRoom: async () => {
+      const { roomCode } = get();
+      // Tell the server first (revoke token / free the seat / forfeit) and wait
+      // for its confirmation before dropping any local state (SPEC 6.3).
+      if (roomCode) {
+        await emitAck<SimpleAck>(ClientEvents.RoomLeave, { roomCode });
+      }
       clearStoredSession();
       set({
         roomCode: null,
         sessionToken: null,
         seatIndex: null,
+        matchId: null,
         roomState: null,
         gameView: null,
         error: null,
+        sessionExpired: false,
       });
     },
 
     clearError: () => set({ error: null }),
+    dismissSessionExpired: () => set({ sessionExpired: false }),
   };
 });

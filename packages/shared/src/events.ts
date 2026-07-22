@@ -5,6 +5,7 @@ export const ClientEvents = {
   RoomCreate: "room:create",
   RoomJoin: "room:join",
   RoomRejoin: "room:rejoin",
+  RoomLeave: "room:leave",
   RoomStart: "room:start",
   RoomQuickstartWithBots: "room:quickstartWithBots",
   GameAnswer: "game:answer",

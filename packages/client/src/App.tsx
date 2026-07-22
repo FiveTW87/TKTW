@@ -12,22 +12,64 @@ function Centered({ children }: { children: ReactNode }) {
   );
 }
 
+/** Semi-transparent overlay shown over the live board while the socket is
+ *  dropped mid-room — the game stays visible underneath (SPEC 6.4/6.6). */
+function ReconnectingOverlay() {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(30,20,10,.55)" }}>
+      <div className="panel" style={{ padding: "22px 30px", textAlign: "center", color: "var(--ink)" }}>
+        <div style={{ fontSize: 26, marginBottom: 8 }}>🔌</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 18 }}>กำลังเชื่อมต่อกลับเข้าสู่ห้อง...</div>
+        <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 6 }}>ที่นั่งของคุณถูกจองไว้ชั่วครู่</div>
+      </div>
+    </div>
+  );
+}
+
+function SessionExpired({ onHome }: { onHome: () => void }) {
+  return (
+    <Centered>
+      <div className="panel" style={{ padding: "28px 34px", textAlign: "center", maxWidth: 420, color: "var(--ink)" }}>
+        <div style={{ fontSize: 30, marginBottom: 10 }}>⌛</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginBottom: 8 }}>ไม่สามารถกลับเข้าสู่เกมเดิมได้</div>
+        <div style={{ fontSize: 13, color: "var(--ink-muted)", lineHeight: 1.6, marginBottom: 18 }}>
+          เซสชันหมดอายุหรือถูกยกเลิก กำลังนำคุณกลับไปยังหน้าหลัก
+        </div>
+        <button className="btn-primary" style={{ padding: "10px 26px", fontSize: 14 }} onClick={onHome}>
+          กลับหน้าหลัก
+        </button>
+      </div>
+    </Centered>
+  );
+}
+
 export default function App() {
   const initialized = useGameStore((s) => s.initialized);
   const connected = useGameStore((s) => s.connected);
   const roomCode = useGameStore((s) => s.roomCode);
   const gameView = useGameStore((s) => s.gameView);
+  const sessionExpired = useGameStore((s) => s.sessionExpired);
+  const dismissSessionExpired = useGameStore((s) => s.dismissSessionExpired);
 
-  if (!connected) return <Centered>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Centered>;
+  // Initial connect (no room yet) — a full-screen wait. A mid-room drop keeps
+  // the board and shows the overlay instead (below).
+  if (!connected && !roomCode) return <Centered>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Centered>;
   if (!initialized) return <Centered>กำลังโหลด...</Centered>;
+  if (sessionExpired) return <SessionExpired onHome={dismissSessionExpired} />;
 
-  if (!roomCode || !gameView) {
-    return <Lobby />;
-  }
+  const content =
+    !roomCode || !gameView ? (
+      <Lobby />
+    ) : gameView.pendingDecision?.kind === "pickGeneral" ? (
+      <GeneralSelect />
+    ) : (
+      <Table />
+    );
 
-  if (gameView.pendingDecision?.kind === "pickGeneral") {
-    return <GeneralSelect />;
-  }
-
-  return <Table />;
+  return (
+    <>
+      {content}
+      {!connected && roomCode && <ReconnectingOverlay />}
+    </>
+  );
 }

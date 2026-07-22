@@ -4,6 +4,7 @@ import {
   createRoomSchema,
   joinRoomSchema,
   rejoinRoomSchema,
+  leaveRoomSchema,
   startGameSchema,
   answerSchema,
   quickstartWithBotsSchema,
@@ -12,7 +13,7 @@ import {
   type AnswerInput,
 } from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom } from "./rooms/RoomManager";
-import { afterRespond } from "./rooms/gameFlow";
+import { afterRespond, broadcastRoomState } from "./rooms/gameFlow";
 
 interface SocketData {
   roomCode?: string;
@@ -33,11 +34,14 @@ function fail(ack: Ack, err: unknown, fallback: string): void {
   ack({ ok: false, error: fallback });
 }
 
-function broadcastLobby(io: Server, room: GameRoom): void {
-  io.to(room.code).emit(ServerEvents.RoomState, {
-    code: room.code,
-    phase: room.phase,
-    seats: room.seats.map((s) => ({ name: s.name, connected: s.connected, isHost: s.isHost, isBot: s.isBot })),
+// After a seat is removed in the lobby, every remaining socket's cached
+// seatIndex may have shifted down — re-sync each to its current position so a
+// later game:answer (which trusts data.seatIndex) can't act as the wrong seat.
+function resyncSeatIndices(io: Server, room: GameRoom): void {
+  room.seats.forEach((seat, i) => {
+    if (!seat.socketId) return;
+    const s = io.sockets.sockets.get(seat.socketId);
+    if (s) (s.data as SocketData).seatIndex = i;
   });
 }
 
@@ -90,7 +94,7 @@ export function registerSocketHandlers(
       void socket.join(room.code);
 
       ok(ack, { roomCode: room.code, sessionToken, seatIndex });
-      broadcastLobby(io, room);
+      broadcastRoomState(io, room);
     });
 
     socket.on(ClientEvents.RoomQuickstartWithBots, (raw: unknown, ack: Ack) => {
@@ -110,7 +114,7 @@ export function registerSocketHandlers(
       void socket.join(room.code);
 
       ok(ack, { roomCode: room.code, sessionToken, seatIndex });
-      broadcastLobby(io, room);
+      broadcastRoomState(io, room);
       runAfterRespond(room); // the room is already "playing" — broadcast the first game:view
     });
 
@@ -129,7 +133,7 @@ export function registerSocketHandlers(
         void socket.join(room.code);
 
         ok(ack, { sessionToken, seatIndex });
-        broadcastLobby(io, room);
+        broadcastRoomState(io, room);
       } catch (err) {
         fail(ack, err, "join failed");
       }
@@ -146,11 +150,36 @@ export function registerSocketHandlers(
         data.seatIndex = seatIndex;
         void socket.join(room.code);
 
-        ok(ack, { seatIndex, phase: room.phase });
-        broadcastLobby(io, room);
+        ok(ack, { seatIndex, phase: room.phase, ...(room.matchId ? { matchId: room.matchId } : {}) });
+        broadcastRoomState(io, room);
         if (room.phase === "playing") sendViewTo(room, seatIndex, socket);
       } catch (err) {
         fail(ack, err, "rejoin failed");
+      }
+    });
+
+    socket.on(ClientEvents.RoomLeave, (raw: unknown, ack: Ack) => {
+      const parsed = leaveRoomSchema.safeParse(raw);
+      if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+
+      const room = rooms.getRoom(parsed.data.roomCode);
+      if (!room) return ok(ack); // already gone — nothing to leave
+      if (data.roomCode !== room.code || data.seatIndex === undefined) {
+        return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
+      }
+
+      if (room.phase === "lobby") {
+        rooms.leaveLobby(room, data.seatIndex);
+        void socket.leave(room.code);
+        delete data.roomCode;
+        delete data.seatIndex;
+        resyncSeatIndices(io, room); // higher seats shifted down — re-sync sockets
+        ok(ack);
+        broadcastRoomState(io, room);
+      } else {
+        // Mid-match leave = forfeit (Part B). For now, treat as a disconnect so
+        // the seat is held; the real forfeit path lands in Part B.
+        ok(ack);
       }
     });
 
@@ -170,7 +199,7 @@ export function registerSocketHandlers(
         return fail(ack, err, "failed to start");
       }
       ok(ack);
-      broadcastLobby(io, room);
+      broadcastRoomState(io, room);
       runAfterRespond(room); // broadcasts the first game:view, arms the first timeout
     });
 
@@ -211,7 +240,9 @@ export function registerSocketHandlers(
       const room = rooms.getRoom(data.roomCode);
       if (!room) return;
       rooms.disconnectSocket(room, socket.id);
-      if (room.phase === "lobby") broadcastLobby(io, room);
+      // Broadcast in lobby AND mid-match so everyone sees "reconnecting" status
+      // (Part B arms the per-seat grace timer that eventually forfeits).
+      broadcastRoomState(io, room);
     });
   });
 }

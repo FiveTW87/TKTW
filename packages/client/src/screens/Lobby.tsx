@@ -301,7 +301,9 @@ function WaitingRoom() {
         </div>
 
         <button
-          onClick={leaveRoom}
+          onClick={() => {
+            if (window.confirm("ออกจากห้องนี้?")) void leaveRoom();
+          }}
           style={{
             display: "block",
             margin: "18px auto 0",

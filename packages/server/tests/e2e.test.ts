@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import type { AddressInfo } from "node:net";
+import type { RoomStatePayload } from "@tktw/shared";
 import { createTktwServer, type TktwServer } from "../src/server";
 
 let server: TktwServer;
@@ -52,6 +53,26 @@ function waitUntilView<T>(socket: ClientSocket, predicate: (v: T) => boolean, ti
       resolve(v);
     }
     socket.on("game:view", handler);
+  });
+}
+
+function waitForRoomState(
+  socket: ClientSocket,
+  predicate: (v: RoomStatePayload) => boolean,
+  timeoutMs = 10_000,
+): Promise<RoomStatePayload> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off("room:state", handler);
+      reject(new Error("waitForRoomState: timed out waiting for a matching room:state"));
+    }, timeoutMs);
+    function handler(v: RoomStatePayload) {
+      if (!predicate(v)) return;
+      clearTimeout(timer);
+      socket.off("room:state", handler);
+      resolve(v);
+    }
+    socket.on("room:state", handler);
   });
 }
 
@@ -337,5 +358,74 @@ describe("quickstart with bots", () => {
       botCount: 0,
     });
     expect(ack.ok).toBe(false);
+  });
+});
+
+// Phase 2 Part A: player identity (name uniqueness + token authority), explicit
+// lobby leave (seat removal + token revocation + re-index), and the mid-match
+// connection-status broadcast. Grace-expiry death / forfeit is Part B.
+describe("identity, leave & connection status (Phase 2 Part A)", () => {
+  it("rejects a duplicate display name (case-insensitive)", async () => {
+    const host = await connectClient();
+    const hostAck = await emitAck<{ ok: boolean; roomCode: string }>(host, "room:create", {
+      playerName: "Alice",
+    });
+    expect(hostAck.ok).toBe(true);
+
+    const joiner = await connectClient();
+    const ack = await emitAck<{ ok: boolean; error?: string }>(joiner, "room:join", {
+      roomCode: hostAck.roomCode,
+      playerName: "  ALICE ", // different case/whitespace, same identity
+    });
+    expect(ack.ok).toBe(false);
+    expect(ack.error).toContain("ชื่อ");
+  });
+
+  it("leaving the lobby removes the seat, re-indexes the rest, and revokes the token", async () => {
+    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+
+    // Carol sits at index 2; once Bob leaves she must be told she's now index 1.
+    const carolResynced = waitForRoomState(sockets[2]!, (s) => s.yourSeatIndex === 1);
+
+    const leaveAck = await emitAck<{ ok: boolean }>(sockets[1]!, "room:leave", { roomCode });
+    expect(leaveAck.ok).toBe(true);
+
+    const carolState = await carolResynced;
+    expect(carolState.seats.map((s) => s.name)).toEqual(["Alice", "Carol"]);
+
+    // Bob's old token is gone — a rejoin with it must fail, not silently
+    // re-seat him or take someone else's seat.
+    const bobAgain = await connectClient();
+    const rejoin = await emitAck<{ ok: boolean }>(bobAgain, "room:rejoin", {
+      roomCode,
+      sessionToken: tokens[1],
+    });
+    expect(rejoin.ok).toBe(false);
+  });
+
+  it("rejects a rejoin with a forged / unknown session token", async () => {
+    const { roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const intruder = await connectClient();
+    const ack = await emitAck<{ ok: boolean }>(intruder, "room:rejoin", {
+      roomCode,
+      sessionToken: "00000000-0000-0000-0000-000000000000",
+    });
+    expect(ack.ok).toBe(false);
+  });
+
+  it("broadcasts connectionStatus=reconnecting when a seat drops mid-match", async () => {
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const startAck = await emitAck<{ ok: boolean }>(sockets[0]!, "room:start", { roomCode });
+    expect(startAck.ok).toBe(true);
+
+    // Carol should hear that Bob's seat (index 1) flipped to reconnecting.
+    const seen = waitForRoomState(sockets[2]!, (s) => s.seats[1]?.connectionStatus === "reconnecting");
+    sockets[1]!.disconnect();
+
+    const state = await seen;
+    expect(state.seats[1]!.connectionStatus).toBe("reconnecting");
+    expect(state.seats[1]!.connected).toBe(false);
+    // The seat is HELD, not removed — reconnect-by-token is still possible.
+    expect(state.seats).toHaveLength(3);
   });
 });

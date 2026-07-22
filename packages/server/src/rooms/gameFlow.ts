@@ -5,7 +5,7 @@
 // event wiring.
 import type { Server } from "socket.io";
 import { projectFor, respond, simpleBotAnswer } from "@tktw/engine";
-import { ServerEvents } from "@tktw/shared";
+import { ServerEvents, type RoomStatePayload, type RoomStateSeat } from "@tktw/shared";
 import { seatPlayerId, type GameRoom } from "./RoomManager";
 import { defaultAnswerFor, DECISION_TIMEOUT_MS } from "../timeouts";
 
@@ -24,11 +24,33 @@ export function broadcastViews(io: Server, room: GameRoom): void {
   });
 }
 
+function roomStateSeat(s: GameRoom["seats"][number]): RoomStateSeat {
+  return { name: s.name, connected: s.connected, connectionStatus: s.connectionStatus, isHost: s.isHost, isBot: s.isBot };
+}
+
+/** Broadcast the room-level meta (seats + connection status + match/deadline)
+ *  PER SOCKET, so each client also learns its own current seat index — that
+ *  survives a lobby re-index without trusting a locally-cached value. */
+export function broadcastRoomState(io: Server, room: GameRoom): void {
+  const base: Omit<RoomStatePayload, "yourSeatIndex"> = {
+    code: room.code,
+    phase: room.phase,
+    seats: room.seats.map(roomStateSeat),
+    ...(room.matchId ? { matchId: room.matchId } : {}),
+    ...(room.decisionExpiresAt ? { decisionExpiresAt: room.decisionExpiresAt } : {}),
+  };
+  room.seats.forEach((seat, i) => {
+    if (!seat.socketId) return;
+    io.to(seat.socketId).emit(ServerEvents.RoomState, { ...base, yourSeatIndex: i });
+  });
+}
+
 function clearRoomTimer(room: GameRoom): void {
   if (room.decisionTimer) {
     clearTimeout(room.decisionTimer);
     delete room.decisionTimer;
   }
+  delete room.decisionExpiresAt;
 }
 
 function isBotDecision(room: GameRoom, playerId: string): boolean {
@@ -60,6 +82,7 @@ export function scheduleTimeout(io: Server, room: GameRoom, timeoutMs = DECISION
   const decisionId = pending.id;
   const isBotTurn = isBotDecision(room, pending.playerId);
   const delay = isBotTurn ? BOT_ANSWER_DELAY_MS : timeoutMs;
+  room.decisionExpiresAt = Date.now() + delay;
 
   room.decisionTimer = setTimeout(() => {
     // The decision may have already been answered (or the room GC'd) by
@@ -101,4 +124,5 @@ export function afterRespond(io: Server, room: GameRoom, timeoutMs = DECISION_TI
   }
   broadcastViews(io, room);
   if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs);
+  broadcastRoomState(io, room); // refresh connection status + decision deadline
 }
