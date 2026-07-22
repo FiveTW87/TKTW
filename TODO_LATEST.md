@@ -61,29 +61,38 @@ Legend:
 > เพิ่มเติมที่แก้ระหว่างทาง: freeze-on-reject, ลิโป้ต้องลงหลบ/สังหาร 2 ใบพร้อมกัน,
 > hujia ยิงเฉพาะตอนโดนตี, สายฟ้า targetRule "self" (วางที่ตัวเอง)
 
-## Phase 2 — Identity / Room / Rejoin
+## Phase 2 — Identity / Room / Rejoin — โค้ดเสร็จ (รอ Room Review)
 
-- [ ] Stable playerId/sessionToken
-- [ ] Remove displayName/socket identity
-- [ ] Prevent name takeover
-- [ ] Explicit leave-room
-- [ ] Fix stale name
-- [ ] Host transfer
-- [ ] Configurable Grace Period default 45s
-- [ ] Remove manual Rejoin
-- [ ] Automatic Rejoin
-- [ ] Restore Seat/Turn/Phase/Decision/Deadline
-- [ ] Reset stale local selection
-- [ ] Revoke expired token
-- [ ] Implement Grace-expiry death policy
-  - [ ] เปิด Role
-  - [ ] ล้าง Hand/Equipment/Delayed Tricks
-  - [ ] ไม่มี Killer/Reward
-  - [ ] ตรวจ Victory Condition
-  - [ ] เจ้าเมืองออกแล้วจบแบบ no_winner
-- [ ] All-other-players-gone flow
-- [ ] Rejoin E2E matrix
-- [ ] GPT Room Review
+> แบ่ง 2 ก้อน: **Part A (6.1–6.4)** `e3c2c76` · **Part B (6.5–6.6)** `b232569`
+> Gate ผ่าน: engine 222/222 · server e2e 20/20 · client 50/50 · tsc สะอาดทุก package
+
+### Part A — Identity · Leave (lobby) · Auto-rejoin · Connection status — `e3c2c76`
+
+- [x] Stable playerId/sessionToken (server-derived `p{seat}`, spoof ไม่ได้)
+- [x] Remove displayName/socket identity (token คือ identity)
+- [x] Prevent name takeover (reject ชื่อซ้ำ case-insensitive)
+- [x] Explicit leave-room (lobby: ลบ seat + revoke + re-index; mid-match ดู Part B)
+- [x] Fix stale name (RoomState broadcast per-socket + `yourSeatIndex`)
+- [x] Host transfer (leaveLobby/disconnect reassign host ใน lobby)
+- [x] Remove manual Rejoin
+- [x] Automatic Rejoin (initial load + live reconnect ผ่าน token)
+- [x] Restore Seat/Turn/Phase/Decision/Deadline (matchId + decisionExpiresAt + projected view; deadline แบบ lightweight)
+- [x] Reset stale local selection (DecisionModal reset ตาม pending.id — ยืนยันแล้ว)
+
+### Part B — Grace-expiry death · Leave-mid-match · Abandoned — `b232569`
+
+- [x] Configurable Grace Period default 45s (env `GRACE_PERIOD_MS` + opts)
+- [x] Revoke expired token (revokeSeatToken ตอน grace หมด/ออกกลางเกม — คง seat ตาม 6.7)
+- [x] Implement Grace-expiry death policy (replay-safe forfeit ใน decisionLog)
+  - [x] เปิด Role
+  - [x] ล้าง Hand/Equipment/Delayed Tricks
+  - [x] ไม่มี Killer/Reward (ไม่ยิง OnDeath, ไม่เรียก onDeath)
+  - [x] ตรวจ Victory Condition (non-lord → identityCheckGameEnd)
+  - [x] เจ้าเมืองออกแล้วจบแบบ no_winner (แยก path จาก killPlayer)
+- [x] Leave-mid-match = forfeit ทันที (ไม่รอ grace)
+- [x] All-other-players-gone flow (RoomPhase `abandoned` เมื่อไม่มี human connected)
+- [x] Rejoin E2E matrix (dup-name · leave+revoke · forged-token · reconnecting · grace→gone · leave-mid-match · abandoned)
+- [ ] GPT Room Review (`/code-review` — ผู้ใช้สั่งเอง)
 
 ## Phase 3 — Hidden Information / Selection
 
