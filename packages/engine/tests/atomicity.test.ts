@@ -153,6 +153,7 @@ describe("respond() leaves state and decisionLog untouched on a rejected answer"
     ).not.toThrow();
 
     expect(session.decisionLog).toHaveLength(logLenBefore + 1); // only the successful retry was logged
-    expect(session.decisionLog[session.decisionLog.length - 1]!.decisionId).toBe(pending.id);
+    const lastEntry = session.decisionLog[session.decisionLog.length - 1]!;
+    expect("forfeit" in lastEntry ? undefined : lastEntry.decisionId).toBe(pending.id);
   });
 });

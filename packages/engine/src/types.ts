@@ -138,8 +138,14 @@ export interface PlayerAnswer {
 }
 
 /** One entry in the append-only decision log used to recover a Game after a
- *  process restart (see engine/src/core/decisions.ts for the replay driver). */
-export interface DecisionLogEntry {
-  decisionId: string;
-  answer: PlayerAnswer;
-}
+ *  process restart, OR to rebuild a live generator after a rejected answer
+ *  (see engine/src/core/decisions.ts for the replay driver).
+ *
+ *  Normally a recorded player answer. The `forfeit` variant is an out-of-band
+ *  event (a disconnect/leave death) that mutates state WITHOUT advancing the
+ *  generator — it must live in the log so replay re-applies it at exactly the
+ *  same point in the timeline (otherwise a rebuild would revive the dead
+ *  player and duplicate their cards). See modes/identity.ts:forfeitIdentityPlayer. */
+export type DecisionLogEntry =
+  | { decisionId: string; answer: PlayerAnswer }
+  | { forfeit: string };

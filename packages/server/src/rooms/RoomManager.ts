@@ -140,6 +140,15 @@ export class RoomManager {
     return { room, seatIndex };
   }
 
+  /** Invalidate a seat's session token WITHOUT removing the seat (SPEC 6.7:
+   *  a forfeited player keeps their board position, but can never rejoin).
+   *  Replacing the token with a fresh secret nobody holds is enough — the
+   *  old token now matches no seat, so rejoin(oldToken) fails. */
+  revokeSeatToken(room: GameRoom, seatIndex: number): void {
+    const seat = room.seats[seatIndex];
+    if (seat) seat.sessionToken = randomUUID();
+  }
+
   attachSocket(room: GameRoom, seatIndex: number, socketId: string): void {
     const seat = room.seats[seatIndex];
     if (!seat) throw new RoomError("no such seat");
@@ -219,6 +228,7 @@ export class RoomManager {
     for (const [code, room] of this.rooms) {
       if (room.emptySince !== null && now - room.emptySince > graceMs) {
         if (room.decisionTimer) clearTimeout(room.decisionTimer);
+        for (const seat of room.seats) if (seat.graceTimer) clearTimeout(seat.graceTimer);
         this.rooms.delete(code);
         removed.push(code);
       }

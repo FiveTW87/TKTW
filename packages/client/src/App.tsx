@@ -26,6 +26,23 @@ function ReconnectingOverlay() {
   );
 }
 
+function Abandoned({ onHome }: { onHome: () => void }) {
+  return (
+    <Centered>
+      <div className="panel" style={{ padding: "28px 34px", textAlign: "center", maxWidth: 420, color: "var(--ink)" }}>
+        <div style={{ fontSize: 30, marginBottom: 10 }}>🚪</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginBottom: 8 }}>เกมถูกยกเลิก</div>
+        <div style={{ fontSize: 13, color: "var(--ink-muted)", lineHeight: 1.6, marginBottom: 18 }}>
+          ผู้เล่นคนอื่นออกจากเกมทั้งหมด แมตช์นี้จึงจบลงโดยไม่มีผลแพ้ชนะ
+        </div>
+        <button className="btn-primary" style={{ padding: "10px 26px", fontSize: 14 }} onClick={onHome}>
+          กลับหน้าหลัก
+        </button>
+      </div>
+    </Centered>
+  );
+}
+
 function SessionExpired({ onHome }: { onHome: () => void }) {
   return (
     <Centered>
@@ -48,14 +65,19 @@ export default function App() {
   const connected = useGameStore((s) => s.connected);
   const roomCode = useGameStore((s) => s.roomCode);
   const gameView = useGameStore((s) => s.gameView);
+  const roomState = useGameStore((s) => s.roomState);
   const sessionExpired = useGameStore((s) => s.sessionExpired);
   const dismissSessionExpired = useGameStore((s) => s.dismissSessionExpired);
+  const leaveRoom = useGameStore((s) => s.leaveRoom);
 
   // Initial connect (no room yet) — a full-screen wait. A mid-room drop keeps
   // the board and shows the overlay instead (below).
   if (!connected && !roomCode) return <Centered>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Centered>;
   if (!initialized) return <Centered>กำลังโหลด...</Centered>;
   if (sessionExpired) return <SessionExpired onHome={dismissSessionExpired} />;
+  // The match ended because everyone else left (seen on reconnect into an
+  // already-abandoned room). Take the player home.
+  if (roomState?.phase === "abandoned") return <Abandoned onHome={() => void leaveRoom()} />;
 
   const content =
     !roomCode || !gameView ? (

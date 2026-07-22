@@ -92,7 +92,7 @@ export function PlayerTile({
             <div style={{ fontSize: 9, color: "var(--gold)", whiteSpace: "nowrap" }}>🔌 กำลังเชื่อมต่อกลับ...</div>
           )}
           {connectionStatus === "gone" && (
-            <div style={{ fontSize: 9, color: "var(--target-red)", whiteSpace: "nowrap" }}>⚠ หลุดการเชื่อมต่อ</div>
+            <div style={{ fontSize: 9, color: "var(--target-red)", whiteSpace: "nowrap" }}>⚠ เสียชีวิต (หลุดการเชื่อมต่อ)</div>
           )}
           <div style={{ display: "flex", gap: 2, marginTop: 5, flexWrap: "wrap" }}>
             {Array.from({ length: player.maxHp }).map((_, i) => (

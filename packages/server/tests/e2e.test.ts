@@ -429,3 +429,91 @@ describe("identity, leave & connection status (Phase 2 Part A)", () => {
     expect(state.seats).toHaveLength(3);
   });
 });
+
+// Phase 2 Part B: grace-expiry death, leave-mid-match forfeit, and abandoned.
+// These need a real (short) grace window, so each swaps in a fresh server
+// configured with gracePeriodMs — the shared beforeEach server keeps the long
+// default so it never auto-forfeits under the other suites.
+describe("forfeit: grace expiry, leave-mid-match, abandoned (Phase 2 Part B)", () => {
+  async function useGraceServer(gracePeriodMs: number): Promise<void> {
+    for (const c of clients.splice(0)) c.disconnect();
+    await server.close();
+    server = createTktwServer({
+      roomGcGraceMs: 24 * 60 * 60 * 1000,
+      roomGcSweepIntervalMs: 60 * 60 * 1000,
+      decisionTimeoutMs: 30_000,
+      gracePeriodMs,
+    });
+    await new Promise<void>((resolve) => server.httpServer.listen(0, resolve));
+    port = (server.httpServer.address() as AddressInfo).port;
+  }
+
+  async function waitFor(cond: () => boolean, timeoutMs = 3000): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (cond()) return;
+      await new Promise((r) => setTimeout(r, 15));
+    }
+    throw new Error("waitFor: condition not met in time");
+  }
+
+  it("grace expiry forfeits the seat: status 'gone', token revoked, seat kept", async () => {
+    await useGraceServer(60);
+    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    expect((await emitAck<{ ok: boolean }>(sockets[0]!, "room:start", { roomCode })).ok).toBe(true);
+
+    // Bob (seat 1, never the lord) drops and never comes back → after grace,
+    // Alice hears the seat flip to "gone".
+    const goneSeen = waitForRoomState(sockets[0]!, (s) => s.seats[1]?.connectionStatus === "gone");
+    sockets[1]!.disconnect();
+
+    const state = await goneSeen;
+    expect(state.seats[1]!.connectionStatus).toBe("gone");
+    expect(state.seats).toHaveLength(3); // seat HELD (SPEC 6.7), not removed
+
+    // The forfeited token is revoked — the old one can never rejoin.
+    const bobAgain = await connectClient();
+    const rejoin = await emitAck<{ ok: boolean }>(bobAgain, "room:rejoin", {
+      roomCode,
+      sessionToken: tokens[1],
+    });
+    expect(rejoin.ok).toBe(false);
+  });
+
+  it("leaving mid-match forfeits immediately without waiting out the grace window", async () => {
+    await useGraceServer(60_000); // long grace — a leave must NOT wait for it
+    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    expect((await emitAck<{ ok: boolean }>(sockets[0]!, "room:start", { roomCode })).ok).toBe(true);
+
+    const goneSeen = waitForRoomState(sockets[0]!, (s) => s.seats[1]?.connectionStatus === "gone");
+    const leaveAck = await emitAck<{ ok: boolean }>(sockets[1]!, "room:leave", { roomCode });
+    expect(leaveAck.ok).toBe(true);
+
+    const state = await goneSeen;
+    expect(state.seats[1]!.connectionStatus).toBe("gone");
+    expect(state.seats).toHaveLength(3);
+
+    const bobAgain = await connectClient();
+    const rejoin = await emitAck<{ ok: boolean }>(bobAgain, "room:rejoin", {
+      roomCode,
+      sessionToken: tokens[1],
+    });
+    expect(rejoin.ok).toBe(false);
+  });
+
+  it("abandons the match once every human has dropped", async () => {
+    await useGraceServer(150);
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    expect((await emitAck<{ ok: boolean }>(sockets[0]!, "room:start", { roomCode })).ok).toBe(true);
+
+    // Drop a NON-lord first (its grace fires first) then the rest. By the time
+    // that first forfeit fires, nobody human is connected → abandoned (before a
+    // later lord forfeit could turn it into a no_winner result instead).
+    sockets[1]!.disconnect();
+    sockets[2]!.disconnect();
+    sockets[0]!.disconnect();
+
+    await waitFor(() => server.rooms.getRoom(roomCode)?.phase === "abandoned");
+    expect(server.rooms.getRoom(roomCode)?.phase).toBe("abandoned");
+  });
+});

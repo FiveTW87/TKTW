@@ -93,6 +93,9 @@ export function* runTurn(ctx: Ctx): EngineGenerator {
       playerId: activeId,
       data: { count: drawCount, base: 2, modifier: drawBonus, skills },
     } satisfies Decision;
+    // The active player can be forfeited (disconnect death) while this prompt
+    // is pending — don't draw cards into a dead player's hand; just end the turn.
+    if (!getPlayer(state, activeId).alive) return advanceSeat(ctx);
     const drawn = drawCards(state, ctx.rng, activeId, drawCount);
     log(state, "draw", { actorId: activeId, amount: drawn.length, ...(skills.length ? { data: { skills: skills.join(",") } } : {}) });
   }
@@ -458,6 +461,9 @@ function* runDiscardPhase(ctx: Ctx, activeId: string): EngineGenerator {
   if (over <= 0) return;
   const data = discardRequest(state, activeId, { min: over, max: over, exact: over });
   const answer = yield { kind: "discardTo", playerId: activeId, data } satisfies Decision;
+  // Forfeited while this prompt was pending — the hand was already dumped to
+  // discard, so there's nothing left to discard; accept the (empty) answer.
+  if (!getPlayer(state, activeId).alive) return;
   const ids = answer.cardIds ?? [];
   assertDiscardAnswer(activeId, ids, data);
   discardCardsFromHand(state, activeId, ids);

@@ -93,6 +93,8 @@ export function resolveLogEntry(entry: LogEntry, view: GameView): string {
     case "wuguPick": return `${actor} เลือกการ์ดจากธัญญาหารบริบูรณ์`;
     case "skillUse":
       return `${actor} ใช้ "${skill(entry.skillId)}"${targets ? ` → ${targets}` : ""}`;
+    case "forfeit":
+      return `${actor} เสียชีวิต (หลุดการเชื่อมต่อ/ออกจากเกม — บทบาท: ${roleDisplay(String(d.role))?.name ?? d.role})`;
     default:
       return `${actor} ${entry.eventType}`.trim();
   }

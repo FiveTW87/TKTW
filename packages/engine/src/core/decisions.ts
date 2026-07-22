@@ -106,9 +106,19 @@ export function replaySession(
   state: GameState,
   rng: Rng,
   log: readonly DecisionLogEntry[],
+  /** Re-applies a forfeit log entry (a disconnect/leave death) — a pure state
+   *  mutation that does NOT advance the generator, so it lands at exactly the
+   *  timeline position it was recorded. Only identity mode records these; the
+   *  base game never does, so it may omit this. */
+  onForfeit?: (state: GameState, playerId: string) => void,
 ): GameSession {
   const session = createSession(genFactory(), state, rng);
   for (const entry of log) {
+    if ("forfeit" in entry) {
+      if (!onForfeit) throw new Error("decision log has a forfeit entry but no onForfeit handler");
+      onForfeit(session.state, entry.forfeit);
+      continue;
+    }
     if (!session.state.pendingDecision) {
       throw new Error("decision log is longer than the game it recorded");
     }

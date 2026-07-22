@@ -6,9 +6,11 @@ import { createTktwServer } from "./server";
 
 const PORT = Number(process.env.PORT ?? 3001);
 
-const { httpServer } = createTktwServer(
-  process.env.CLIENT_ORIGIN ? { corsOrigin: process.env.CLIENT_ORIGIN } : {},
-);
+const serverOpts: Parameters<typeof createTktwServer>[0] = {};
+if (process.env.CLIENT_ORIGIN) serverOpts.corsOrigin = process.env.CLIENT_ORIGIN;
+if (process.env.GRACE_PERIOD_MS) serverOpts.gracePeriodMs = Number(process.env.GRACE_PERIOD_MS);
+
+const { httpServer } = createTktwServer(serverOpts);
 
 httpServer.listen(PORT, () => {
   console.log(`TKTW server listening on :${PORT}`);

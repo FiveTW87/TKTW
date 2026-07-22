@@ -156,6 +156,54 @@ export function identityCheckGameEnd(state: import("../types").GameState): void 
   }
 }
 
+// SPEC 6.5: a player who forfeits (disconnect grace expiry, or an explicit
+// leave-mid-match) dies WITHOUT a killer — a pure clean-up death, so no kill
+// reward/penalty, no OnDeath skills, no dying/tao rescue window. This is NOT
+// killPlayer: killPlayer runs identityCheckGameEnd, under which a dead lord
+// means the rebels win — but a lord who merely dropped offline must NOT hand
+// the rebels a victory, so the lord case is a separate no_winner path here.
+//
+// Pure (not a generator): forfeit fires no triggers, so it's a plain mutation
+// — which is exactly what lets replaySession re-apply it from the log without
+// re-running the generator (see decisions.ts:replaySession onForfeit).
+export function applyIdentityForfeit(state: import("../types").GameState, playerId: string): void {
+  const p = getPlayer(state, playerId);
+  if (!p.alive) return; // idempotent — a seat only forfeits once
+  p.alive = false;
+  p.roleRevealed = true;
+
+  // Same zone clean-up as killPlayer: hand, equipment, and pending judgments
+  // all go to the discard pile so nothing is stranded on a dead seat.
+  state.discardPile.push(...p.hand.splice(0));
+  for (const slot of Object.keys(p.equipment) as EquipSlot[]) {
+    const c = p.equipment[slot];
+    if (c) state.discardPile.push(c);
+  }
+  p.equipment = {};
+  state.discardPile.push(...p.judgmentZone.splice(0));
+
+  log(state, "forfeit", { actorId: playerId, data: { role: p.role ?? "" } });
+
+  if (p.role === "lord") {
+    // A lord dropping offline is a no-contest: nobody wins (distinct from a
+    // lord killed in play, where identityCheckGameEnd awards the rebels).
+    state.finished = true;
+    state.winners = [];
+    return;
+  }
+  identityCheckGameEnd(state);
+}
+
+/** Live-session forfeit: apply the clean death AND record it in the decision
+ *  log so a later rebuild()/recover replays it at the same timeline position
+ *  (keeping distances/ranges of subsequent moves consistent). The server
+ *  drives the generator past the dead player's own pending decision, if any,
+ *  via ordinary respond() calls (which are themselves logged). */
+export function forfeitIdentityPlayer(session: GameSession, playerId: string): void {
+  applyIdentityForfeit(session.state, playerId);
+  session.decisionLog.push({ forfeit: playerId });
+}
+
 // SPEC 2's kill reward/penalty table (P3.5). Mode-level, not general-level
 // — this is exactly what Ctx.onDeath exists for.
 export function* identityOnDeath(
@@ -215,5 +263,5 @@ export function recoverIdentityGame(
   const state = createInitialState(opts, rng);
   const config: GameConfig = { checkGameEnd: identityCheckGameEnd, onDeath: identityOnDeath };
   const ctx = makeCtx(state, rng, config);
-  return replaySession(() => identityRootGen(ctx), state, rng, log);
+  return replaySession(() => identityRootGen(ctx), state, rng, log, applyIdentityForfeit);
 }

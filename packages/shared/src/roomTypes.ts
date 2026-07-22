@@ -1,7 +1,9 @@
 // The lobby/room-level shapes both server and client need to agree on —
 // distinct from GameView (the engine's own hidden-info-filtered state),
 // which is re-exported as-is from @tktw/engine in index.ts.
-export type RoomPhase = "lobby" | "playing" | "ended";
+// "abandoned" = the match ended early because everyone else forfeited/left —
+// distinct from "ended" (a real win/loss result) so the client can say so.
+export type RoomPhase = "lobby" | "playing" | "ended" | "abandoned";
 
 // "connected" = socket attached; "reconnecting" = dropped, still inside the
 // grace period (seat held); "gone" = grace expired / forfeited (seat kept for

@@ -8,13 +8,15 @@ import {
   roleTableFor,
   identityCheckGameEnd,
   identityOnDeath,
+  applyIdentityForfeit,
+  forfeitIdentityPlayer,
 } from "../src/modes/identity";
 import { respond } from "../src/core/decisions";
 import { getPlayer } from "../src/core/state";
 import { killPlayer } from "../src/core/damage";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 import { runUntilEnd } from "../src/bots/runner";
-import type { Role } from "../src/types";
+import type { GameState, PlayerAnswer, Role } from "../src/types";
 
 describe("SPEC 2: role proportions for every player count", () => {
   const expected: Record<number, Record<Role, number>> = {
@@ -306,5 +308,170 @@ describe("event-sourced replay works for identity-mode sessions too", () => {
 
     const recovered = recoverIdentityGame({ playerCount: 5, seed: 321 }, original.decisionLog);
     expect(recovered.state).toEqual(original.state);
+  });
+});
+
+// SPEC 6.5/6.6 — forfeit (disconnect grace expiry / leave-mid-match death).
+describe("SPEC 6.5: forfeit (a clean, killer-less death)", () => {
+  // Every card in the game, wherever it currently sits — must stay constant
+  // (forfeit only MOVES a dead player's cards to discard, never creates or
+  // destroys any). A rebuild that lost the forfeit would duplicate them.
+  function totalCards(state: GameState): number {
+    let n = state.drawPile.length + state.discardPile.length;
+    for (const p of state.players) {
+      n += p.hand.length + p.judgmentZone.length;
+      n += Object.values(p.equipment).filter(Boolean).length;
+    }
+    return n;
+  }
+
+  // The server's forfeit-drive answer for whatever the dead player still owns.
+  function forfeitSkip(session: ReturnType<typeof createIdentityGame>): PlayerAnswer {
+    const pd = session.state.pendingDecision!;
+    const base = { decisionId: pd.id, playerId: pd.playerId };
+    if (pd.kind === "mainAction") return { ...base, choice: "endPhase" };
+    if (pd.kind === "discardTo" || pd.kind === "discardChosenBy") return { ...base, cardIds: [] };
+    if (pd.kind === "drawCard") return { ...base, choice: "draw" };
+    if (pd.kind === "pickGeneral") return base;
+    return { ...base, pass: true };
+  }
+
+  function driveDeadOwner(session: ReturnType<typeof createIdentityGame>): void {
+    let guard = 0;
+    while (
+      session.state.pendingDecision &&
+      !session.state.finished &&
+      !getPlayer(session.state, session.state.pendingDecision.playerId).alive
+    ) {
+      respond(session, forfeitSkip(session));
+      if (++guard > 60) throw new Error("forfeit drive did not terminate");
+    }
+  }
+
+  it("dumps hand, equipment, and judgment zone to discard, reveals the role, kills cleanly", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 88 });
+    finishGeneralSelection(session, 5);
+    const state = session.state;
+    const victim = getPlayer(state, "p3"); // a non-lord
+    // Seed each zone so we can watch all three drain into the discard pile.
+    victim.equipment.weapon = { id: "spade_1_1", typeKey: "crossbow", suit: "spade", rank: 1 };
+    victim.judgmentZone.push({ id: "heart_2_2", typeKey: "lebusishu", suit: "heart", rank: 2 });
+    const total = totalCards(state);
+    const discardBefore = state.discardPile.length;
+    const zoneCount = victim.hand.length + 1 /*equip*/ + 1 /*judgment*/;
+
+    applyIdentityForfeit(state, "p3");
+
+    expect(victim.alive).toBe(false);
+    expect(victim.roleRevealed).toBe(true);
+    expect(victim.hand).toHaveLength(0);
+    expect(victim.equipment.weapon).toBeUndefined();
+    expect(victim.judgmentZone).toHaveLength(0);
+    expect(state.discardPile.length).toBe(discardBefore + zoneCount);
+    expect(totalCards(state)).toBe(total); // nothing created/destroyed
+  });
+
+  it("a lord who forfeits ends the game with NO winner (never hands the rebels a win)", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 91 });
+    finishGeneralSelection(session, 5);
+    applyIdentityForfeit(session.state, "p0"); // p0 is always the lord
+    expect(session.state.finished).toBe(true);
+    expect(session.state.winners).toEqual([]);
+  });
+
+  it("a non-lord forfeit runs the ordinary win check (last opposition gone → lord side wins)", () => {
+    const rng = createRng(1);
+    const state = createInitialState({ playerCount: 4, seed: 1 }, rng);
+    const roles: Role[] = ["lord", "loyalist", "rebel", "traitor"];
+    state.players.forEach((p, i) => {
+      p.role = roles[i]!;
+      p.roleRevealed = p.role === "lord";
+    });
+    state.players[2]!.alive = false; // rebel already dead by normal play
+    applyIdentityForfeit(state, "p3"); // the traitor forfeits — no opposition left
+    expect(state.finished).toBe(true);
+    expect(state.winners).toEqual(["lord", "loyalist"]);
+  });
+
+  it("CRITICAL: a forfeit survives rebuild() — a later rejected answer must not revive the dead or duplicate cards", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 4242 });
+    finishGeneralSelection(session, 5);
+    // Drive to the lord's mainAction (past the draw prompt / any opening skills).
+    while (session.state.pendingDecision && session.state.pendingDecision.kind !== "mainAction") {
+      respond(session, simpleBotAnswer(session));
+    }
+    const total = totalCards(session.state);
+
+    // A bystander (not the current decision owner) forfeits mid-turn.
+    forfeitIdentityPlayer(session, "p2");
+    expect(getPlayer(session.state, "p2").alive).toBe(false);
+    expect(session.state.finished).toBe(false); // one non-lord out of 5 ≠ game over
+
+    // Now feed an ILLEGAL answer to the live owner → respond() throws and,
+    // internally, rebuild()s the session by replaying the decision log (which
+    // now contains the forfeit entry). If the forfeit weren't logged, this
+    // rebuild would bring p2 back to life with a full hand.
+    const pending = session.state.pendingDecision!;
+    expect(() =>
+      respond(session, {
+        decisionId: pending.id,
+        playerId: pending.playerId,
+        choice: "playCard",
+        cardIds: ["definitely_not_a_real_card"],
+        targetIds: [],
+      }),
+    ).toThrow();
+
+    expect(getPlayer(session.state, "p2").alive).toBe(false); // stayed dead
+    expect(getPlayer(session.state, "p2").hand).toHaveLength(0);
+    expect(totalCards(session.state)).toBe(total); // no duplication
+    // And the game is still playable from the same decision.
+    expect(session.state.pendingDecision).toBeDefined();
+  });
+
+  it("recoverIdentityGame replays a forfeit entry to the exact same state", () => {
+    const original = createIdentityGame({ playerCount: 5, seed: 555 });
+    finishGeneralSelection(original, 5);
+    while (original.state.pendingDecision && original.state.pendingDecision.kind !== "mainAction") {
+      respond(original, simpleBotAnswer(original));
+    }
+    forfeitIdentityPlayer(original, "p2");
+    // play a few more legal bot moves after the forfeit
+    for (let i = 0; i < 8 && original.state.pendingDecision && !original.state.finished; i++) {
+      driveDeadOwner(original);
+      if (!original.state.pendingDecision || original.state.finished) break;
+      respond(original, simpleBotAnswer(original));
+    }
+
+    const recovered = recoverIdentityGame({ playerCount: 5, seed: 555 }, original.decisionLog);
+    expect(recovered.state).toEqual(original.state);
+  });
+
+  it("forfeiting the ACTIVE player never hangs the game — the driver skips their draw/discard/mainAction", () => {
+    for (let seed = 0; seed < 60; seed++) {
+      const session = createIdentityGame({ playerCount: 5, seed: seed + 7000 });
+      finishGeneralSelection(session, 5);
+      const total = totalCards(session.state);
+
+      // Advance a varying number of steps, then forfeit whoever currently owns
+      // the decision (often the active player, mid draw/play/discard).
+      let steps = seed % 14;
+      while (steps-- > 0 && session.state.pendingDecision && !session.state.finished) {
+        respond(session, simpleBotAnswer(session));
+      }
+      if (!session.state.pendingDecision || session.state.finished) continue;
+
+      const victim = session.state.pendingDecision.playerId;
+      forfeitIdentityPlayer(session, victim);
+      driveDeadOwner(session);
+
+      expect(getPlayer(session.state, victim).alive).toBe(false);
+      expect(getPlayer(session.state, victim).hand).toHaveLength(0);
+      expect(totalCards(session.state)).toBe(total);
+
+      // The rest of the game must still terminate with the bots.
+      expect(() => runUntilEnd(session, simpleBotAnswer)).not.toThrow();
+      expect(session.state.finished).toBe(true);
+    }
   });
 });

@@ -10,6 +10,10 @@ import { simpleBotAnswer, type GameSession, type PlayerAnswer } from "@tktw/engi
 
 export const DECISION_TIMEOUT_MS = 30_000;
 
+// SPEC 6.5: how long a dropped in-match seat is held (status "reconnecting")
+// before it forfeits — the player's character dies and their token is revoked.
+export const GRACE_PERIOD_MS = 45_000;
+
 export function defaultAnswerFor(session: GameSession): PlayerAnswer {
   const pending = session.state.pendingDecision;
   if (!pending) throw new Error("defaultAnswerFor: no pending decision");

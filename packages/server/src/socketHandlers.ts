@@ -13,7 +13,7 @@ import {
   type AnswerInput,
 } from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom } from "./rooms/RoomManager";
-import { afterRespond, broadcastRoomState } from "./rooms/gameFlow";
+import { afterRespond, broadcastRoomState, armGraceTimer, forfeitAndContinue } from "./rooms/gameFlow";
 
 interface SocketData {
   roomCode?: string;
@@ -67,6 +67,9 @@ function toPlayerAnswer(playerId: string, fields: AnswerInput): PlayerAnswer {
 
 export interface SocketHandlerOptions {
   decisionTimeoutMs?: number;
+  /** How long a dropped in-match seat is held before it forfeits (SPEC 6.5).
+   *  Overridable so tests don't wait out the real 45s default. */
+  gracePeriodMs?: number;
 }
 
 export function registerSocketHandlers(
@@ -74,11 +77,14 @@ export function registerSocketHandlers(
   rooms: RoomManager,
   opts: SocketHandlerOptions = {},
 ): void {
-  const { decisionTimeoutMs } = opts;
+  const { decisionTimeoutMs, gracePeriodMs } = opts;
   const runAfterRespond = (room: GameRoom): void =>
     decisionTimeoutMs === undefined
       ? afterRespond(io, room)
       : afterRespond(io, room, decisionTimeoutMs);
+  const graceOpts: { graceMs?: number; decisionTimeoutMs?: number } = {};
+  if (gracePeriodMs !== undefined) graceOpts.graceMs = gracePeriodMs;
+  if (decisionTimeoutMs !== undefined) graceOpts.decisionTimeoutMs = decisionTimeoutMs;
 
   io.on("connection", (socket: Socket) => {
     const data = socket.data as SocketData;
@@ -177,9 +183,15 @@ export function registerSocketHandlers(
         ok(ack);
         broadcastRoomState(io, room);
       } else {
-        // Mid-match leave = forfeit (Part B). For now, treat as a disconnect so
-        // the seat is held; the real forfeit path lands in Part B.
+        // Mid-match leave (SPEC 6.2/6.3) = an immediate forfeit — no grace: the
+        // character dies cleanly and the token is revoked, same as a grace
+        // expiry. The socket then detaches from the (now dead) seat.
+        const seatIndex = data.seatIndex;
+        void socket.leave(room.code);
+        delete data.roomCode;
+        delete data.seatIndex;
         ok(ack);
+        forfeitAndContinue(io, rooms, room, seatIndex, decisionTimeoutMs);
       }
     });
 
@@ -239,9 +251,15 @@ export function registerSocketHandlers(
       if (!data.roomCode) return;
       const room = rooms.getRoom(data.roomCode);
       if (!room) return;
+      const seatIndex = data.seatIndex;
       rooms.disconnectSocket(room, socket.id);
-      // Broadcast in lobby AND mid-match so everyone sees "reconnecting" status
-      // (Part B arms the per-seat grace timer that eventually forfeits).
+      // Mid-match: hold the seat for the grace window, then forfeit if the
+      // player hasn't reconnected (a reconnect clears the timer). In the lobby
+      // there's no character to lose, so nothing to time out.
+      if (room.phase === "playing" && seatIndex !== undefined) {
+        armGraceTimer(io, rooms, room, seatIndex, graceOpts);
+      }
+      // Everyone else sees the "reconnecting" status immediately.
       broadcastRoomState(io, room);
     });
   });

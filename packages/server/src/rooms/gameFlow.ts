@@ -4,10 +4,10 @@
 // happens after a decision resolves" logic isn't tangled up with socket.io
 // event wiring.
 import type { Server } from "socket.io";
-import { projectFor, respond, simpleBotAnswer } from "@tktw/engine";
+import { projectFor, respond, simpleBotAnswer, forfeitIdentityPlayer, type GameSession } from "@tktw/engine";
 import { ServerEvents, type RoomStatePayload, type RoomStateSeat } from "@tktw/shared";
-import { seatPlayerId, type GameRoom } from "./RoomManager";
-import { defaultAnswerFor, DECISION_TIMEOUT_MS } from "../timeouts";
+import { seatPlayerId, RoomManager, type GameRoom } from "./RoomManager";
+import { defaultAnswerFor, DECISION_TIMEOUT_MS, GRACE_PERIOD_MS } from "../timeouts";
 
 /** Bot seats answer their own turn shortly after it becomes pending, using
  *  the engine's real bot policy (not the conservative AFK default) — short
@@ -125,4 +125,122 @@ export function afterRespond(io: Server, room: GameRoom, timeoutMs = DECISION_TI
   broadcastViews(io, room);
   if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs);
   broadcastRoomState(io, room); // refresh connection status + decision deadline
+}
+
+function isPlayerAlive(session: GameSession, playerId: string): boolean {
+  return session.state.players.find((p) => p.id === playerId)?.alive ?? false;
+}
+
+// Terminates whatever decision a just-forfeited player still owns so the
+// generator can advance past them. Each option is a clean no-op given the
+// turn loop's alive-guards: mainAction ends the phase; a draw is skipped
+// before any card is dealt; discard sees an already-emptied hand; a reactive
+// pass declines. Mirrors timeouts.ts:safeFallbackAnswer.
+function forfeitSkipAnswer(pending: NonNullable<GameSession["state"]["pendingDecision"]>) {
+  const base = { decisionId: pending.id, playerId: pending.playerId };
+  if (pending.kind === "mainAction") return { ...base, choice: "endPhase" };
+  if (pending.kind === "discardTo" || pending.kind === "discardChosenBy") return { ...base, cardIds: [] };
+  if (pending.kind === "drawCard") return { ...base, choice: "draw" };
+  if (pending.kind === "pickGeneral") return base;
+  return { ...base, pass: true };
+}
+
+// True while at least one human seat still has a live socket. (A "gone"
+// seat is always disconnected, so this also excludes forfeited players.)
+function anyHumanConnected(room: GameRoom): boolean {
+  return room.seats.some((seat) => !seat.isBot && seat.connected);
+}
+
+// SPEC 6.6: if a forfeit leaves no human connected to the match (everyone
+// else has dropped/left), abandon it rather than let bots play it out. A
+// decisive result — including a lord's no_winner forfeit — is checked first
+// (room.session.finished), so a real outcome always wins over "abandoned".
+function maybeAbandon(io: Server, room: GameRoom): boolean {
+  if (room.phase !== "playing") return false;
+  if (room.session?.state.finished) return false;
+  if (anyHumanConnected(room)) return false;
+  room.phase = "abandoned";
+  clearRoomTimer(room);
+  for (const seat of room.seats) {
+    if (seat.graceTimer) {
+      clearTimeout(seat.graceTimer);
+      delete seat.graceTimer;
+    }
+  }
+  room.emptySince = Date.now(); // hand it to the GC sweep
+  broadcastRoomState(io, room);
+  return true;
+}
+
+/** SPEC 6.5: a seat forfeits (grace expired, or an explicit leave-mid-match).
+ *  Revoke its token (seat kept — 6.7), mark it gone, kill the character
+ *  cleanly in the engine, then drive the generator past any decision the dead
+ *  player still owned so the rest of the table keeps playing. */
+export function forfeitAndContinue(
+  io: Server,
+  rooms: RoomManager,
+  room: GameRoom,
+  seatIndex: number,
+  timeoutMs = DECISION_TIMEOUT_MS,
+): void {
+  const seat = room.seats[seatIndex];
+  if (!seat) return;
+  rooms.revokeSeatToken(room, seatIndex);
+  seat.connectionStatus = "gone";
+  if (seat.graceTimer) {
+    clearTimeout(seat.graceTimer);
+    delete seat.graceTimer;
+  }
+
+  const session = room.session;
+  if (room.phase === "playing" && session) {
+    forfeitIdentityPlayer(session, seatPlayerId(seatIndex));
+    let guard = 0;
+    while (
+      session.state.pendingDecision &&
+      !session.state.finished &&
+      !isPlayerAlive(session, session.state.pendingDecision.playerId)
+    ) {
+      try {
+        respond(session, forfeitSkipAnswer(session.state.pendingDecision));
+      } catch (err) {
+        console.error(`[room ${room.code}] forfeit-drive answer was rejected — stopping:`, err);
+        break;
+      }
+      if (++guard > 100) {
+        console.error(`[room ${room.code}] forfeit-drive did not terminate — pausing`);
+        break;
+      }
+    }
+    if (session.state.finished) {
+      room.phase = "ended";
+      clearRoomTimer(room);
+    }
+  }
+
+  broadcastViews(io, room);
+  if (maybeAbandon(io, room)) return;
+  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs);
+  broadcastRoomState(io, room);
+}
+
+/** Arm the per-seat grace timer on an in-match disconnect. A reconnect clears
+ *  it (RoomManager.attachSocket); otherwise it forfeits when it fires. */
+export function armGraceTimer(
+  io: Server,
+  rooms: RoomManager,
+  room: GameRoom,
+  seatIndex: number,
+  opts: { graceMs?: number; decisionTimeoutMs?: number } = {},
+): void {
+  const seat = room.seats[seatIndex];
+  if (!seat) return;
+  if (seat.graceTimer) clearTimeout(seat.graceTimer);
+  const graceMs = opts.graceMs ?? GRACE_PERIOD_MS;
+  seat.graceTimer = setTimeout(() => {
+    delete seat.graceTimer;
+    // A reconnect (or a game that already ended) makes the forfeit moot.
+    if (seat.connected || room.phase !== "playing") return;
+    forfeitAndContinue(io, rooms, room, seatIndex, opts.decisionTimeoutMs);
+  }, graceMs);
 }

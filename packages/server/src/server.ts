@@ -27,6 +27,9 @@ export interface TktwServerOptions {
   /** How long a pending decision waits before the default answer fires.
    *  Overridable so tests don't have to wait out the real 30s default. */
   decisionTimeoutMs?: number;
+  /** How long a dropped in-match seat is held before it forfeits (SPEC 6.5).
+   *  Overridable so tests don't wait out the real 45s default. */
+  gracePeriodMs?: number;
 }
 
 export interface TktwServer {
@@ -66,11 +69,10 @@ export function createTktwServer(opts: TktwServerOptions = {}): TktwServer {
   });
 
   const rooms = new RoomManager();
-  registerSocketHandlers(
-    io,
-    rooms,
-    opts.decisionTimeoutMs === undefined ? {} : { decisionTimeoutMs: opts.decisionTimeoutMs },
-  );
+  const handlerOpts: { decisionTimeoutMs?: number; gracePeriodMs?: number } = {};
+  if (opts.decisionTimeoutMs !== undefined) handlerOpts.decisionTimeoutMs = opts.decisionTimeoutMs;
+  if (opts.gracePeriodMs !== undefined) handlerOpts.gracePeriodMs = opts.gracePeriodMs;
+  registerSocketHandlers(io, rooms, handlerOpts);
 
   const graceMs = opts.roomGcGraceMs ?? DEFAULT_GC_GRACE_MS;
   const sweepMs = opts.roomGcSweepIntervalMs ?? DEFAULT_GC_SWEEP_INTERVAL_MS;

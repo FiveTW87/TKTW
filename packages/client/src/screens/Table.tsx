@@ -183,7 +183,8 @@ export function Table() {
 
   if (gameView.finished) {
     const myRole = gameView.players.find((p) => p.id === gameView.viewerId)?.role;
-    const won = myRole ? gameView.winners?.includes(myRole) : false;
+    const noWinner = !gameView.winners || gameView.winners.length === 0;
+    const won = !noWinner && myRole ? gameView.winners?.includes(myRole) : false;
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <div className="panel-plain anim-pop" style={{ width: 440, textAlign: "center", padding: 44 }}>
@@ -203,7 +204,9 @@ export function Table() {
             <span style={{ fontFamily: "var(--font-glyph)", fontSize: 44, color: "#f6ecd2" }}>{won ? "勝" : "終"}</span>
           </div>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "var(--red)" }}>{won ? "ชัยชนะ!" : "จบเกม"}</div>
-          <div style={{ marginTop: 8, color: "var(--ink-muted)", fontSize: 15 }}>ฝ่ายชนะ: {gameView.winners?.join(", ")}</div>
+          <div style={{ marginTop: 8, color: "var(--ink-muted)", fontSize: 15 }}>
+            {noWinner ? "ไม่มีผู้ชนะ — เจ้าเมืองหลุดการเชื่อมต่อ" : `ฝ่ายชนะ: ${gameView.winners?.join(", ")}`}
+          </div>
           <button onClick={leaveRoom} className="btn-primary" style={{ marginTop: 26, padding: "13px 44px", fontSize: 16 }}>
             เล่นอีกครั้ง
           </button>
@@ -836,6 +839,17 @@ export function Table() {
               )}
               {/* Rules — sits right by the phase indicator, always reachable */}
               <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
+              {/* Leaving mid-match is a forfeit — warn before it kills the character. */}
+              <button
+                onClick={() => {
+                  if (window.confirm("ออกตอนนี้ = ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้ ต้องการออกหรือไม่?")) {
+                    void leaveRoom();
+                  }
+                }}
+                style={{ width: "100%", padding: "6px 10px", fontSize: 11, background: "transparent", color: "var(--ink-faint)", border: "1px solid var(--card-border-2)", borderRadius: 5, cursor: "pointer" }}
+              >
+                ออกจากเกม
+              </button>
             </div>
           </div>
         </div>
