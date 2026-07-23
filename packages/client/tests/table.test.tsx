@@ -41,8 +41,10 @@ beforeEach(() => {
     roomCode: null,
     sessionToken: null,
     seatIndex: null,
+    matchId: null,
     roomState: null,
     gameView: null,
+    matchResult: null,
     error: null,
     answeringId: null,
   });
@@ -80,6 +82,10 @@ async function enterRoom(roomCode: string) {
   await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
   respondTo("room:create", { ok: true, roomCode, sessionToken: "d".repeat(20), seatIndex: 0 });
   await waitFor(() => expect(screen.getByText(roomCode)).toBeInTheDocument());
+  // SPEC 8.3: game:answer is stamped with matchId (gameStore reads it from
+  // room:state) — the real server always sends one once a match starts, but
+  // this harness only ever fires game:view directly, so supply it here.
+  fakeSocket.fire("room:state", { code: roomCode, phase: "playing", seats: [], matchId: "test-match" });
   return user;
 }
 
@@ -220,7 +226,7 @@ describe("Table: main action card play", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "ENDPH1", decisionId: "dec_end", choice: "endPhase" });
+    expect(call.payload).toEqual({ roomCode: "ENDPH1", matchId: "test-match", decisionId: "dec_end", choice: "endPhase" });
   });
 
   it("a reactive decision that isn't mine shows a waiting banner, not a confirm bar", async () => {
@@ -283,7 +289,7 @@ describe("Table: reactive decision dialog", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "DODGE01", decisionId: "dec_shan_mine", cardIds: ["heart_1_1"] });
+    expect(call.payload).toEqual({ roomCode: "DODGE01", matchId: "test-match", decisionId: "dec_shan_mine", cardIds: ["heart_1_1"] });
   });
 
   it("declining a respondShan dialog sends pass: true", async () => {
@@ -308,7 +314,7 @@ describe("Table: reactive decision dialog", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "DODGE02", decisionId: "dec_shan_decline", pass: true });
+    expect(call.payload).toEqual({ roomCode: "DODGE02", matchId: "test-match", decisionId: "dec_shan_decline", pass: true });
   });
 
   it("double-tapping the หลบ card sends the answer only once (no duplicate → no freeze)", async () => {
@@ -345,37 +351,6 @@ describe("Table: reactive decision dialog", () => {
   });
 });
 
-describe("Table: role reveal", () => {
-  it("shows the role-reveal dialog once a general is assigned, and closing it reveals the board", async () => {
-    const user = await enterRoom("ROLE001");
-
-    fakeSocket.fire("game:view", {
-      viewerId: "p0",
-      players: [
-        player("p0", { role: "lord", roleRevealed: true, generalId: "caocao" }),
-        player("p1", { name: "Bob" }),
-        player("p2"),
-      ],
-      currentSeat: 0,
-      turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
-      eventStack: [],
-      pendingDecision: { id: "dec_main_role", kind: "mainAction", playerId: "p0", data: {} },
-      finished: false,
-      log: [],
-    });
-
-    await waitFor(() => expect(screen.getByText("บทบาทของคุณ")).toBeInTheDocument());
-    // role name shows in the reveal modal (and now also on the character card)
-    expect(screen.getAllByText("เจ้าเมือง").length).toBeGreaterThan(0);
-
-    await user.click(screen.getByRole("button", { name: /เริ่มศึก/ }));
-    expect(screen.queryByText("บทบาทของคุณ")).not.toBeInTheDocument();
-  });
-});
-
 describe("Table: character skills + use-skill", () => {
   it("shows the general's skills, and using an active skill sends choice:useSkill with the right skillId", async () => {
     const user = await enterRoom("SKILL01");
@@ -405,11 +380,8 @@ describe("Table: character skills + use-skill", () => {
       log: [],
     });
 
-    // dismiss the role-reveal dialog first
-    await user.click(await screen.findByRole("button", { name: /เริ่มศึก/ }));
-
     // both sunquan skills are narrated
-    expect(screen.getByText("ถ่วงดุลอำนาจ")).toBeInTheDocument();
+    expect(await screen.findByText("ถ่วงดุลอำนาจ")).toBeInTheDocument();
     expect(screen.getByText("ผนึกกำลัง")).toBeInTheDocument();
 
     // click the active skill's "ใช้สกิล" button
@@ -448,9 +420,7 @@ describe("Table: character skills + use-skill", () => {
       finished: false,
       log: [],
     });
-    await user.click(await screen.findByRole("button", { name: /เริ่มศึก/ }));
-
-    await user.click(screen.getByRole("button", { name: /ใช้สกิล/ }));
+    await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // no opponents become targetable (ถ่วงดุลอำนาจ takes no target)
     expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
     // confirm disabled until a card is chosen (needs ≥1 card)
@@ -480,9 +450,7 @@ describe("Table: character skills + use-skill", () => {
       finished: false,
       log: [],
     });
-    await user.click(await screen.findByRole("button", { name: /เริ่มศึก/ }));
-
-    const btn = screen.getByRole("button", { name: /ใช้ครบแล้วเทิร์นนี้/ });
+    const btn = await screen.findByRole("button", { name: /ใช้ครบแล้วเทิร์นนี้/ });
     expect(btn).toBeDisabled();
     await user.click(btn); // clicking does nothing
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
@@ -507,7 +475,11 @@ async function enterGame(roomCode: string, self: ReturnType<typeof player>, rest
     finished: false,
     log: [],
   });
-  await user.click(await screen.findByRole("button", { name: /เริ่มศึก/ }));
+  // The role-reveal screen (SPEC 7.2) is gated on roomState.phase ===
+  // "revealing" now (App.tsx), not on Table's own local state — this
+  // harness never fires a "room:state" event, so roomState stays null and
+  // Table renders directly with no modal to dismiss.
+  await screen.findByRole("button", { name: /จบเทิร์น/ });
   clearSent();
   return user;
 }

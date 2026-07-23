@@ -23,6 +23,12 @@ function createGeneralsGame(playerCount: number, seed: number) {
     // and never reach the rest at all.
     const gid = REAL_GENERALS[(i + seed) % REAL_GENERALS.length]!;
     assignGeneral(state, `p${i}`, gid, i === 0);
+    // Real identity-mode play always reveals every general before the turn
+    // loop starts (modes/identity.ts) — this harness skips that setup, so it
+    // must restore the same invariant or a bot reading its own projectFor
+    // view (e.g. detecting Lu Xun's shunshou immunity) sees every opponent's
+    // generalId hidden as "" and picks illegal targets.
+    state.players[i]!.generalRevealed = true;
   }
   const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
   return createSession(runGame(ctx), state, rng);

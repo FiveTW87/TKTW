@@ -16,6 +16,7 @@ import { getPlayer } from "../src/core/state";
 import { killPlayer } from "../src/core/damage";
 import { simpleBotAnswer } from "../src/bots/simplePolicy";
 import { runUntilEnd } from "../src/bots/runner";
+import { projectFor } from "../src/core/view";
 import type { GameState, PlayerAnswer, Role } from "../src/types";
 
 describe("SPEC 2: role proportions for every player count", () => {
@@ -43,7 +44,7 @@ describe("SPEC 2: role proportions for every player count", () => {
     });
   }
 
-  it("assigns exactly those proportions when a real game is set up (seat 0 = lord)", () => {
+  it("assigns exactly those proportions when a real game is set up (lord randomized onto any seat)", () => {
     for (let n = 3; n <= 10; n++) {
       const session = createIdentityGame({ playerCount: n, seed: n * 100 });
       const tally: Record<string, number> = {};
@@ -53,8 +54,21 @@ describe("SPEC 2: role proportions for every player count", () => {
       expect(tally.loyalist ?? 0).toBe(counts.loyalist);
       expect(tally.rebel ?? 0).toBe(counts.rebel);
       expect(tally.traitor ?? 0).toBe(counts.traitor);
-      expect(getPlayer(session.state, "p0").role).toBe("lord");
+      // SPEC 8.2: the lord is not pinned to seat 0 — find whoever it landed
+      // on and confirm turn 1 (currentSeat) starts there.
+      const lord = session.state.players.find((p) => p.role === "lord")!;
+      expect(session.state.currentSeat).toBe(lord.seat);
     }
+  });
+
+  it("the lord lands on more than one seat across seeds (not pinned to seat 0)", () => {
+    const lordSeats = new Set<number>();
+    for (let seed = 0; seed < 30; seed++) {
+      const session = createIdentityGame({ playerCount: 5, seed });
+      const lord = session.state.players.find((p) => p.role === "lord")!;
+      lordSeats.add(lord.seat);
+    }
+    expect(lordSeats.size).toBeGreaterThan(1);
   });
 });
 
@@ -98,6 +112,7 @@ describe("SPEC 3: setup", () => {
 
   it("the general-selection decisions offer 5 to the lord and 3 to everyone else", () => {
     const session = createIdentityGame({ playerCount: 4, seed: 5 });
+    const lord = session.state.players.find((p) => p.role === "lord")!;
     const seen: { playerId: string; count: number }[] = [];
     for (let i = 0; i < 4; i++) {
       const pending = session.state.pendingDecision!;
@@ -106,7 +121,7 @@ describe("SPEC 3: setup", () => {
       seen.push({ playerId: pending.playerId, count: options.length });
       respond(session, { decisionId: pending.id, playerId: pending.playerId, choice: options[0]! });
     }
-    expect(seen[0]!.playerId).toBe("p0"); // lord picks first
+    expect(seen[0]!.playerId).toBe(lord.id); // lord picks first, wherever they landed
     expect(seen[0]!.count).toBe(5);
     for (const entry of seen.slice(1)) expect(entry.count).toBe(3);
   });
@@ -131,7 +146,10 @@ describe("SPEC 3: setup", () => {
       const session = createIdentityGame({ playerCount: 4, seed });
       const pending = session.state.pendingDecision!;
       respond(session, { decisionId: pending.id, playerId: pending.playerId, pass: true });
-      picks.add(getPlayer(session.state, "p0").generalId);
+      // Check whoever actually answered (not always "p0" — the lord can land
+      // on any seat, SPEC 8.2), otherwise this just measures an arbitrary
+      // uninvolved player's untouched "none" placeholder.
+      picks.add(getPlayer(session.state, pending.playerId).generalId);
     }
     expect(picks.size).toBeGreaterThan(1);
   });
@@ -166,6 +184,83 @@ describe("SPEC 3: setup", () => {
       expect(new Set(ids).size).toBe(3);
       expect(ids.every((id) => id !== "none")).toBe(true);
     }
+  });
+});
+
+// SPEC 7.1/7.3: a player's chosen general (and anything derived from it —
+// faction, gender, HP) must not leak to opponents before the reveal. The
+// lord's general is public the instant the lord confirms; everyone else's
+// reveals together, only once the last non-lord has picked.
+describe("SPEC 7.1/7.3: hidden information — general reveal", () => {
+  it("an opponent's general is hidden (neutral placeholders) until generalRevealed flips", () => {
+    const session = createIdentityGame({ playerCount: 4, seed: 12 });
+    const lord = session.state.players.find((p) => p.role === "lord")!;
+    // Before anyone has picked: nobody's generalRevealed is set yet.
+    for (const p of session.state.players) expect(p.generalRevealed).toBe(false);
+
+    const opponent = session.state.players.find((p) => p.id !== lord.id)!;
+    const viewBefore = projectFor(session.state, opponent.id);
+    const lordViewBefore = viewBefore.players.find((p) => p.id === lord.id)!;
+    // Lord hasn't picked yet either, so still hidden to everyone but self.
+    expect(lordViewBefore.generalId).toBe("");
+    expect(lordViewBefore.hp).toBe(0);
+    expect(lordViewBefore.maxHp).toBe(0);
+
+    // Lord picks — their general is public to everyone immediately.
+    const lordPending = session.state.pendingDecision!;
+    respond(session, {
+      decisionId: lordPending.id,
+      playerId: lordPending.playerId,
+      choice: (lordPending.data as { options: string[] }).options[0]!,
+    });
+    expect(lord.generalRevealed).toBe(true);
+    const viewAfterLordPick = projectFor(session.state, opponent.id);
+    const lordViewAfter = viewAfterLordPick.players.find((p) => p.id === lord.id)!;
+    expect(lordViewAfter.generalId).toBe(lord.generalId);
+    expect(lordViewAfter.generalId).not.toBe("");
+
+    // Non-lords are still hidden from each other mid-selection.
+    const others = session.state.players.filter((p) => p.id !== lord.id);
+    const stillPicking = others[0]!;
+    const viewer = others[1]!;
+    const midView = projectFor(session.state, viewer.id);
+    const stillPickingView = midView.players.find((p) => p.id === stillPicking.id)!;
+    expect(stillPickingView.generalId).toBe("");
+    expect(stillPickingView.faction).toBe("qun");
+    expect(stillPickingView.hp).toBe(0);
+
+    // Drive the rest of selection to completion.
+    while (session.state.pendingDecision?.kind === "pickGeneral") {
+      const pending = session.state.pendingDecision;
+      respond(session, {
+        decisionId: pending.id,
+        playerId: pending.playerId,
+        choice: (pending.data as { options: string[] }).options[0]!,
+      });
+    }
+
+    // Now everyone's general is revealed to everyone.
+    for (const p of session.state.players) expect(p.generalRevealed).toBe(true);
+    const finalView = projectFor(session.state, viewer.id);
+    for (const p of session.state.players) {
+      const pv = finalView.players.find((v) => v.id === p.id)!;
+      expect(pv.generalId).toBe(p.generalId);
+      expect(pv.generalId).not.toBe("");
+    }
+  });
+
+  it("pickGeneral candidate options never reach a non-responder", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 55 });
+    const pending = session.state.pendingDecision!;
+    const others = session.state.players.filter((p) => p.id !== pending.playerId);
+    for (const p of others) {
+      const view = projectFor(session.state, p.id);
+      const projectedDecision = view.pendingDecision;
+      expect(projectedDecision?.data).toEqual({});
+    }
+    // The responder itself still sees the real options.
+    const ownView = projectFor(session.state, pending.playerId);
+    expect((ownView.pendingDecision?.data as { options?: string[] }).options?.length).toBeGreaterThan(0);
   });
 });
 
@@ -374,7 +469,8 @@ describe("SPEC 6.5: forfeit (a clean, killer-less death)", () => {
   it("a lord who forfeits ends the game with NO winner (never hands the rebels a win)", () => {
     const session = createIdentityGame({ playerCount: 5, seed: 91 });
     finishGeneralSelection(session, 5);
-    applyIdentityForfeit(session.state, "p0"); // p0 is always the lord
+    const lord = session.state.players.find((p) => p.role === "lord")!;
+    applyIdentityForfeit(session.state, lord.id);
     expect(session.state.finished).toBe(true);
     expect(session.state.winners).toEqual([]);
   });
@@ -467,11 +563,18 @@ describe("SPEC 6.5: forfeit (a clean, killer-less death)", () => {
 
       expect(getPlayer(session.state, victim).alive).toBe(false);
       expect(getPlayer(session.state, victim).hand).toHaveLength(0);
-      expect(totalCards(session.state)).toBe(total);
+      // NOT checked here: totalCards() right after driveDeadOwner. A
+      // multi-step effect (e.g. wugu's "everyone picks one of N revealed
+      // cards") can be genuinely mid-resolution at this exact point — its
+      // still-unassigned cards live only in that generator's local closure,
+      // not yet in any zone, so a snapshot here can look transiently short
+      // without anything actually being lost. Card conservation is instead
+      // checked below, once the game has fully settled.
 
       // The rest of the game must still terminate with the bots.
       expect(() => runUntilEnd(session, simpleBotAnswer)).not.toThrow();
       expect(session.state.finished).toBe(true);
+      expect(totalCards(session.state)).toBe(total);
     }
   });
 });

@@ -11,6 +11,7 @@ import {
   type SimpleAck,
   type GameView,
   type PlayerAnswer,
+  type MatchResult,
 } from "@tktw/shared";
 
 const STORAGE_KEY = "tktw_session";
@@ -54,6 +55,9 @@ interface GameStoreState {
   matchId: string | null;
   roomState: RoomStatePayload | null;
   gameView: GameView | null;
+  /** SPEC 8.4 — set once the current match finishes; re-sent on a rejoin
+   *  into an already-"ended" room. Cleared on returnToLobby/leaveRoom. */
+  matchResult: MatchResult | null;
   error: string | null;
   /** Set when an auto-rejoin fails despite a stored session (grace expired /
    *  token revoked) — the UI shows "can't return" then sends the user home. */
@@ -74,6 +78,7 @@ interface GameStoreState {
   startGame: () => Promise<void>;
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
   leaveRoom: () => Promise<void>;
+  returnToLobby: () => Promise<void>;
   clearError: () => void;
   dismissSessionExpired: () => void;
 }
@@ -131,12 +136,15 @@ export const useGameStore = create<GameStoreState>((set, get) => {
   });
   socket.on("disconnect", () => set({ connected: false }));
   socket.on(ServerEvents.RoomState, (payload: RoomStatePayload) =>
-    set({
+    set((s) => ({
       roomState: payload,
       // yourSeatIndex is authoritative — it survives a lobby re-index.
       ...(payload.yourSeatIndex !== undefined ? { seatIndex: payload.yourSeatIndex } : {}),
       ...(payload.matchId ? { matchId: payload.matchId } : {}),
-    }),
+      // A rematch's return-to-lobby moves the room off "ended" for everyone,
+      // not just whoever triggered it — drop the stale result along with it.
+      matchResult: payload.phase === "ended" ? s.matchResult : null,
+    })),
   );
   // A fresh view means the previous decision has advanced — release the
   // double-submit guard so the next decision can be answered.
@@ -144,6 +152,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     const pd = payload.pendingDecision;
     pushDebug(`view → pending: ${pd ? `${pd.kind} @${pd.playerId}` : "none"}${payload.finished ? " (FINISHED)" : ""}`);
     set({ gameView: payload, answeringId: null });
+  });
+  socket.on(ServerEvents.MatchResult, (payload: MatchResult) => {
+    pushDebug(`result → ${payload.endReason} (matchId ${payload.matchId})`);
+    set({ matchResult: payload });
   });
   if (socket.connected) void attemptRejoin();
 
@@ -156,6 +168,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     matchId: null,
     roomState: null,
     gameView: null,
+    matchResult: null,
     error: null,
     sessionExpired: false,
     answeringId: null,
@@ -202,8 +215,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     },
 
     answer: async (fields) => {
-      const { roomCode, answeringId } = get();
-      if (!roomCode) return;
+      const { roomCode, matchId, answeringId } = get();
+      if (!roomCode || !matchId) return;
       const tag = `${fields.decisionId} ${fields.choice ?? (fields.pass ? "pass" : fields.cardIds ? `cards[${fields.cardIds.length}]` : "?")}`;
       // Already answering (or done with) this exact decision → drop the
       // duplicate. Without this a fast double-click sends two answers for one
@@ -215,7 +228,9 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       }
       set({ answeringId: fields.decisionId });
       pushDebug(`→ answer ${tag}`);
-      const ack = await emitAck<SimpleAck>(ClientEvents.GameAnswer, { roomCode, ...fields });
+      // SPEC 8.3: stamped with matchId so the server can reject a stale
+      // answer from a previous match (decisionIds restart at dec_1 each match).
+      const ack = await emitAck<SimpleAck>(ClientEvents.GameAnswer, { roomCode, matchId, ...fields });
       if (!ack.ok) {
         // Rejected — the decision is still pending, so clear the guard to
         // allow a corrected retry.
@@ -243,9 +258,23 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         matchId: null,
         roomState: null,
         gameView: null,
+        matchResult: null,
         error: null,
         sessionExpired: false,
       });
+    },
+
+    returnToLobby: async () => {
+      // SPEC 8.5: from the result screen, back to this room's own lobby for
+      // a rematch — same room/socket/session, just a fresh match to come.
+      const { roomCode } = get();
+      if (!roomCode) return;
+      const ack = await emitAck<SimpleAck>(ClientEvents.RoomReturnToLobby, { roomCode });
+      if (!ack.ok) {
+        set({ error: ack.error });
+        return;
+      }
+      set({ gameView: null, matchResult: null, matchId: null, error: null });
     },
 
     clearError: () => set({ error: null }),

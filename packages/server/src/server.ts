@@ -30,6 +30,14 @@ export interface TktwServerOptions {
   /** How long a dropped in-match seat is held before it forfeits (SPEC 6.5).
    *  Overridable so tests don't wait out the real 45s default. */
   gracePeriodMs?: number;
+  /** How long the role-reveal screen holds before general selection starts
+   *  (SPEC 7.2). Overridable so tests don't wait out the real 8s default. */
+  revealDurationMs?: number;
+  /** How long a bot seat waits before answering its own turn. Overridable so
+   *  tests that need a FULL match to actually finish (SPEC 8: result/rematch)
+   *  aren't stuck waiting out the real 600ms per decision across however many
+   *  it takes a 3+ player identity game to end. */
+  botAnswerDelayMs?: number;
 }
 
 export interface TktwServer {
@@ -69,9 +77,16 @@ export function createTktwServer(opts: TktwServerOptions = {}): TktwServer {
   });
 
   const rooms = new RoomManager();
-  const handlerOpts: { decisionTimeoutMs?: number; gracePeriodMs?: number } = {};
+  const handlerOpts: {
+    decisionTimeoutMs?: number;
+    gracePeriodMs?: number;
+    revealDurationMs?: number;
+    botAnswerDelayMs?: number;
+  } = {};
   if (opts.decisionTimeoutMs !== undefined) handlerOpts.decisionTimeoutMs = opts.decisionTimeoutMs;
   if (opts.gracePeriodMs !== undefined) handlerOpts.gracePeriodMs = opts.gracePeriodMs;
+  if (opts.revealDurationMs !== undefined) handlerOpts.revealDurationMs = opts.revealDurationMs;
+  if (opts.botAnswerDelayMs !== undefined) handlerOpts.botAnswerDelayMs = opts.botAnswerDelayMs;
   registerSocketHandlers(io, rooms, handlerOpts);
 
   const graceMs = opts.roomGcGraceMs ?? DEFAULT_GC_GRACE_MS;

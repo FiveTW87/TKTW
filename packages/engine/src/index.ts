@@ -44,6 +44,8 @@ export function recoverGame(
 export { createIdentityGame, recoverIdentityGame, roleTableFor, identityCheckGameEnd, identityOnDeath };
 export { forfeitIdentityPlayer } from "./modes/identity";
 export { assignGeneral } from "./core/generalAssign";
+export { summarizeMatch, type MatchSummary, type MatchPlayerSummary } from "./core/matchResult";
+export { createRng, type Rng } from "./core/rng";
 
 export * from "./types";
 export * from "./core/view";

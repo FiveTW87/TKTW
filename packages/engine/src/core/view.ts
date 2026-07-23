@@ -26,7 +26,8 @@ export interface PlayerView {
   name: string;
   role: Role | undefined; // undefined unless self / lord / dead
   roleRevealed: boolean;
-  generalId: string;
+  generalId: string; // "" unless self / generalRevealed
+  generalRevealed: boolean;
   faction: Faction;
   gender: Gender;
   hp: number;
@@ -56,19 +57,27 @@ export interface GameView {
   // the entire remaining deck order.
 }
 
+// SPEC 7.1/7.3: a player's general (and anything derived from it — faction,
+// gender, HP) must stay hidden from everyone but its owner until the reveal.
+// The lord's general is public the instant the lord confirms; everyone
+// else's reveals together once the last non-lord has picked — both tracked
+// by `generalRevealed` (set in modes/identity.ts). Neutral placeholders are
+// sent instead of the real values so nothing leaks early.
 function projectPlayer(p: Player, viewerId: string): PlayerView {
   const roleVisible = p.id === viewerId || p.role === "lord" || !p.alive;
+  const genVisible = p.id === viewerId || p.generalRevealed;
   return {
     id: p.id,
     seat: p.seat,
     name: p.name,
     role: roleVisible ? p.role : undefined,
     roleRevealed: p.roleRevealed,
-    generalId: p.generalId,
-    faction: p.faction,
-    gender: p.gender,
-    hp: p.hp,
-    maxHp: p.maxHp,
+    generalId: genVisible ? p.generalId : "",
+    generalRevealed: p.generalRevealed,
+    faction: genVisible ? p.faction : "qun",
+    gender: genVisible ? p.gender : "male",
+    hp: genVisible ? p.hp : 0,
+    maxHp: genVisible ? p.maxHp : 0,
     alive: p.alive,
     hand: p.id === viewerId ? p.hand.slice() : { count: p.hand.length },
     equipment: { ...p.equipment },

@@ -41,8 +41,10 @@ beforeEach(() => {
     roomCode: null,
     sessionToken: null,
     seatIndex: null,
+    matchId: null,
     roomState: null,
     gameView: null,
+    matchResult: null,
     error: null,
     answeringId: null,
   });
@@ -79,6 +81,10 @@ async function enterRoom(roomCode: string) {
   await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
   respondTo("room:create", { ok: true, roomCode, sessionToken: "c".repeat(20), seatIndex: 0 });
   await waitFor(() => expect(screen.getByText(roomCode)).toBeInTheDocument());
+  // SPEC 8.3: game:answer is stamped with matchId (gameStore reads it from
+  // room:state) — the real server always sends one once a match starts, but
+  // this harness only ever fires game:view directly, so supply it here.
+  fakeSocket.fire("room:state", { code: roomCode, phase: "playing", seats: [], matchId: "test-match" });
   return user;
 }
 
@@ -122,7 +128,7 @@ describe("General select screen", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const answerCall = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(answerCall.payload).toEqual({ roomCode: "PICKME", decisionId: "dec_1", choice: "caocao" });
+    expect(answerCall.payload).toEqual({ roomCode: "PICKME", matchId: "test-match", decisionId: "dec_1", choice: "caocao" });
   });
 
   it("shows a waiting indicator (not the picker) when it's someone else's pick", async () => {

@@ -71,35 +71,59 @@ function resolvePick(offered: readonly string[], answer: PlayerAnswer, rng: Rng)
   return offered[rng.nextInt(offered.length)]!;
 }
 
-// SPEC 3.1-3.3: assign roles (lord = seat 0, always), then run the general
-// selection flow. Card dealing is already done by createInitialState —
-// nothing here should draw the initial 4.
+// SPEC 3.1-3.3/7.2/8.2: assign roles (lord randomized onto any seat, not
+// pinned to seat 0), then run the general selection flow. Card dealing is
+// already done by createInitialState — nothing here should draw the initial 4.
 //
-// Selection is a queue, one player at a time (lord first, then seat order).
-// The lord's 5 are the 3 lord-skill generals (so the lord always has the
-// option to make their unique skill matter) plus 2 random from the rest of
-// the pool. Everyone else is offered 3. Whatever isn't picked in a round —
-// including any of the 3 lord-skill generals the lord passed on — goes back
-// into the shared pool and gets reshuffled, not queued in order — so the
-// next player isn't guaranteed to see specifically the previous player's
-// leftovers, just a random draw from everything still unclaimed. That's
-// what keeps generals from repeating across players and gives the 3
+// Seats stay the fixed turn-order ring (seat 0..n-1); only which SEAT holds
+// which ROLE is randomized. `currentSeat` is then pointed at the lord's seat
+// so the turn loop's very first turn is the lord's, wherever they landed.
+//
+// Selection is a queue, one player at a time (lord first, then clockwise from
+// the lord's seat). The lord's 5 are the 3 lord-skill generals (so the lord
+// always has the option to make their unique skill matter) plus 2 random from
+// the rest of the pool. Everyone else is offered 3. Whatever isn't picked in a
+// round — including any of the 3 lord-skill generals the lord passed on —
+// goes back into the shared pool and gets reshuffled, not queued in order —
+// so the next player isn't guaranteed to see specifically the previous
+// player's leftovers, just a random draw from everything still unclaimed.
+// That's what keeps generals from repeating across players and gives the 3
 // lord-skill generals more chances to actually get played by someone, not
 // just buried in a 25-general pool that might never resurface them.
+//
+// SPEC 7.1/7.3: a player's chosen general must not leak to opponents before
+// the reveal. The lord's general reveals the instant the lord confirms; every
+// other player's general reveals together, only once the LAST non-lord has
+// picked — hence `generalRevealed` is flipped per-player for the lord, then
+// in one pass over `others` after the loop.
 function* setupIdentityGame(ctx: Ctx): EngineGenerator {
   const { state, rng } = ctx;
   const players = [...state.players].sort((a, b) => a.seat - b.seat);
   const roles = roleTableFor(players.length);
 
-  const lord = players.find((p) => p.seat === 0)!;
-  lord.role = "lord";
+  // SPEC 8.2: randomize role->seat (not player identity->seat — the ring
+  // itself, seat 0..n-1, stays the turn order). The lord can land on any seat.
+  const shuffledRoles = rng.shuffle(roles);
+  players.forEach((p, i) => {
+    p.role = shuffledRoles[i]!;
+  });
+
+  const lord = players.find((p) => p.role === "lord")!;
   lord.roleRevealed = true;
   log(state, "roleReveal", { actorId: lord.id, data: { role: "lord" } });
 
+  // SPEC 7.2/8.2: turn 1 (and general selection) starts from the lord's seat,
+  // not seat 0.
+  state.currentSeat = lord.seat;
+
   const others = players.filter((p) => p.id !== lord.id);
-  const shuffledRoles = rng.shuffle(roles.filter((r) => r !== "lord"));
-  others.forEach((p, i) => {
-    p.role = shuffledRoles[i]!;
+  // Clockwise from the lord's seat: sort the rest by their distance ahead of
+  // lord.seat around the ring, not raw seat index.
+  const n = players.length;
+  others.sort((a, b) => {
+    const da = (a.seat - lord.seat + n) % n;
+    const db = (b.seat - lord.seat + n) % n;
+    return da - db;
   });
 
   const lordSkillIds = rng.shuffle(lordSkillGeneralIds());
@@ -128,7 +152,16 @@ function* setupIdentityGame(ctx: Ctx): EngineGenerator {
     // Private: a player's own pick must not leak to opponents before the
     // simultaneous reveal (visibility filtered per viewer in view.ts).
     log(state, "pickGeneral", { actorId: p.id, visibility: "private", data: { generalId: chosen } });
+
+    if (p.id === lord.id) {
+      // Lord's general is public the instant they confirm (SPEC 7.3).
+      lord.generalRevealed = true;
+    }
   }
+
+  // SPEC 7.3: everyone else's general reveals together, only after the last
+  // non-lord has picked.
+  for (const p of others) p.generalRevealed = true;
 }
 
 // SPEC 2's win table + P3.4/P3.6: called from core/damage.ts:killPlayer

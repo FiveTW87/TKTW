@@ -4,10 +4,32 @@
 // happens after a decision resolves" logic isn't tangled up with socket.io
 // event wiring.
 import type { Server } from "socket.io";
-import { projectFor, respond, simpleBotAnswer, forfeitIdentityPlayer, type GameSession } from "@tktw/engine";
+import { projectFor, respond, simpleBotAnswer, forfeitIdentityPlayer, summarizeMatch, type GameSession } from "@tktw/engine";
 import { ServerEvents, type RoomStatePayload, type RoomStateSeat } from "@tktw/shared";
 import { seatPlayerId, RoomManager, type GameRoom } from "./RoomManager";
-import { defaultAnswerFor, DECISION_TIMEOUT_MS, GRACE_PERIOD_MS } from "../timeouts";
+import { defaultAnswerFor, DECISION_TIMEOUT_MS, GRACE_PERIOD_MS, REVEAL_DURATION_MS } from "../timeouts";
+
+// SPEC 7.2: "revealing" (the role-reveal screen) and "playing" are both a
+// live match — a seat's connection/grace handling shouldn't care which of
+// the two sub-phases it's currently in.
+function isMatchActive(room: GameRoom): boolean {
+  return room.phase === "playing" || room.phase === "revealing";
+}
+
+// SPEC 8.2: each match randomizes a fresh player->seat permutation
+// (RoomManager.startGame's room.seatAssignment[lobbyIndex] = engineSeat), so
+// lobby seat index i and the engine's `p{i}` no longer necessarily coincide.
+// Every place that used to assume they did routes through these two instead.
+// Both fall back to the identity mapping when there's no assignment (lobby,
+// or a room predating a match) so callers don't need their own guard.
+export function engineSeatOf(room: GameRoom, lobbyIndex: number): number {
+  return room.seatAssignment?.[lobbyIndex] ?? lobbyIndex;
+}
+
+function lobbySeatOf(room: GameRoom, engineSeat: number): number {
+  const idx = room.seatAssignment?.indexOf(engineSeat) ?? -1;
+  return idx >= 0 ? idx : engineSeat;
+}
 
 /** Bot seats answer their own turn shortly after it becomes pending, using
  *  the engine's real bot policy (not the conservative AFK default) — short
@@ -19,7 +41,7 @@ export function broadcastViews(io: Server, room: GameRoom): void {
   if (!room.session) return;
   room.seats.forEach((seat, i) => {
     if (!seat.connected || !seat.socketId) return;
-    const view = projectFor(room.session!.state, seatPlayerId(i));
+    const view = projectFor(room.session!.state, seatPlayerId(engineSeatOf(room, i)));
     io.to(seat.socketId).emit(ServerEvents.GameView, view);
   });
 }
@@ -28,16 +50,32 @@ function roomStateSeat(s: GameRoom["seats"][number]): RoomStateSeat {
   return { name: s.name, connected: s.connected, connectionStatus: s.connectionStatus, isHost: s.isHost, isBot: s.isBot };
 }
 
+// Inverts room.seatAssignment (lobbyIndex -> engineSeat) into engineSeat ->
+// lobbyIndex, so the client can map a GameView board player (engine-seat
+// ordered) back onto this room's (lobby-order) connection status without the
+// two orderings needing to coincide. Absent outside an active match.
+function lobbySeatOfEngineSeat(room: GameRoom): number[] | undefined {
+  if (!room.seatAssignment) return undefined;
+  const out = new Array<number>(room.seatAssignment.length);
+  room.seatAssignment.forEach((engineSeat, lobbyIndex) => {
+    out[engineSeat] = lobbyIndex;
+  });
+  return out;
+}
+
 /** Broadcast the room-level meta (seats + connection status + match/deadline)
  *  PER SOCKET, so each client also learns its own current seat index — that
  *  survives a lobby re-index without trusting a locally-cached value. */
 export function broadcastRoomState(io: Server, room: GameRoom): void {
+  const seatMap = lobbySeatOfEngineSeat(room);
   const base: Omit<RoomStatePayload, "yourSeatIndex"> = {
     code: room.code,
     phase: room.phase,
     seats: room.seats.map(roomStateSeat),
     ...(room.matchId ? { matchId: room.matchId } : {}),
     ...(room.decisionExpiresAt ? { decisionExpiresAt: room.decisionExpiresAt } : {}),
+    ...(room.revealExpiresAt ? { revealExpiresAt: room.revealExpiresAt } : {}),
+    ...(seatMap ? { lobbySeatOfEngineSeat: seatMap } : {}),
   };
   room.seats.forEach((seat, i) => {
     if (!seat.socketId) return;
@@ -53,9 +91,67 @@ function clearRoomTimer(room: GameRoom): void {
   delete room.decisionExpiresAt;
 }
 
+function clearRevealTimer(room: GameRoom): void {
+  if (room.revealTimer) {
+    clearTimeout(room.revealTimer);
+    delete room.revealTimer;
+  }
+  delete room.revealExpiresAt;
+}
+
+/** SPEC 8.4: compute the match's authoritative result exactly once, the
+ *  moment state.finished flips true (from either a normal engine finish or a
+ *  forfeit-driven one) — summarizeMatch is engine-pure; this just adds the
+ *  server-only bits (matchId identity, wall-clock duration) it can't know.
+ *  Idempotent (checks room.result) since both call sites can't race but
+ *  might otherwise double-compute on a shared code path. */
+function finalizeMatchResult(room: GameRoom): void {
+  if (room.result || !room.session?.state.finished) return;
+  const summary = summarizeMatch(room.session.state);
+  room.result = {
+    ...summary,
+    matchId: room.matchId ?? "",
+    durationMs: room.matchStartedAt ? Date.now() - room.matchStartedAt : 0,
+  };
+}
+
+// MatchResult is the same for every viewer (no hidden-info filtering, unlike
+// GameView) — one room-wide broadcast, not the per-seat pattern above.
+function broadcastMatchResult(io: Server, room: GameRoom): void {
+  if (!room.result) return;
+  io.to(room.code).emit(ServerEvents.MatchResult, room.result);
+}
+
+/** SPEC 7.2: hold the match at "revealing" for a fixed window before the
+ *  first pickGeneral (the lord's — already live inside the engine session,
+ *  which pauses there synchronously) is actually surfaced/timed. Broadcasts
+ *  now so clients can render the reveal screen from the projected view
+ *  (own role; the lord's identity is public per SPEC either way), then flips
+ *  to "playing" and arms the real decision timeout once the window elapses. */
+export function beginRevealPhase(
+  io: Server,
+  room: GameRoom,
+  revealMs = REVEAL_DURATION_MS,
+  decisionTimeoutMs = DECISION_TIMEOUT_MS,
+  botDelayMs = BOT_ANSWER_DELAY_MS,
+): void {
+  if (room.phase !== "revealing") return;
+  room.revealExpiresAt = Date.now() + revealMs;
+  broadcastViews(io, room);
+  broadcastRoomState(io, room);
+  room.revealTimer = setTimeout(() => {
+    delete room.revealTimer;
+    if (room.phase !== "revealing") return; // e.g. abandoned mid-reveal
+    room.phase = "playing";
+    delete room.revealExpiresAt;
+    afterRespond(io, room, decisionTimeoutMs, botDelayMs);
+  }, revealMs);
+}
+
 function isBotDecision(room: GameRoom, playerId: string): boolean {
-  const seatIndex = Number(playerId.slice(1));
-  return Number.isNaN(seatIndex) ? false : !!room.seats[seatIndex]?.isBot;
+  const engineSeat = Number(playerId.slice(1));
+  if (Number.isNaN(engineSeat)) return false;
+  return !!room.seats[lobbySeatOf(room, engineSeat)]?.isBot;
 }
 
 // A last-resort answer that always terminates a decision when the normal
@@ -74,14 +170,19 @@ function safeFallbackAnswer(session: NonNullable<GameRoom["session"]>, decisionI
   return { ...base, pass: true };
 }
 
-export function scheduleTimeout(io: Server, room: GameRoom, timeoutMs = DECISION_TIMEOUT_MS): void {
+export function scheduleTimeout(
+  io: Server,
+  room: GameRoom,
+  timeoutMs = DECISION_TIMEOUT_MS,
+  botDelayMs = BOT_ANSWER_DELAY_MS,
+): void {
   clearRoomTimer(room);
   const session = room.session;
   const pending = session?.state.pendingDecision;
   if (!session || !pending) return;
   const decisionId = pending.id;
   const isBotTurn = isBotDecision(room, pending.playerId);
-  const delay = isBotTurn ? BOT_ANSWER_DELAY_MS : timeoutMs;
+  const delay = isBotTurn ? botDelayMs : timeoutMs;
   room.decisionExpiresAt = Date.now() + delay;
 
   room.decisionTimer = setTimeout(() => {
@@ -110,21 +211,28 @@ export function scheduleTimeout(io: Server, room: GameRoom, timeoutMs = DECISION
         return;
       }
     }
-    afterRespond(io, room, timeoutMs);
+    afterRespond(io, room, timeoutMs, botDelayMs);
   }, delay);
 }
 
 /** Call after any successful respond() — including the very first one right
  *  after room.session is created — to broadcast the new state and arm the
  *  next decision's timeout. */
-export function afterRespond(io: Server, room: GameRoom, timeoutMs = DECISION_TIMEOUT_MS): void {
+export function afterRespond(
+  io: Server,
+  room: GameRoom,
+  timeoutMs = DECISION_TIMEOUT_MS,
+  botDelayMs = BOT_ANSWER_DELAY_MS,
+): void {
   if (room.session?.state.finished) {
     room.phase = "ended";
     clearRoomTimer(room);
+    finalizeMatchResult(room);
   }
   broadcastViews(io, room);
-  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs);
+  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs);
   broadcastRoomState(io, room); // refresh connection status + decision deadline
+  broadcastMatchResult(io, room);
 }
 
 function isPlayerAlive(session: GameSession, playerId: string): boolean {
@@ -156,11 +264,12 @@ function anyHumanConnected(room: GameRoom): boolean {
 // decisive result — including a lord's no_winner forfeit — is checked first
 // (room.session.finished), so a real outcome always wins over "abandoned".
 function maybeAbandon(io: Server, room: GameRoom): boolean {
-  if (room.phase !== "playing") return false;
+  if (!isMatchActive(room)) return false;
   if (room.session?.state.finished) return false;
   if (anyHumanConnected(room)) return false;
   room.phase = "abandoned";
   clearRoomTimer(room);
+  clearRevealTimer(room);
   for (const seat of room.seats) {
     if (seat.graceTimer) {
       clearTimeout(seat.graceTimer);
@@ -182,19 +291,27 @@ export function forfeitAndContinue(
   room: GameRoom,
   seatIndex: number,
   timeoutMs = DECISION_TIMEOUT_MS,
+  botDelayMs = BOT_ANSWER_DELAY_MS,
 ): void {
   const seat = room.seats[seatIndex];
   if (!seat) return;
   rooms.revokeSeatToken(room, seatIndex);
   seat.connectionStatus = "gone";
+  // A grace-expiry forfeit already went through disconnectSocket (connected
+  // is already false); an explicit mid-match leave (SPEC 6.2/6.3) hasn't —
+  // the socket left the room but this seat's own bookkeeping never reflected
+  // it. Make both paths agree: a "gone" seat is never "connected" (SPEC 8.5
+  // relies on this to prune it on a later return-to-lobby).
+  seat.connected = false;
+  delete seat.socketId;
   if (seat.graceTimer) {
     clearTimeout(seat.graceTimer);
     delete seat.graceTimer;
   }
 
   const session = room.session;
-  if (room.phase === "playing" && session) {
-    forfeitIdentityPlayer(session, seatPlayerId(seatIndex));
+  if (isMatchActive(room) && session) {
+    forfeitIdentityPlayer(session, seatPlayerId(engineSeatOf(room, seatIndex)));
     let guard = 0;
     while (
       session.state.pendingDecision &&
@@ -215,13 +332,16 @@ export function forfeitAndContinue(
     if (session.state.finished) {
       room.phase = "ended";
       clearRoomTimer(room);
+      clearRevealTimer(room);
+      finalizeMatchResult(room);
     }
   }
 
   broadcastViews(io, room);
   if (maybeAbandon(io, room)) return;
-  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs);
+  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs);
   broadcastRoomState(io, room);
+  broadcastMatchResult(io, room);
 }
 
 /** Arm the per-seat grace timer on an in-match disconnect. A reconnect clears
@@ -231,7 +351,7 @@ export function armGraceTimer(
   rooms: RoomManager,
   room: GameRoom,
   seatIndex: number,
-  opts: { graceMs?: number; decisionTimeoutMs?: number } = {},
+  opts: { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } = {},
 ): void {
   const seat = room.seats[seatIndex];
   if (!seat) return;
@@ -240,7 +360,7 @@ export function armGraceTimer(
   seat.graceTimer = setTimeout(() => {
     delete seat.graceTimer;
     // A reconnect (or a game that already ended) makes the forfeit moot.
-    if (seat.connected || room.phase !== "playing") return;
-    forfeitAndContinue(io, rooms, room, seatIndex, opts.decisionTimeoutMs);
+    if (seat.connected || !isMatchActive(room)) return;
+    forfeitAndContinue(io, rooms, room, seatIndex, opts.decisionTimeoutMs, opts.botDelayMs);
   }, graceMs);
 }

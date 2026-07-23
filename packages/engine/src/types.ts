@@ -33,6 +33,7 @@ export interface Player {
   roleRevealed: boolean;
 
   generalId: string;
+  generalRevealed: boolean;
   faction: Faction;
   gender: Gender;
 

@@ -20,4 +20,6 @@ export type {
   Card,
   LogEntry,
   Phase,
+  MatchSummary,
+  MatchPlayerSummary,
 } from "@tktw/engine";

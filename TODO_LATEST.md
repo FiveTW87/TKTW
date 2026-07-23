@@ -96,59 +96,73 @@ Legend:
 
 ## Phase 3 — Hidden Information / Selection
 
+> Code-complete for the data/authority + minimal-wiring scope agreed via `/grill-me`:
+> engine (role↔seat randomization, `generalRevealed` gating), shared (`revealing` RoomPhase),
+> server (reveal-phase timer + rejoin/grace handling), client (RoleRevealModal wired to the
+> real phase). engine 225 · server 20 · client 49, typecheck clean on all 4 packages.
+> Still open: formal audits below, DevTools network inspection, and GPT Security Review
+> (user-triggered). Player→seat reshuffle per match/rematch deferred to Phase 4 (§8.2).
+
 - [ ] Audit Role projection
 - [ ] Audit hand projection
 - [ ] Audit General choices
 - [ ] Audit private Skill decisions
 - [ ] Audit reconnect payload
-- [ ] Implement Role reveal screen before General selection
-  - [ ] แสดงเฉพาะ Role ของตน
-  - [ ] ใช้ Deadline เดิมเมื่อ Rejoin
-  - [ ] เจ้าเมืองเป็น Public ตามกฎ
+- [x] Implement Role reveal screen before General selection
+  - [x] แสดงเฉพาะ Role ของตน
+  - [x] ใช้ Deadline เดิมเมื่อ Rejoin
+  - [x] เจ้าเมืองเป็น Public ตามกฎ
 - [ ] Randomize Match Seat and Role independently
-  - [ ] Match แรก
-  - [ ] Rematch
-  - [ ] เจ้าเมืองไม่ผูก Seat 1
-  - [ ] เจ้าเมืองเริ่มเทิร์นแรกจาก Seat ที่สุ่มได้
-- [ ] General selection timer
-- [ ] Implement General selection reveal flow
-  - [ ] เจ้าเมืองเลือกก่อน
-  - [ ] เปิดนายพลเจ้าเมืองทันที
-  - [ ] ผู้เล่นอื่นเลือกแบบส่วนตัวตามลำดับ
-  - [ ] เปิดนายพลคนอื่นพร้อมกันเมื่อเลือกครบ
-- [ ] Non-lords select privately in seat order and reveal together
-- [ ] Own choices only
-- [ ] Random/Confirm/Waiting
+  - [x] Match แรก (role→seat)
+  - [ ] Rematch (player→seat reshuffle — Phase 4)
+  - [x] เจ้าเมืองไม่ผูก Seat 1
+  - [x] เจ้าเมืองเริ่มเทิร์นแรกจาก Seat ที่สุ่มได้
+- [x] General selection timer
+- [x] Implement General selection reveal flow
+  - [x] เจ้าเมืองเลือกก่อน
+  - [x] เปิดนายพลเจ้าเมืองทันที
+  - [x] ผู้เล่นอื่นเลือกแบบส่วนตัวตามลำดับ
+  - [x] เปิดนายพลคนอื่นพร้อมกันเมื่อเลือกครบ
+- [x] Non-lords select privately in seat order and reveal together
+- [x] Own choices only
+- [x] Random/Confirm/Waiting
 - [ ] View public skills
 - [ ] Network payload inspection
 - [ ] GPT Security Review
 
 ## Phase 4 — Match End / Rematch
 
-- [ ] Separate Room/Match
-- [ ] Unique Match ID
-- [ ] Command envelope + clientActionId
-- [ ] Reject old Match action
-- [ ] Finish/abandon statuses
-- [ ] Cancel timers/decisions on finish
-- [ ] Implement Result screen
-  - [ ] เปิด Role ทุกคน
-  - [ ] แสดง Winner/No Winner
-  - [ ] แสดงสาเหตุจบเกม
-- [ ] Implement post-game statistics
-  - [ ] Most kills
-  - [ ] Most damage taken
-  - [ ] ไม่นับ Skill HP cost เป็น Damage
-  - [ ] Disconnect death ไม่มี Killer
-- [ ] Handle tied stat leaders
-- [ ] No-winner result when Lord leaves/expires
-- [ ] Return to same Lobby
-- [ ] Reuse Socket
-- [ ] Fresh Match state
-- [ ] Randomize Seat every Match including first/rematch
-- [ ] Ready/minimum players
-- [ ] Host transfer post-game
-- [ ] Rematch x3 E2E
+> Code-complete for the scope agreed via `/grill-me`: pragmatic extension of the flat `GameRoom`
+> (no literal Room/Match object split — SPEC §8.1's split is illustrative, not a gate requirement),
+> true player→seat permutation every match, engine-pure `summarizeMatch()` + `game:result` event,
+> minimal `matchId` guard (full `MatchCommandEnvelope`/`clientActionId` idempotency stays Phase 5),
+> host-driven rematch with no ready-flags. engine 236 · server 35 · client 53, typecheck clean on
+> all 4 packages. GPT Lifecycle Review skipped this phase per user (same as Phase 3's security review).
+
+- [x] Separate Room/Match (pragmatic: `result`/`matchStartedAt`/`seatAssignment` on `GameRoom`, not a literal split)
+- [x] Unique Match ID (fresh matchId + fresh seed every `startGame`, including rematch — fixes a latent identical-replay bug)
+- [ ] Command envelope + clientActionId (deferred to Phase 5, §9.1)
+- [x] Reject old Match action (`game:answer` stamped + checked against `room.matchId`)
+- [x] Finish/abandon statuses
+- [x] Cancel timers/decisions on finish
+- [x] Implement Result screen
+  - [x] เปิด Role ทุกคน
+  - [x] แสดง Winner/No Winner
+  - [x] แสดงสาเหตุจบเกม
+- [x] Implement post-game statistics
+  - [x] Most kills
+  - [x] Most damage taken
+  - [x] ไม่นับ Skill HP cost เป็น Damage
+  - [x] Disconnect death ไม่มี Killer
+- [x] Handle tied stat leaders
+- [x] No-winner result when Lord leaves/expires
+- [x] Return to same Lobby
+- [x] Reuse Socket
+- [x] Fresh Match state
+- [x] Randomize Seat every Match including first/rematch (true player→seat permutation, §8.2)
+- [ ] Ready/minimum players — MIN_PLAYERS check reused as-is; per-player "ready" flags explicitly NOT added (decision: host-driven restart, no ready gate)
+- [x] Host transfer post-game
+- [x] Rematch x3 E2E
 - [ ] GPT Lifecycle Review
 
 ## Phase 5 — Projected View / Protocol

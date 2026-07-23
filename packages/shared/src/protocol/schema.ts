@@ -40,6 +40,12 @@ export const leaveRoomSchema = z.object({
   roomCode: roomCodeSchema,
 });
 
+// SPEC 8.5: from the result screen, any player can send the room back to
+// the lobby for a rematch (host-driven restart from there — no ready flags).
+export const returnToLobbySchema = z.object({
+  roomCode: roomCodeSchema,
+});
+
 // One-click solo test mode: create a room, fill it with bot seats, and
 // start immediately — no join step, no waiting on other humans.
 export const quickstartWithBotsSchema = z.object({
@@ -50,8 +56,14 @@ export const quickstartWithBotsSchema = z.object({
 // Mirrors engine's PlayerAnswer (types.ts) minus playerId/decisionId, which
 // the server fills in itself from the room seat / current pendingDecision —
 // a client is never trusted to say who it's answering as.
+//
+// matchId (SPEC 8.3/8.7): a session's decisionIds restart at dec_1 on every
+// new match, so decisionId alone can't tell a stale answer from a previous
+// match apart from a legitimate one in the current match — the server
+// rejects any answer whose matchId doesn't match room.matchId.
 export const answerSchema = z.object({
   roomCode: roomCodeSchema,
+  matchId: z.string().min(1),
   decisionId: z.string().min(1),
   choice: z.string().max(64).optional(),
   cardIds: z.array(z.string().max(64)).max(10).optional(),
@@ -66,5 +78,6 @@ export type JoinRoomInput = z.infer<typeof joinRoomSchema>;
 export type RejoinRoomInput = z.infer<typeof rejoinRoomSchema>;
 export type StartGameInput = z.infer<typeof startGameSchema>;
 export type LeaveRoomInput = z.infer<typeof leaveRoomSchema>;
+export type ReturnToLobbyInput = z.infer<typeof returnToLobbySchema>;
 export type AnswerInput = z.infer<typeof answerSchema>;
 export type QuickstartWithBotsInput = z.infer<typeof quickstartWithBotsSchema>;

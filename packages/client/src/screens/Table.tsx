@@ -4,7 +4,6 @@ import { useGameStore } from "../store/gameStore";
 import { PlayerTile } from "../components/PlayerTile";
 import { HandCard, CardTooltip } from "../components/HandCard";
 import { DecisionModal } from "../components/DecisionModal";
-import { RoleRevealModal } from "../components/RoleRevealModal";
 import { InspectModal } from "../components/InspectModal";
 import { ModalOverlay, ModalPanel } from "../components/Modal";
 import { SkillToast, type ToastData } from "../components/SkillToast";
@@ -64,8 +63,6 @@ export function Table() {
   const [inspecting, setInspecting] = useState<PlayerView | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const roleRevealShown = useRef(false);
-  const [showRoleReveal, setShowRoleReveal] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
   const prevHandIdsRef = useRef<Set<string>>(new Set());
@@ -91,13 +88,6 @@ export function Table() {
   }, [decisionKey]);
 
   const me = gameView?.players.find((p) => p.id === gameView.viewerId);
-
-  useEffect(() => {
-    if (me && me.generalId !== "none" && !roleRevealShown.current) {
-      roleRevealShown.current = true;
-      setShowRoleReveal(true);
-    }
-  }, [me?.generalId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
@@ -181,39 +171,10 @@ export function Table() {
 
   if (!gameView) return null;
 
-  if (gameView.finished) {
-    const myRole = gameView.players.find((p) => p.id === gameView.viewerId)?.role;
-    const noWinner = !gameView.winners || gameView.winners.length === 0;
-    const won = !noWinner && myRole ? gameView.winners?.includes(myRole) : false;
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-        <div className="panel-plain anim-pop" style={{ width: 440, textAlign: "center", padding: 44 }}>
-          <div
-            style={{
-              width: 84,
-              height: 84,
-              borderRadius: "50%",
-              margin: "0 auto 18px",
-              background: "radial-gradient(circle at 38% 34%, #c0463a, #8f2a22)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid #f2e7cf",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 44, color: "#f6ecd2" }}>{won ? "勝" : "終"}</span>
-          </div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "var(--red)" }}>{won ? "ชัยชนะ!" : "จบเกม"}</div>
-          <div style={{ marginTop: 8, color: "var(--ink-muted)", fontSize: 15 }}>
-            {noWinner ? "ไม่มีผู้ชนะ — เจ้าเมืองหลุดการเชื่อมต่อ" : `ฝ่ายชนะ: ${gameView.winners?.join(", ")}`}
-          </div>
-          <button onClick={leaveRoom} className="btn-primary" style={{ marginTop: 26, padding: "13px 44px", fontSize: 16 }}>
-            เล่นอีกครั้ง
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // SPEC 8.4: a finished match's own screen is <Result/>, driven by the
+  // authoritative MatchResult broadcast (App.tsx routes there once it
+  // arrives) — Table has nothing useful left to render once gameView.finished.
+  if (gameView.finished) return null;
 
   if (!me) return null;
 
@@ -946,7 +907,6 @@ export function Table() {
         </div>
       )}
       {showDecisionModal && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
-      {showRoleReveal && <RoleRevealModal me={me} onClose={() => setShowRoleReveal(false)} />}
       {inspecting && <InspectModal player={inspecting} onClose={() => setInspecting(null)} />}
       {playChoices && (
         <ModalOverlay onClose={() => setPlayChoices(null)}>

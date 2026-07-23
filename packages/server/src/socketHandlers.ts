@@ -8,12 +8,20 @@ import {
   startGameSchema,
   answerSchema,
   quickstartWithBotsSchema,
+  returnToLobbySchema,
   ClientEvents,
   ServerEvents,
   type AnswerInput,
 } from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom } from "./rooms/RoomManager";
-import { afterRespond, broadcastRoomState, armGraceTimer, forfeitAndContinue } from "./rooms/gameFlow";
+import {
+  afterRespond,
+  beginRevealPhase,
+  broadcastRoomState,
+  armGraceTimer,
+  forfeitAndContinue,
+  engineSeatOf,
+} from "./rooms/gameFlow";
 
 interface SocketData {
   roomCode?: string;
@@ -47,7 +55,7 @@ function resyncSeatIndices(io: Server, room: GameRoom): void {
 
 function sendViewTo(room: GameRoom, seatIndex: number, socket: Socket): void {
   if (!room.session) return;
-  socket.emit(ServerEvents.GameView, projectFor(room.session.state, seatPlayerId(seatIndex)));
+  socket.emit(ServerEvents.GameView, projectFor(room.session.state, seatPlayerId(engineSeatOf(room, seatIndex))));
 }
 
 // zod's .optional() yields `T | undefined` keys that are always *present*,
@@ -70,6 +78,14 @@ export interface SocketHandlerOptions {
   /** How long a dropped in-match seat is held before it forfeits (SPEC 6.5).
    *  Overridable so tests don't wait out the real 45s default. */
   gracePeriodMs?: number;
+  /** How long the role-reveal screen holds before general selection starts
+   *  (SPEC 7.2). Overridable so tests don't wait out the real 8s default. */
+  revealDurationMs?: number;
+  /** How long a bot seat waits before answering its own turn. Overridable so
+   *  tests that need a FULL match to actually finish (SPEC 8: result/rematch)
+   *  aren't stuck waiting out the real 600ms per decision across however many
+   *  it takes a 3+ player identity game to end. */
+  botAnswerDelayMs?: number;
 }
 
 export function registerSocketHandlers(
@@ -77,14 +93,15 @@ export function registerSocketHandlers(
   rooms: RoomManager,
   opts: SocketHandlerOptions = {},
 ): void {
-  const { decisionTimeoutMs, gracePeriodMs } = opts;
+  const { decisionTimeoutMs, gracePeriodMs, revealDurationMs, botAnswerDelayMs } = opts;
   const runAfterRespond = (room: GameRoom): void =>
-    decisionTimeoutMs === undefined
-      ? afterRespond(io, room)
-      : afterRespond(io, room, decisionTimeoutMs);
-  const graceOpts: { graceMs?: number; decisionTimeoutMs?: number } = {};
+    afterRespond(io, room, decisionTimeoutMs, botAnswerDelayMs);
+  const runBeginRevealPhase = (room: GameRoom): void =>
+    beginRevealPhase(io, room, revealDurationMs, decisionTimeoutMs, botAnswerDelayMs);
+  const graceOpts: { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } = {};
   if (gracePeriodMs !== undefined) graceOpts.graceMs = gracePeriodMs;
   if (decisionTimeoutMs !== undefined) graceOpts.decisionTimeoutMs = decisionTimeoutMs;
+  if (botAnswerDelayMs !== undefined) graceOpts.botDelayMs = botAnswerDelayMs;
 
   io.on("connection", (socket: Socket) => {
     const data = socket.data as SocketData;
@@ -120,8 +137,7 @@ export function registerSocketHandlers(
       void socket.join(room.code);
 
       ok(ack, { roomCode: room.code, sessionToken, seatIndex });
-      broadcastRoomState(io, room);
-      runAfterRespond(room); // the room is already "playing" — broadcast the first game:view
+      runBeginRevealPhase(room); // room starts in "revealing" (SPEC 7.2), same as a normal start
     });
 
     socket.on(ClientEvents.RoomJoin, (raw: unknown, ack: Ack) => {
@@ -158,7 +174,13 @@ export function registerSocketHandlers(
 
         ok(ack, { seatIndex, phase: room.phase, ...(room.matchId ? { matchId: room.matchId } : {}) });
         broadcastRoomState(io, room);
-        if (room.phase === "playing") sendViewTo(room, seatIndex, socket);
+        // SPEC 7.2: a rejoin during the reveal screen still needs the
+        // projected view (own role; the lord's is public either way).
+        if (room.phase === "playing" || room.phase === "revealing") sendViewTo(room, seatIndex, socket);
+        // SPEC 8.4: a rejoin into an already-finished match still needs the
+        // result screen — the broadcast at match-end only reached whoever
+        // was connected at that moment.
+        if (room.phase === "ended" && room.result) socket.emit(ServerEvents.MatchResult, room.result);
       } catch (err) {
         fail(ack, err, "rejoin failed");
       }
@@ -191,7 +213,7 @@ export function registerSocketHandlers(
         delete data.roomCode;
         delete data.seatIndex;
         ok(ack);
-        forfeitAndContinue(io, rooms, room, seatIndex, decisionTimeoutMs);
+        forfeitAndContinue(io, rooms, room, seatIndex, decisionTimeoutMs, botAnswerDelayMs);
       }
     });
 
@@ -211,8 +233,33 @@ export function registerSocketHandlers(
         return fail(ack, err, "failed to start");
       }
       ok(ack);
+      // SPEC 7.2: roles are already assigned (createIdentityGame pauses at
+      // the lord's first pickGeneral synchronously), but general selection
+      // itself is withheld behind the reveal screen until its timer expires.
+      runBeginRevealPhase(room); // broadcasts room state + game views for the reveal
+    });
+
+    // SPEC 8.5: from the result screen, any player can send a finished match
+    // back to the lobby for a rematch — host-driven restart from there (the
+    // host calls room:start again, same as a first match).
+    socket.on(ClientEvents.RoomReturnToLobby, (raw: unknown, ack: Ack) => {
+      const parsed = returnToLobbySchema.safeParse(raw);
+      if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+
+      const room = rooms.getRoom(parsed.data.roomCode);
+      if (!room) return fail(ack, new RoomError("room not found"), "room not found");
+      if (data.roomCode !== room.code || data.seatIndex === undefined) {
+        return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
+      }
+
+      try {
+        rooms.returnToLobby(room);
+      } catch (err) {
+        return fail(ack, err, "failed to return to lobby");
+      }
+      resyncSeatIndices(io, room); // pruned seats shift the rest down — re-sync sockets
+      ok(ack);
       broadcastRoomState(io, room);
-      runAfterRespond(room); // broadcasts the first game:view, arms the first timeout
     });
 
     socket.on(ClientEvents.GameAnswer, (raw: unknown, ack: Ack) => {
@@ -226,9 +273,15 @@ export function registerSocketHandlers(
       if (data.roomCode !== room.code || data.seatIndex === undefined) {
         return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
       }
+      // SPEC 8.3/8.7: a session's decisionIds restart at dec_1 every match, so
+      // decisionId alone can't tell a stale answer from a previous match
+      // apart from a legitimate one in this one — reject it outright.
+      if (parsed.data.matchId !== room.matchId) {
+        return fail(ack, new RoomError("stale match"), "stale match");
+      }
 
       const pending = room.session.state.pendingDecision;
-      const myPlayerId = seatPlayerId(data.seatIndex);
+      const myPlayerId = seatPlayerId(engineSeatOf(room, data.seatIndex));
       if (!pending) return fail(ack, new RoomError("no pending decision"), "no pending decision");
       if (pending.playerId !== myPlayerId) {
         return fail(ack, new RoomError("not your decision to answer"), "not your decision to answer");
@@ -255,8 +308,10 @@ export function registerSocketHandlers(
       rooms.disconnectSocket(room, socket.id);
       // Mid-match: hold the seat for the grace window, then forfeit if the
       // player hasn't reconnected (a reconnect clears the timer). In the lobby
-      // there's no character to lose, so nothing to time out.
-      if (room.phase === "playing" && seatIndex !== undefined) {
+      // there's no character to lose, so nothing to time out. "revealing"
+      // counts as in-match too (SPEC 7.2) — a drop during the reveal screen
+      // needs the same grace protection as one mid-match.
+      if ((room.phase === "playing" || room.phase === "revealing") && seatIndex !== undefined) {
         armGraceTimer(io, rooms, room, seatIndex, graceOpts);
       }
       // Everyone else sees the "reconnecting" status immediately.

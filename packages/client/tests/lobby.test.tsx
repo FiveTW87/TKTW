@@ -47,8 +47,10 @@ beforeEach(() => {
     roomCode: null,
     sessionToken: null,
     seatIndex: null,
+    matchId: null,
     roomState: null,
     gameView: null,
+    matchResult: null,
     error: null,
     answeringId: null,
   });

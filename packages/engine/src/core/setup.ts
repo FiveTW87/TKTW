@@ -27,6 +27,7 @@ export function createInitialState(opts: SetupOptions, rng: Rng): GameState {
       role: "rebel", // placeholder; modes/identity.ts assigns real roles for P3
       roleRevealed: false,
       generalId: "none",
+      generalRevealed: false,
       faction: "qun",
       gender: "male",
       hp: 4,

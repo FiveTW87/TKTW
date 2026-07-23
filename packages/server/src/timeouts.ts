@@ -14,6 +14,12 @@ export const DECISION_TIMEOUT_MS = 30_000;
 // before it forfeits — the player's character dies and their token is revoked.
 export const GRACE_PERIOD_MS = 45_000;
 
+// SPEC 7.2: how long the role-reveal screen holds before the first
+// pickGeneral decision (the lord's) is surfaced/timed. Roles are already
+// assigned in the engine by this point — this is purely a server-side pacing
+// delay, never part of engine state (SPEC 3.4: timers stay out of the engine).
+export const REVEAL_DURATION_MS = 8_000;
+
 export function defaultAnswerFor(session: GameSession): PlayerAnswer {
   const pending = session.state.pendingDecision;
   if (!pending) throw new Error("defaultAnswerFor: no pending decision");

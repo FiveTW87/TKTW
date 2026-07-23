@@ -9,8 +9,8 @@
 // restart. GameSession's own decisionLog/recoverGame machinery exists for
 // that harder problem but isn't wired in here; see gameFlow.ts.
 import { randomUUID } from "node:crypto";
-import { createIdentityGame, type GameSession } from "@tktw/engine";
-import { ROOM_CODE_ALPHABET, type RoomPhase, type ConnectionStatus } from "@tktw/shared";
+import { createIdentityGame, createRng, type GameSession } from "@tktw/engine";
+import { ROOM_CODE_ALPHABET, type RoomPhase, type ConnectionStatus, type MatchResult } from "@tktw/shared";
 
 export type { RoomPhase };
 
@@ -34,9 +34,19 @@ export interface GameRoom {
   phase: RoomPhase;
   seats: SeatSlot[];
   session?: GameSession;
-  seed: number;
   /** Set when the match starts — part of the reconnect restore payload. */
   matchId?: string;
+  /** SPEC 8.2: this match's player->seat permutation, indexed by lobby seat
+   *  (room.seats index) -> engine seat (the `p{k}` id used in GameView).
+   *  Freshly randomized every match/rematch — never the identity mapping,
+   *  and never reused from a previous match. Absent in "lobby". */
+  seatAssignment?: number[];
+  /** ms-epoch when the current match's session was created (SPEC 8.4
+   *  duration). Absent in "lobby". */
+  matchStartedAt?: number;
+  /** SPEC 8.4: the finished match's result, computed once at game-end and
+   *  kept around so a rejoin into "ended" can resend it (server.ts driven). */
+  result?: MatchResult;
   createdAt: number;
   /** Timestamp of the moment the room's connected-socket count first hit
    *  zero, or null while at least one seat is connected. The GC sweep only
@@ -49,6 +59,11 @@ export interface GameRoom {
   /** ms-epoch deadline of the current pending decision (for the client
    *  countdown / reconnect deadline restore). */
   decisionExpiresAt?: number;
+  /** SPEC 7.2: fires when the role-reveal screen's timer expires, flipping
+   *  phase "revealing" -> "playing" and arming the lord's pickGeneral timer. */
+  revealTimer?: ReturnType<typeof setTimeout>;
+  /** ms-epoch deadline of the "revealing" phase (reconnect restore). */
+  revealExpiresAt?: number;
 }
 
 export const MIN_PLAYERS = 3;
@@ -83,7 +98,6 @@ export class RoomManager {
       code,
       phase: "lobby",
       seats: [{ name: hostName, sessionToken, connected: true, connectionStatus: "connected", isHost: true, isBot: false }],
-      seed: Math.floor(Math.random() * 1_000_000_000),
       createdAt: Date.now(),
       emptySince: null,
     };
@@ -175,9 +189,10 @@ export class RoomManager {
     if (room.seats.every((s) => s.isBot || !s.connected)) {
       room.emptySince = Date.now();
     }
-    // Host auto-transfer is lobby-only: mid-game there's no "host" action
-    // left to perform, so there's nothing to hand off.
-    if (room.phase === "lobby" && seat.isHost) {
+    // Host auto-transfer applies in the lobby and post-game (SPEC 8.6): a
+    // "host" action (starting the game / returning to lobby) exists in both.
+    // Mid-match there's no host action left to perform, so nothing to hand off.
+    if ((room.phase === "lobby" || room.phase === "ended") && seat.isHost) {
       seat.isHost = false;
       const next = room.seats.find((s) => s.connected);
       if (next) next.isHost = true;
@@ -191,13 +206,59 @@ export class RoomManager {
     if (room.seats.length < MIN_PLAYERS) {
       throw new RoomError(`need at least ${MIN_PLAYERS} players to start`);
     }
-    room.session = createIdentityGame({
-      playerCount: room.seats.length,
-      seed: room.seed,
-      names: room.seats.map((s) => s.name),
+    const n = room.seats.length;
+    // SPEC 8.2: every match (first and rematch alike) gets its own fresh
+    // seed — reusing room-level state here would replay the identical deal
+    // every rematch. The seat permutation gets an independent seed so it
+    // isn't just a byproduct of whatever the identity game's own internal
+    // shuffles happen to draw first.
+    const matchSeed = Math.floor(Math.random() * 1_000_000_000);
+    const seatSeed = Math.floor(Math.random() * 1_000_000_000);
+    // seatAssignment[lobbyIndex] = engineSeat: a fresh player->seat
+    // permutation, decoupled from lobby join order (§8.2's "ห้ามใช้ Seat
+    // เดิมเพียงเพราะเป็น Rematch" / "Lobby Join Order ไม่ถือเป็น Match Seat").
+    const seatAssignment = createRng(seatSeed).shuffle([...Array(n).keys()]);
+    const names = new Array<string>(n);
+    room.seats.forEach((seat, lobbyIndex) => {
+      names[seatAssignment[lobbyIndex]!] = seat.name;
     });
+    room.session = createIdentityGame({
+      playerCount: n,
+      seed: matchSeed,
+      names,
+    });
+    room.seatAssignment = seatAssignment;
     room.matchId = randomUUID();
-    room.phase = "playing";
+    room.matchStartedAt = Date.now();
+    delete room.result;
+    // SPEC 7.2: roles are already assigned inside createIdentityGame (the
+    // engine session is paused at the lord's first pickGeneral), but the
+    // server withholds it behind a brief reveal screen before general
+    // selection actually starts — see gameFlow.ts:beginRevealPhase.
+    room.phase = "revealing";
+  }
+
+  /** SPEC 8.5: from the result screen, send a finished match's room back to
+   *  the lobby for a rematch. Host-driven restart from there (no per-player
+   *  ready gate) — the host simply calls startGame again afterward, which
+   *  mints a fresh seed/matchId/seatAssignment same as a first match.
+   *  Prunes any seat that isn't currently connected (a forfeited "gone" seat,
+   *  or someone who dropped and never reconnected) — SPEC 8.5/8.7: some
+   *  players leaving must not block the rest from returning to lobby. */
+  returnToLobby(room: GameRoom): void {
+    if (room.phase !== "ended") throw new RoomError("match is not over");
+    room.seats = room.seats.filter((s) => s.connected);
+    if (!room.seats.some((s) => s.isHost)) {
+      const next = room.seats[0];
+      if (next) next.isHost = true;
+    }
+    delete room.session;
+    delete room.matchId;
+    delete room.seatAssignment;
+    delete room.matchStartedAt;
+    delete room.result;
+    room.phase = "lobby";
+    if (room.seats.length === 0) room.emptySince = Date.now();
   }
 
   /** Explicit leave from the LOBBY (ROOM-002/003): the seat and its token are

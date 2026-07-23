@@ -8,10 +8,12 @@ export const ClientEvents = {
   RoomLeave: "room:leave",
   RoomStart: "room:start",
   RoomQuickstartWithBots: "room:quickstartWithBots",
+  RoomReturnToLobby: "room:returnToLobby",
   GameAnswer: "game:answer",
 } as const;
 
 export const ServerEvents = {
   RoomState: "room:state",
   GameView: "game:view",
+  MatchResult: "game:result",
 } as const;
