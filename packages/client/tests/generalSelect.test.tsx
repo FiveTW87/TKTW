@@ -158,4 +158,36 @@ describe("General select screen", () => {
     await waitFor(() => expect(screen.getByText(/รอ p1 เลือกนายพล/)).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
   });
+
+  // SPEC §7.3 — the selector's screen must show a Timer, which previously
+  // didn't render anywhere on this screen at all.
+  it("shows a countdown when the decision carries a deadline", async () => {
+    await enterRoom("TIMER1");
+    const now = Date.now();
+
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [basePlayer("p0", 0), basePlayer("p1", 1), basePlayer("p2", 2)],
+      currentTurnPlayerId: "p0",
+      turnNumber: 0,
+      currentPhase: "prepare",
+      drawPileCount: 90,
+      discardPile: [], discardPileCount: 0,
+      eventStack: [],
+      pendingDecision: {
+        id: "dec_timer",
+        kind: "pickGeneral",
+        playerId: "p0",
+        data: { options: ["caocao", "liubei"] },
+        startedAt: now,
+        expiresAt: now + 15000,
+      },
+      finished: false,
+      gameLogs: [],
+      serverNow: now,
+    });
+
+    expect(await screen.findByText(/เหลือ \d+ วินาที/)).toBeInTheDocument();
+  });
 });

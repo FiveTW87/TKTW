@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
 import { generalDisplay, generalFaction, factionColor } from "../data/generalNames";
 import { generalSkills } from "../data/generalSkills";
+import { useCountdown } from "../lib/useCountdown";
 
 export function GeneralSelect() {
   const gameView = useGameStore((s) => s.gameView);
@@ -11,6 +12,9 @@ export function GeneralSelect() {
   const [busy, setBusy] = useState(false);
 
   const pending = gameView?.pendingDecision;
+  // Hooks must run unconditionally — compute the countdown before any early
+  // return below (SPEC §7.3's "Timer" requirement for the selector's screen).
+  const remaining = useCountdown(pending?.expiresAt, gameView?.serverNow ?? 0);
   if (!gameView || !pending) return null;
 
   const isMine = pending.playerId === gameView.viewerPlayerId;
@@ -34,12 +38,28 @@ export function GeneralSelect() {
             <span style={{ fontFamily: "var(--font-glyph)", color: "var(--red)", fontSize: 32 }}>將</span>
             {isMine ? "เลือกนายพลของคุณ" : `รอ ${waitingName} เลือกนายพล...`}
           </div>
-          {isMine && isLord && (
-            <div style={{ fontSize: 13, color: "var(--red)", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18 }}>主</span>
-              คุณคือเจ้าเมือง — พลังชีวิต +1
-            </div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {isMine && isLord && (
+              <div style={{ fontSize: 13, color: "var(--red)", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18 }}>主</span>
+                คุณคือเจ้าเมือง — พลังชีวิต +1
+              </div>
+            )}
+            {remaining !== null && (
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: remaining <= 5 ? "var(--target-red)" : "var(--ink-muted)",
+                  background: "rgba(0,0,0,.06)",
+                  borderRadius: 8,
+                  padding: "3px 10px",
+                }}
+              >
+                เหลือ {remaining} วินาที
+              </span>
+            )}
+          </div>
         </div>
 
         {isMine && (
