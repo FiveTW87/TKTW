@@ -60,20 +60,20 @@ function playerName(gameView: GameView, id: string | undefined): string {
 // `reason` tag — so the reveal prompt tells you what you're lucking for.
 const JUDGMENT_CONTEXT: Record<string, { title: string; hint?: string }> = {
   lebusishu: {
-    title: 'ตัดสิน "เพลินจนลืมแคว้นสู่" — แตะเปิดการ์ด',
+    title: `ตัดสิน "${cardDisplay("lebusishu").name}" — แตะเปิดการ์ด`,
     hint: "ได้โพแดง (♥) = รอด เล่นได้ตามปกติ · ไม่ใช่ = ข้ามเฟสลงการ์ดเทิร์นนี้",
   },
   shandian: {
-    title: 'ตัดสิน "สายฟ้า" — แตะเปิดการ์ด',
+    title: `ตัดสิน "${cardDisplay("shandian").name}" — แตะเปิดการ์ด`,
     hint: "ได้โพดำ ♠ 2–9 = โดน 3 ดาเมจ · ไม่ใช่ = รอด ส่งต่อคนถัดไป",
   },
   bagua: {
-    title: 'ค่ายกลแปดทิศ — แตะเปิดการ์ดแทนการลง "หลบ"',
+    title: `${cardDisplay("bagua").name} — แตะเปิดการ์ดแทนการลง "${cardDisplay("shan").name}"`,
     hint: "ได้ดอกแดง (♥♦) = นับเป็นหลบอัตโนมัติ · ไม่ใช่ = ไม่ติด",
   },
   machao_tieqi: {
-    title: 'ทหารม้าเหล็ก — แตะเปิดการ์ดตัดสิน',
-    hint: "ได้ดอกแดง (♥♦) = เป้าลง \"หลบ\" ไม่ได้",
+    title: `${skillById("machao_tieqi")?.name ?? "machao_tieqi"} — แตะเปิดการ์ดตัดสิน`,
+    hint: `ได้ดอกแดง (♥♦) = เป้าลง "${cardDisplay("shan").name}" ไม่ได้`,
   },
   xiahoudun_ganglie: {
     title: 'พลังเดือด — แตะเปิดการ์ดตัดสิน',
@@ -100,50 +100,50 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
             icon: "閃",
             title: `โดน "${shaName}" จาก ${name(data.sourceId)} — ต้องลง "${shanName}" ${needed} ใบถึงจะรอด`,
             hint: `เลือก ${needed} ใบพร้อมกัน — ลงไม่ครบไม่เสียการ์ด แต่โดนดาเมจ`,
-            shape: { kind: "card", neededType: "shan", requiredCount: needed, declineLabel: "ยอมโดน", confirmLabel: `ลงหลบ ${needed} ใบ` },
+            shape: { kind: "card", neededType: "shan", requiredCount: needed, declineLabel: "ยอมโดน", confirmLabel: `ลง${shanName} ${needed} ใบ` },
           }
         : {
             icon: "閃",
             title: `โดน "${shaName}" จาก ${name(data.sourceId)} — จะลง "${shanName}" ไหม?`,
-            shape: { kind: "card", neededType: "shan", declineLabel: "ยอมโดน", confirmLabel: "ลงหลบ" },
+            shape: { kind: "card", neededType: "shan", declineLabel: "ยอมโดน", confirmLabel: `ลง${shanName}` },
           };
     case "respondSha":
       if (data.reason === "nanman") {
         return {
           icon: "蠻",
-          title: `ศึกชนเผ่าใต้ — จะลง "${shaName}" ไหม? (ไม่ลงจะโดน 1 ดาเมจ)`,
-          shape: { kind: "card", neededType: "sha", declineLabel: "ยอมโดนดาเมจ", confirmLabel: "ลงสังหาร" },
+          title: `${cardDisplay("nanman").name} — จะลง "${shaName}" ไหม? (ไม่ลงจะโดน 1 ดาเมจ)`,
+          shape: { kind: "card", neededType: "sha", declineLabel: "ยอมโดนดาเมจ", confirmLabel: `ลง${shaName}` },
         };
       }
       return needed > 1
         ? {
             icon: "決",
-            title: `ดวลกับ ${name(data.opponentId)} — ต้องลง "${shaName}" ${needed} ใบถึงจะชนะรอบนี้`,
+            title: `${cardDisplay("juedou").name}กับ ${name(data.opponentId)} — ต้องลง "${shaName}" ${needed} ใบถึงจะชนะรอบนี้`,
             hint: `เลือก ${needed} ใบพร้อมกัน — ลงไม่ครบไม่เสียการ์ด แต่แพ้ดวล`,
-            shape: { kind: "card", neededType: "sha", requiredCount: needed, declineLabel: "ยอมแพ้ดวล", confirmLabel: `ลงสังหาร ${needed} ใบ` },
+            shape: { kind: "card", neededType: "sha", requiredCount: needed, declineLabel: "ยอมแพ้ดวล", confirmLabel: `ลง${shaName} ${needed} ใบ` },
           }
         : {
             icon: "決",
-            title: `ดวลกับ ${name(data.opponentId)} — จะลง "${shaName}" ไหม? (ไม่ลงจะแพ้ดวล)`,
-            shape: { kind: "card", neededType: "sha", declineLabel: "ยอมแพ้ดวล", confirmLabel: "ลงสังหาร" },
+            title: `${cardDisplay("juedou").name}กับ ${name(data.opponentId)} — จะลง "${shaName}" ไหม? (ไม่ลงจะแพ้ดวล)`,
+            shape: { kind: "card", neededType: "sha", declineLabel: "ยอมแพ้ดวล", confirmLabel: `ลง${shaName}` },
           };
     case "respondTao":
       return {
         icon: "桃",
         title: `${name(data.dyingId)} ใกล้ตาย (HP ${data.hp}) — จะช่วยด้วย "${taoName}" ไหม?`,
         hint: "เลือกได้มากกว่า 1 ใบ (ฟื้นตามจำนวนใบ)",
-        shape: { kind: "card", neededType: "tao", multi: true, declineLabel: "ไม่ช่วย", confirmLabel: "ใช้ท้อ" },
+        shape: { kind: "card", neededType: "tao", multi: true, declineLabel: "ไม่ช่วย", confirmLabel: `ใช้${taoName}` },
       };
     case "askWuxie":
       return {
         icon: "無",
         title: `จะใช้ "${wuxieName}" ยกเลิก "${cardDisplay(String(data.cancelledType ?? "")).name}" ไหม?`,
-        shape: { kind: "card", neededType: "wuxie", declineLabel: "ปล่อยผ่าน", confirmLabel: "ใช้ไร้ช่องโหว่" },
+        shape: { kind: "card", neededType: "wuxie", declineLabel: "ปล่อยผ่าน", confirmLabel: `ใช้${wuxieName}` },
       };
     case "swordIceChoice":
       return {
         icon: "冰",
-        title: `${name(data.targetId)} ถือกระบี่น้ำแข็ง — จะรับดาเมจ หรือให้เขาทิ้งการ์ด 2 ใบแทน?`,
+        title: `${name(data.targetId)} ถือ${cardDisplay("sword_ice").name} — จะรับดาเมจ หรือให้เขาทิ้งการ์ด 2 ใบแทน?`,
         shape: {
           kind: "choice",
           options: [
@@ -155,7 +155,7 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "guanshiForce":
       return {
         icon: "貫",
-        title: `${name(data.targetId)} ลงหลบสำเร็จ — จะทิ้งการ์ด 2 ใบ บังคับให้โดน (ขวานทะลุศิลา) ไหม?`,
+        title: `${name(data.targetId)} ลงหลบสำเร็จ — จะทิ้งการ์ด 2 ใบ บังคับให้โดน (${cardDisplay("guanshi").name}) ไหม?`,
         shape: {
           kind: "card",
           multi: true,
@@ -168,17 +168,17 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "qinglongReplay":
       return {
         icon: "龍",
-        title: `${name(data.targetId)} โดนสังหารแล้ว — จะใช้ง้าวมังกรเขียว ลงสังหารซ้ำไหม?`,
+        title: `${name(data.targetId)} โดน${shaName}แล้ว — จะใช้${cardDisplay("qinglong").name} ลง${shaName}ซ้ำไหม?`,
         shape: {
           kind: "choice",
-          options: [{ value: "replay", label: "ลงสังหารซ้ำ" }],
+          options: [{ value: "replay", label: `ลง${shaName}ซ้ำ` }],
           declineLabel: "พอแค่นี้",
         },
       };
     case "qilinDestroyHorse":
       return {
         icon: "麟",
-        title: `ธนูกิเลน — เลือกทำลายม้าของ ${name(data.targetId)}`,
+        title: `${cardDisplay("qilin").name} — เลือกทำลายม้าของ ${name(data.targetId)}`,
         shape: {
           kind: "choice",
           options: [
@@ -190,7 +190,7 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "swordYyChoice":
       return {
         icon: "陰",
-        title: `โดนกระบี่คู่หยินหยางจาก ${name(data.sourceId)} — จะทิ้งการ์ด 1 ใบ หรือให้เขาจั่วเพิ่ม?`,
+        title: `โดน${cardDisplay("sword_yy").name}จาก ${name(data.sourceId)} — จะทิ้งการ์ด 1 ใบ หรือให้เขาจั่วเพิ่ม?`,
         shape: {
           kind: "choice",
           options: [{ value: "discard", label: "ทิ้งการ์ด 1 ใบ" }],
@@ -217,14 +217,14 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "jiedaoForceSha":
       return {
         icon: "借",
-        title: `ถูกบังคับให้ลง "${shaName}" ใส่ ${name(data.mustTarget)} (ยืมดาบฆ่าคน) — จะทำไหม?`,
+        title: `ถูกบังคับให้ลง "${shaName}" ใส่ ${name(data.mustTarget)} (${cardDisplay("jiedao").name}) — จะทำไหม?`,
         hint: "ถ้าไม่ทำ จะเสียอาวุธให้ผู้บังคับแทน",
-        shape: { kind: "card", neededType: "sha", declineLabel: "ยอมเสียอาวุธ", confirmLabel: "ลงสังหาร" },
+        shape: { kind: "card", neededType: "sha", declineLabel: "ยอมเสียอาวุธ", confirmLabel: `ลง${shaName}` },
       };
     case "huibiRedirect":
       return {
         icon: "避",
-        title: `โดนสังหารจาก ${name(data.sourceId)} — จะทิ้งการ์ดโอนเป้าไปคนอื่นไหม? (หลบลี้ภัย)`,
+        title: `โดน${shaName}จาก ${name(data.sourceId)} — จะทิ้งการ์ดโอนเป้าไปคนอื่นไหม? (${skillById("daiqiao_huibi")?.name ?? "daiqiao_huibi"})`,
         hint: "เลือกการ์ด 1 ใบ แล้วเลือกเป้าหมายใหม่",
         shape: { kind: "card", requiredCount: 1, needsTarget: true, declineLabel: "รับเอง", confirmLabel: "โอนเป้า" },
       };
@@ -262,7 +262,7 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "fankuiPick":
       return {
         icon: "反",
-        title: `จะชิงการ์ด 1 ใบจากมือ ${name(data.sourceId)} ไหม? (โต้กลับ)`,
+        title: `จะชิงการ์ด 1 ใบจากมือ ${name(data.sourceId)} ไหม? (${skillById("simayi_fankui")?.name ?? "simayi_fankui"})`,
         hint: "มือของเขาปิดอยู่ จะได้ใบแบบสุ่ม",
         shape: { kind: "choice", options: [{ value: "", label: "ชิงการ์ด" }], declineLabel: "ไม่เอา" },
       };
@@ -275,7 +275,7 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "guicaiReplace":
       return {
         icon: "詭",
-        title: `ใช้ "อัจฉริยะปีศาจ" แทนที่ไพ่ตัดสินของ ${name(data.forPlayer)} ไหม?`,
+        title: `ใช้ "${skillById("simayi_guicai")?.name ?? "simayi_guicai"}" แทนที่ไพ่ตัดสินของ ${name(data.forPlayer)} ไหม?`,
         hint: "เลือกการ์ด 1 ใบจากมือ หรือปล่อยผ่าน",
         shape: { kind: "card", requiredCount: 1, declineLabel: "ปล่อยผ่าน", confirmLabel: "แทนที่ไพ่ตัดสิน" },
       };
@@ -309,7 +309,7 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "wuguPick":
       return {
         icon: "穀",
-        title: `ธัญญาหารบริบูรณ์ — เลือกการ์ด 1 ใบจากที่เปิด`,
+        title: `${cardDisplay("wugu").name} — เลือกการ์ด 1 ใบจากที่เปิด`,
         hint: "เอาเมาส์ชี้การ์ดเพื่อดูรายละเอียด",
         shape: { kind: "pickFromRevealed" },
       };
@@ -326,14 +326,14 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
     case "tuxiTargets":
       return {
         icon: "襲",
-        title: "จู่โจมสายฟ้าแลบ — ชิงการ์ด 1 ใบจากผู้เล่นสูงสุด 2 คน",
+        title: `${skillById("zhangliao_tuxi")?.name ?? "zhangliao_tuxi"} — ชิงการ์ด 1 ใบจากผู้เล่นสูงสุด 2 คน`,
         hint: "แตะเลือกได้ถึง 2 คน (ข้ามการจั่วปกติเทิร์นนี้แล้ว)",
         shape: { kind: "pickPlayers", min: 0, max: 2 },
       };
     case "guandouOrder":
       return {
         icon: "觀",
-        title: `ดูดาว — จัดเรียงการ์ดบนกองจั่ว (แตะตามลำดับที่ต้องการ)`,
+        title: `${skillById("zhugeliang_guandou")?.name ?? "zhugeliang_guandou"} — จัดเรียงการ์ดบนกองจั่ว (แตะตามลำดับที่ต้องการ)`,
         hint: "ใบที่แตะก่อนจะถูกจั่วก่อน · ไม่แตะ = เรียงเดิม",
         shape: { kind: "anonymousPicker", ordered: true },
       };

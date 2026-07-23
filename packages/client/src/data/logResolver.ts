@@ -27,7 +27,7 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
     case "tao":
       return `${actor} ลง "${card("tao")}" ช่วย ${targets}`;
     case "dodge":
-      return `${actor} ลง "${card("shan")}"${d.sourceId ? ` กันสังหารจาก ${name(String(d.sourceId))}` : ""}`;
+      return `${actor} ลง "${card("shan")}"${d.sourceId ? ` กัน${card("sha")}จาก ${name(String(d.sourceId))}` : ""}`;
     case "death":
       return `${actor} เสียชีวิต (บทบาท: ${roleDisplay(String(d.role))?.name ?? d.role})${d.killerId ? ` — สังหารโดย ${name(String(d.killerId))}` : ""}`;
     case "draw": {
@@ -47,7 +47,7 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
         d.outcome === "miss" ? "ไม่โดน" :
         d.outcome === "survive" ? "รอด" :
         d.outcome === "skipPlay" ? "ข้ามเฟสลงการ์ด" :
-        d.outcome === "autoDodge" ? 'นับเป็น "หลบ" อัตโนมัติ' :
+        d.outcome === "autoDodge" ? `นับเป็น "${card("shan")}" อัตโนมัติ` :
         d.outcome === "fail" ? "ไม่ติด" : "";
       return `${actor} ตัดสิน "${card(entry.cardType)}" ${face} — ${outcome}`;
     }
@@ -73,24 +73,30 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
       return `${actor} สังหารกบฏสำเร็จ จั่ว ${amt} ใบ`;
     case "killPenalty":
       return `${actor} (เจ้าเมือง) สังหารขุนนางภักดี ทิ้งการ์ดในมือและอุปกรณ์`;
-    case "fanjianGuess":
-      return d.correct ? `${actor} ทายดอกถูก (กลไส้ศึก)` : `${actor} ทายดอกผิด — เสีย 1 HP (กลไส้ศึก)`;
+    case "fanjianGuess": {
+      const fanjianName = skill("zhouyu_fanjian");
+      return d.correct ? `${actor} ทายดอกถูก (${fanjianName})` : `${actor} ทายดอกผิด — เสีย 1 HP (${fanjianName})`;
+    }
     // weapon/skill flavor
-    case "swordIceDiscard": return `${actor} ทิ้งการ์ด 2 ใบแทนโดนดาเมจ (กระบี่น้ำแข็ง)`;
-    case "qilinDestroyHorse": return `${actor} ถูกทำลาย${d.slot === "horseMinus" ? "ม้า−1" : "ม้า+1"} (ธนูกิเลน)`;
-    case "guanshiForce": return `${actor} ทิ้งการ์ด 2 ใบ บังคับให้ "สังหาร" โดน (ขวานทะลุศิลา)`;
-    case "qinglongReplay": return `${actor} ใช้ง้าวมังกรเขียว ลง "สังหาร" ซ้ำใส่ ${targets}`;
-    case "renwangNegate": return `"สังหาร" ดอกดำ${d.sourceId ? ` จาก ${name(String(d.sourceId))}` : ""} ไม่มีผลกับ ${actor} (โล่ราชันย์)`;
-    case "swordYyDiscard": return `${actor} ทิ้งการ์ด 1 ใบ (กระบี่คู่หยินหยาง)`;
-    case "swordYyDraw": return `${actor} จั่ว 1 ใบ (กระบี่คู่หยินหยาง)`;
-    case "zhangbaSha": return `${actor} ใช้ทวนงูจั้งปา ทิ้ง 2 ใบแทน "สังหาร"`;
-    case "juedouSha": return `${actor} ลง "สังหาร" ตอบโต้ในดวล`;
-    case "jiedaoForce": return `${actor} ถูกบังคับให้ลง "สังหาร" ใส่ ${targets} (ยืมดาบฆ่าคน)`;
-    case "jiedaoTakeWeapon": return `${actor} ได้อาวุธ "${card(entry.cardType)}" จาก ${targets} (ยืมดาบฆ่าคน)`;
-    case "guoheDiscard": return `${actor} ทิ้งการ์ด "${card(entry.cardType)}" ของ ${targets} (ข้ามสะพานแล้วรื้อทิ้ง)`;
-    case "shunshouSteal": return `${actor} ขโมยการ์ด "${card(entry.cardType)}" จาก ${targets} (ฉวยโอกาสลักแกะ)`;
-    case "wuguReveal": return `${actor} ใช้ "ธัญญาหารบริบูรณ์" เปิด ${amt} ใบ`;
-    case "wuguPick": return `${actor} เลือกการ์ดจากธัญญาหารบริบูรณ์`;
+    case "swordIceDiscard": return `${actor} ทิ้งการ์ด 2 ใบแทนโดนดาเมจ (${card("sword_ice")})`;
+    case "qilinDestroyHorse": return `${actor} ถูกทำลาย${d.slot === "horseMinus" ? "ม้า−1" : "ม้า+1"} (${card("qilin")})`;
+    case "guanshiForce": return `${actor} ทิ้งการ์ด 2 ใบ บังคับให้ "${card("sha")}" โดน (${card("guanshi")})`;
+    case "qinglongReplay": return `${actor} ใช้${card("qinglong")} ลง "${card("sha")}" ซ้ำใส่ ${targets}`;
+    case "renwangNegate": return `"${card("sha")}" ดอกดำ${d.sourceId ? ` จาก ${name(String(d.sourceId))}` : ""} ไม่มีผลกับ ${actor} (${card("renwang")})`;
+    case "swordYyDiscard": return `${actor} ทิ้งการ์ด 1 ใบ (${card("sword_yy")})`;
+    case "swordYyDraw": return `${actor} จั่ว 1 ใบ (${card("sword_yy")})`;
+    case "zhangbaSha": return `${actor} ใช้${card("zhangba")} ทิ้ง 2 ใบแทน "${card("sha")}"`;
+    case "juedouSha": return `${actor} ลง "${card("sha")}" ตอบโต้ใน${card("juedou")}`;
+    case "jiedaoForce": return `${actor} ถูกบังคับให้ลง "${card("sha")}" ใส่ ${targets} (${card("jiedao")})`;
+    case "jiedaoTakeWeapon": return `${actor} ได้อาวุธ "${card(entry.cardType)}" จาก ${targets} (${card("jiedao")})`;
+    case "guoheDiscard": return `${actor} ทิ้งการ์ด "${card(entry.cardType)}" ของ ${targets} (${card("guohe")})`;
+    case "shunshouSteal": return `${actor} ขโมยการ์ด "${card(entry.cardType)}" จาก ${targets} (${card("shunshou")})`;
+    case "wuguReveal": return `${actor} ใช้ "${card("wugu")}" เปิด ${amt} ใบ`;
+    case "wuguPick": return `${actor} เลือกการ์ดจาก${card("wugu")}`;
+    case "machaoTieqiJudge": {
+      const face = `${SUIT_TH[String(d.suit)] ?? d.suit}${d.rank}`;
+      return `${actor} ตัดสิน "${skill("machao_tieqi")}" ${face} — ${targets} ลง "${card("shan")}" ไม่ได้`;
+    }
     case "skillUse":
       return `${actor} ใช้ "${skill(entry.skillId)}"${targets ? ` → ${targets}` : ""}`;
     case "forfeit":

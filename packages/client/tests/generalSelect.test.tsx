@@ -116,8 +116,8 @@ describe("General select screen", () => {
     expect(screen.getByText("โจโฉ")).toBeInTheDocument();
     expect(screen.getByText("เล่าปี่")).toBeInTheDocument();
     // skills are narrated on each general card now
-    expect(screen.getByText("วีรบุรุษเจ้าเล่ห์")).toBeInTheDocument(); // caocao_jianxiong
-    expect(screen.getByText("เมตตาธรรม")).toBeInTheDocument(); // liubei_rende
+    expect(screen.getByText("พลิกภัยเป็นกล")).toBeInTheDocument(); // caocao_jianxiong
+    expect(screen.getByText("ปันทรัพย์รวมใจ")).toBeInTheDocument(); // liubei_rende
 
     const confirmBtn = screen.getByRole("button", { name: "ยืนยัน" });
     expect(confirmBtn).toBeDisabled();

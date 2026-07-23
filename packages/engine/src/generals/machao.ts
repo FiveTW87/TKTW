@@ -40,10 +40,12 @@ registerGeneral({
           const judged = yield* runJudgment(ctx, ownerId, { interactive: true, reason: "machao_tieqi" });
           if (colorOf(judged.suit) === "red") {
             box.blockedFromDodge = true;
-            log(
-              state,
-              `${ownerId} ตัดสิน "ทหารม้าเหล็ก" ${judged.suit}${judged.rank} — ${box.targetId} ลง "หลบ" ไม่ได้`,
-            );
+            log(state, "machaoTieqiJudge", {
+              actorId: ownerId,
+              targetIds: [box.targetId],
+              skillId: "machao_tieqi",
+              data: { suit: judged.suit, rank: judged.rank },
+            });
           }
         },
       },

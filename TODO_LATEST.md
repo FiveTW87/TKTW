@@ -195,15 +195,28 @@ Legend:
 
 ## Phase 6 — Thai Naming
 
-- [ ] Apply 15 card names
-- [ ] Apply 17 equipment names
-- [ ] Apply 40 skill names
-- [ ] Keep all IDs
-- [ ] Update localization summaries
-- [ ] Update all UI surfaces
-- [ ] Search remaining old names
-- [ ] Run tests/typecheck/lint
-- [ ] GPT Naming Diff Review
+> Code-complete for the scope locked via `/grill-me`: values swapped in place in the 4 existing
+> client dictionaries (no flat i18n keyspace refactor — that stays Phase 7+), every inline name
+> literal that bypassed the dictionaries (`logResolver.ts`, `decisionCopy.ts`, `RulesModal.tsx`,
+> `Table.tsx`) now routes through `cardDisplay()`/`skillById()`, and catalog summaries/descriptions
+> were adopted as canonical (not names-only). Engine's one Thai-log exception (`machao.ts`'s
+> `tieqi` judgment, which stored a full Thai sentence as `eventType`) was fixed in a separate
+> commit to structured `log(eventType, params)` + a new `logResolver.ts` case — engine is now
+> fully ID-based. engine 246 · client 54 (unchanged counts, copy-only diff), typecheck clean on
+> all 4 packages; server 38 unaffected (confirms isolation). Full repo sweep of every changed
+> catalog name found no missed player-visible surface — remaining hits are dev comments/test
+> titles, `throw new Error()` messages, or generic Thai verb usage ("สังหาร"/"ดวล" as ordinary
+> words, e.g. Result.tsx's "สังหารมากที่สุด" kill-count label — not the renamed card entity).
+
+- [x] Apply 15 card names (`cardNames.ts` `CARD_DISPLAY`)
+- [x] Apply 17 equipment names (`cardNames.ts` `CARD_DISPLAY`)
+- [x] Apply 40 skill names (`generalSkills.ts` `GENERAL_SKILLS`, matched to `skillId` by general+position where a repo name diverged from the catalog's literal old name)
+- [x] Keep all IDs (`git diff` shows no `id:`/`typeKey`/`skillId`/`generalId` changes — only string display values)
+- [x] Update localization summaries (adopted catalog `summaryTh`/skill mechanic text as canonical `CARD_INFO`/`description`)
+- [x] Update all UI surfaces (hand/hover, discard/draw pile, equipment slots, player detail, general select, skill toast, game log, decision dialogs, rules modal)
+- [x] Search remaining old names (repo-wide sweep; classified every hit — none are missed player-visible surfaces)
+- [x] Run tests/typecheck/lint (engine 246 · client 54 · server 38, typecheck clean on all 4 packages)
+- [ ] GPT Naming Diff Review (user-triggered `/code-review` on the two Phase 6 commits)
 
 ## Phase 7 — Functional UI
 
