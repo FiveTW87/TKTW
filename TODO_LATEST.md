@@ -220,43 +220,70 @@ Legend:
 
 ## Phase 7 — Functional UI
 
-- [ ] UI state architecture
-- [ ] Lobby
-- [ ] Character Selection
-- [ ] Circular board
-- [ ] Relative seats
-- [ ] Self bottom center
-- [ ] 3–5 mode
-- [ ] 6–8 compact mode
-- [ ] 9–10 portrait mode
-- [ ] Turn/Phase/Timer
-- [ ] Central card zone
-- [ ] Delayed Tricks on target
-- [ ] Player compact panel
-- [ ] Player Detail
-- [ ] Hand selection
-- [ ] Equipment
-- [ ] Game History
-- [ ] Death/Reconnect/Leave/Result dialogs
-- [ ] Full functional game with placeholders
+> Code-complete for the scope locked via `/grill-me`: a layered refactor (not a from-scratch
+> rewrite) of the working-but-monolithic `Table.tsx` into the SPEC §11.3 circular war-table —
+> opponents positioned on a trig arc by relative seat (`lib/seatLayout.ts`), local player as a
+> distinct bottom-center dock (`components/board/SelfDock.tsx`), 3 density modes chosen by player
+> count (`densityMode`: medium/compact/head). Selection/target/skill state moved out of ~6
+> scattered `useState`s into a dedicated `useInteraction` reducer (`hooks/useInteraction.ts`),
+> reset on every decision change (§11.1/§6.3). Added a fixed `TurnPanel` with a live countdown
+> that didn't exist anywhere before (`lib/useCountdown.ts`, reused on both the board and General
+> Selection), pinned above dialogs (z-index 90 > modal's 40). Fixed the latest-played-card hover
+> preview and its pointer-events blocking, and added a `DeathDialog` (spectate/leave) for the
+> previously-unhandled own-death case. Everything else on this checklist (Lobby, hand/equipment,
+> Player Detail, Game History, hidden info, delayed tricks, target highlighting, result screen)
+> was already correct from earlier phases and is now re-wired into the new board with regression
+> tests. engine 246 · server 38 unaffected (confirms isolation) · client 75, typecheck clean on
+> all 4 packages. Still placeholders only — real theme/assets are Phase 9, mobile-landscape is
+> Phase 8. **Not yet run:** a browser-visual pass across 3/5/8/10 players (blocked — `claude-in-chrome`
+> won't connect in this environment, suspected Opera-vs-Chrome extension-API gap) and GPT/code
+> review (user-triggered, same as Phases 3/5/6).
+
+- [x] UI state architecture (`hooks/useInteraction.ts` reducer, reset on `pendingDecision.id`)
+- [x] Lobby (`screens/Lobby.tsx` — room code/host/seats/connection status/leave/start/min-player
+  gate all pre-existing and unaffected; "Ready" flags intentionally NOT added per Phase 4's
+  host-driven-restart decision)
+- [x] Character Selection (`screens/GeneralSelect.tsx` — selector-only view, Lord-first with
+  immediate reveal, others together; now with a live countdown, SPEC §7.3)
+- [x] Circular board (`components/board/GameBoard.tsx`)
+- [x] Relative seats (`lib/seatLayout.ts` `relativeSeat`, unit-tested)
+- [x] Self bottom center (`components/board/SelfDock.tsx`, distinct from the opponent ring)
+- [x] 3–5 mode (`densityMode` → `"medium"`)
+- [x] 6–8 compact mode (`densityMode` → `"compact"`)
+- [x] 9–10 portrait mode (`densityMode` → `"head"`, `PlayerTile`'s head-portrait variant)
+- [x] Turn/Phase/Timer (`components/board/TurnPanel.tsx` + `lib/useCountdown.ts`)
+- [x] Central card zone (`components/board/CentralZone.tsx`)
+- [x] Delayed Tricks on target (`judgmentZone` chips on `OpponentPanel`/`SelfDock`, never central)
+- [x] Player compact panel (`components/PlayerTile.tsx`, density-aware)
+- [x] Player Detail (`InspectModal.tsx`, preserved/re-wired)
+- [x] Hand selection (`HandCard.tsx` + interaction reducer, preserved/re-wired)
+- [x] Equipment (`SelfDock.tsx`/`PlayerTile.tsx` equipment zones, preserved/re-wired)
+- [x] Game History (`components/board/GameHistoryPanel.tsx`, extracted, preserved)
+- [x] Death/Reconnect/Leave/Result dialogs (`DeathDialog.tsx` new; Reconnect/Leave/Result
+  pre-existing and unaffected)
+- [ ] Full functional game with placeholders (bot-playthrough tests pass; a real browser-observed
+  full game at every player count is the pending gate item above)
 
 ### Additional UI requirements from original bug/UX list
 
-- [ ] Fix latest-used card hover/tap preview
-- [ ] Ensure preview overlays do not block pointer events
-- [ ] Player Detail shows public skills and current equipment
-- [ ] Player Detail does not clear card/target selection
-- [ ] Turn/Phase/Responder/Timer remains visible over dialogs
-- [ ] Attach Delayed Tricks to target Player panels
-- [ ] Show real Player/Card/Skill names in Game History
-- [ ] Highlight current turn and legal/selected targets
-- [ ] Add Death Dialog with spectate/leave actions
-- [ ] Verify Local Player always renders bottom center
-- [ ] Verify 3/5/8/10-player layouts
-- [ ] Compact equipment icons for other players
-- [ ] Character Selection dialog appears only for current selector
-- [ ] Reveal Lord General immediately and non-Lord Generals together
-- [ ] Result screen shows all Roles, Winner/No Winner and statistics
+- [x] Fix latest-used card hover/tap preview (`components/board/CentralZone.tsx`)
+- [x] Ensure preview overlays do not block pointer events (`CardTooltip`, `pointer-events: none`)
+- [x] Player Detail shows public skills and current equipment (`InspectModal.tsx`, preserved)
+- [x] Player Detail does not clear card/target selection (opening it never dispatches to the
+  interaction reducer)
+- [x] Turn/Phase/Responder/Timer remains visible over dialogs (`TurnPanel` z-index 90 > modal 40)
+- [x] Attach Delayed Tricks to target Player panels (never rendered in the central zone)
+- [x] Show real Player/Card/Skill names in Game History (`logResolver.ts`, preserved)
+- [x] Highlight current turn and legal/selected targets (`glow-turn`/`glow-target`, preserved)
+- [x] Add Death Dialog with spectate/leave actions (`components/DeathDialog.tsx`, new)
+- [x] Verify Local Player always renders bottom center (structural — `SelfDock` is never part of
+  the opponent arc)
+- [ ] Verify 3/5/8/10-player layouts (structural RTL tests pass; visual browser check still
+  pending — the blocked gate item above)
+- [x] Compact equipment icons for other players (`EquipChip` on `PlayerTile`, preserved)
+- [x] Character Selection dialog appears only for current selector (`GeneralSelect.tsx`, preserved)
+- [x] Reveal Lord General immediately and non-Lord Generals together (preserved, Phase 3)
+- [x] Result screen shows all Roles, Winner/No Winner and statistics (`Result.tsx`, preserved)
 
 ## Phase 8 — Mobile Landscape
 
