@@ -94,21 +94,22 @@ describe("Table: main action card play", () => {
     const user = await enterRoom("PLAYME");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", { hand: [{ id: "spade_1_1", typeKey: "sha", suit: "spade", rank: 1 }] }),
         player("p1", { hand: { count: 3 } }),
         player("p2", { hand: { count: 3 } }),
       ],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_main", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [{ id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } }],
+      gameLogs: [{ id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } }],
     });
 
     await waitFor(() => expect(screen.getByText("สังหาร")).toBeInTheDocument());
@@ -138,21 +139,22 @@ describe("Table: main action card play", () => {
     const user = await enterRoom("TAOHELP");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", { hp: 4, maxHp: 4, hand: [{ id: "heart_3_1", typeKey: "tao", suit: "heart", rank: 3 }] }),
         player("p1", { name: "Bob", hp: 2, maxHp: 4, hand: { count: 3 } }), // injured
         player("p2", { hp: 3, maxHp: 4, hand: { count: 3 } }), // injured
       ],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_tao", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText("ท้อ")).toBeInTheDocument());
@@ -177,21 +179,22 @@ describe("Table: main action card play", () => {
     const user = await enterRoom("TAOSELF");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", { hp: 3, maxHp: 4, hand: [{ id: "heart_3_1", typeKey: "tao", suit: "heart", rank: 3 }] }),
         player("p1", { hp: 4, maxHp: 4 }),
         player("p2", { hp: 4, maxHp: 4 }),
       ],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_taoself", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText("ท้อ")).toBeInTheDocument());
@@ -208,17 +211,18 @@ describe("Table: main action card play", () => {
     const user = await enterRoom("ENDPH1");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [player("p0"), player("p1"), player("p2")],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_end", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     const endBtn = await screen.findByRole("button", { name: "จบเทิร์น" });
@@ -226,24 +230,25 @@ describe("Table: main action card play", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "ENDPH1", matchId: "test-match", decisionId: "dec_end", choice: "endPhase" });
+    expect(call.payload).toEqual({ roomCode: "ENDPH1", matchId: "test-match", decisionId: "dec_end", choice: "endPhase", clientActionId: expect.any(String) });
   });
 
   it("a reactive decision that isn't mine shows a waiting banner, not a confirm bar", async () => {
     await enterRoom("WAITTURN");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [player("p0"), player("p1", { name: "Bob" }), player("p2")],
-      currentSeat: 1,
+      currentTurnPlayerId: "p1",
       turnNumber: 2,
-      phase: "play",
-      drawPile: { count: 70 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 70,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_shan", kind: "respondShan", playerId: "p1", data: { sourceId: "p0" } },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText(/^Bob:/)).toBeInTheDocument());
@@ -257,7 +262,8 @@ describe("Table: reactive decision dialog", () => {
     const user = await enterRoom("DODGE01");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", {
           hand: [
@@ -268,15 +274,15 @@ describe("Table: reactive decision dialog", () => {
         player("p1", { name: "Bob" }),
         player("p2"),
       ],
-      currentSeat: 1,
+      currentTurnPlayerId: "p1",
       turnNumber: 2,
-      phase: "play",
-      drawPile: { count: 70 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 70,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_shan_mine", kind: "respondShan", playerId: "p0", data: { sourceId: "p1" } },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText(/จะลง "หลบ" ไหม/)).toBeInTheDocument());
@@ -289,24 +295,25 @@ describe("Table: reactive decision dialog", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "DODGE01", matchId: "test-match", decisionId: "dec_shan_mine", cardIds: ["heart_1_1"] });
+    expect(call.payload).toEqual({ roomCode: "DODGE01", matchId: "test-match", decisionId: "dec_shan_mine", cardIds: ["heart_1_1"], clientActionId: expect.any(String) });
   });
 
   it("declining a respondShan dialog sends pass: true", async () => {
     const user = await enterRoom("DODGE02");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [player("p0", { hand: [] }), player("p1", { name: "Bob" }), player("p2")],
-      currentSeat: 1,
+      currentTurnPlayerId: "p1",
       turnNumber: 2,
-      phase: "play",
-      drawPile: { count: 70 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 70,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_shan_decline", kind: "respondShan", playerId: "p0", data: { sourceId: "p1" } },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     const declineBtn = await screen.findByRole("button", { name: "ยอมโดน" });
@@ -314,28 +321,29 @@ describe("Table: reactive decision dialog", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(call.payload).toEqual({ roomCode: "DODGE02", matchId: "test-match", decisionId: "dec_shan_decline", pass: true });
+    expect(call.payload).toEqual({ roomCode: "DODGE02", matchId: "test-match", decisionId: "dec_shan_decline", pass: true, clientActionId: expect.any(String) });
   });
 
   it("double-tapping the หลบ card sends the answer only once (no duplicate → no freeze)", async () => {
     const user = await enterRoom("DODGE03");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", { hand: [{ id: "heart_1_1", typeKey: "shan", suit: "heart", rank: 1 }] }),
         player("p1", { name: "Bob" }),
         player("p2"),
       ],
-      currentSeat: 1,
+      currentTurnPlayerId: "p1",
       turnNumber: 2,
-      phase: "play",
-      drawPile: { count: 70 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 70,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_shan_dbl", kind: "respondShan", playerId: "p0", data: { sourceId: "p1" } },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     const dialog = within(await screen.findByRole("dialog"));
@@ -357,7 +365,8 @@ describe("Table: character skills + use-skill", () => {
 
     // sunquan has an active skill (zhiheng / ถ่วงดุลอำนาจ)
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         player("p0", {
           generalId: "sunquan",
@@ -369,15 +378,15 @@ describe("Table: character skills + use-skill", () => {
         player("p1", { name: "Bob" }),
         player("p2"),
       ],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_skill", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     // both sunquan skills are narrated
@@ -401,7 +410,8 @@ describe("Table: character skills + use-skill", () => {
   it("a target-less skill (ถ่วงดุลอำนาจ) never lights up opponents; card-count gates confirm", async () => {
     const user = await enterRoom("NOTGT");
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [
         {
           ...player("p0", { generalId: "sunquan", faction: "wu", role: "lord", roleRevealed: true }),
@@ -410,15 +420,15 @@ describe("Table: character skills + use-skill", () => {
         player("p1", { name: "Bob" }),
         player("p2", { name: "Carol" }),
       ],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_notgt", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // no opponents become targetable (ถ่วงดุลอำนาจ takes no target)
@@ -438,17 +448,18 @@ describe("Table: character skills + use-skill", () => {
     };
     const user = await enterRoom("SPENT");
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [me, player("p1", { name: "Bob" }), player("p2")],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 1,
-      phase: "play",
-      drawPile: { count: 80 },
-      discardPile: [],
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: { id: "dec_spent", kind: "mainAction", playerId: "p0", data: {} },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
     const btn = await screen.findByRole("button", { name: /ใช้ครบแล้วเทิร์นนี้/ });
     expect(btn).toBeDisabled();
@@ -463,17 +474,18 @@ describe("Table: character skills + use-skill", () => {
 async function enterGame(roomCode: string, self: ReturnType<typeof player>, rest: ReturnType<typeof player>[]) {
   const user = await enterRoom(roomCode);
   fakeSocket.fire("game:view", {
-    viewerId: self.id,
+    viewerPlayerId: self.id,
+    viewerSeatIndex: self.seat,
     players: [self, ...rest],
-    currentSeat: 0,
+    currentTurnPlayerId: "p0",
     turnNumber: 1,
-    phase: "play",
-    drawPile: { count: 80 },
-    discardPile: [],
+    currentPhase: "play",
+    drawPileCount: 80,
+    discardPile: [], discardPileCount: 0,
     eventStack: [],
     pendingDecision: { id: "dec_init", kind: "mainAction", playerId: self.id, data: {} },
     finished: false,
-    log: [],
+    gameLogs: [],
   });
   // The role-reveal screen (SPEC 7.2) is gated on roomState.phase ===
   // "revealing" now (App.tsx), not on Table's own local state — this
@@ -486,20 +498,40 @@ async function enterGame(roomCode: string, self: ReturnType<typeof player>, rest
 
 function fireView(self: ReturnType<typeof player>, rest: ReturnType<typeof player>[], pendingDecision: unknown, overrides: Record<string, unknown> = {}) {
   fakeSocket.fire("game:view", {
-    viewerId: self.id,
+    viewerPlayerId: self.id,
+    viewerSeatIndex: self.seat,
     players: [self, ...rest],
-    currentSeat: 0,
+    currentTurnPlayerId: "p0",
     turnNumber: 2,
-    phase: "play",
-    drawPile: { count: 70 },
-    discardPile: [],
+    currentPhase: "play",
+    drawPileCount: 70,
+    discardPile: [], discardPileCount: 0,
     eventStack: [],
     pendingDecision,
     finished: false,
-    log: [],
+    gameLogs: [],
     ...overrides,
   });
 }
+
+// Phase 3 close-out — SPEC §7.4: view public skills. The 🔍 inspect panel
+// must show an opponent's general's public skills (name + description),
+// not just their general/HP/equipment.
+describe("Table: inspect panel shows public skills (SPEC 7.4)", () => {
+  it("opening an opponent's inspect panel lists their general's skills", async () => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    // sunquan has two named skills (ถ่วงดุลอำนาจ / ผนึกกำลัง) already asserted
+    // elsewhere in this file for the general-select screen.
+    const rest = [player("p1", { name: "Bob", generalId: "sunquan", faction: "wu" }), player("p2")];
+    const user = await enterGame("INSPECT1", me, rest);
+
+    // p1 (sunquan) renders before p2 among opponents — inspect p1's tile.
+    await user.click(screen.getAllByTitle("ดูอุปกรณ์/รายละเอียด")[0]!);
+
+    expect(await screen.findByText("ถ่วงดุลอำนาจ")).toBeInTheDocument();
+    expect(screen.getByText("ผนึกกำลัง")).toBeInTheDocument();
+  });
+});
 
 describe("Table: stuck-state safety net", () => {
   it("shows a recovery panel when a view arrives with no pending decision and the game isn't finished", async () => {
@@ -559,7 +591,7 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("SHANDIAN1", me, rest);
 
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(screen.getByText("สายฟ้า"));
     // no target step — it plays immediately with no targetIds
@@ -596,7 +628,7 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("TAOPASS", me, rest);
 
-    fireView(me, rest, { id: "dec_rt", kind: "respondTao", playerId: "p0", data: { dyingId: "p1", hp: 0 } }, { currentSeat: 1 });
+    fireView(me, rest, { id: "dec_rt", kind: "respondTao", playerId: "p0", data: { dyingId: "p1", hp: 0 } }, { currentTurnPlayerId: "p1" });
 
     await waitFor(() =>
       expect(sentEvents.some((e) => e.event === "game:answer" && (e.payload as { pass?: boolean }).pass === true)).toBe(true),
@@ -627,7 +659,7 @@ describe("Table: card conversion + distance", () => {
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("WUSHENG1", me, rest);
 
-    fireView(me, rest, { id: "dec_rs", kind: "respondSha", playerId: "p0", data: { opponentId: "p1", reason: "juedou" } }, { currentSeat: 1 });
+    fireView(me, rest, { id: "dec_rs", kind: "respondSha", playerId: "p0", data: { opponentId: "p1", reason: "juedou" } }, { currentTurnPlayerId: "p1" });
 
     const dialog = within(await screen.findByRole("dialog"));
     await user.click(dialog.getByText("ข้ามสะพานรื้อ")); // the red guohe, offered via wusheng
@@ -641,7 +673,7 @@ describe("Table: card conversion + distance", () => {
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("WUSHENG2", me, rest);
 
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(screen.getByText("หลบ")); // not dimmed — playable as สังหาร
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
@@ -660,7 +692,7 @@ describe("Table: card conversion + distance", () => {
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("WUSHENG3", me, rest);
 
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(screen.getByText("ท้อ")); // red ท้อ → heal OR attack
     expect(await screen.findByText(/เล่น .*เป็น/)).toBeInTheDocument();
@@ -675,7 +707,7 @@ describe("Table: card conversion + distance", () => {
     ];
     const user = await enterGame("JIEDAO1", me, rest);
 
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(screen.getByText("ยืมดาบฆ่าคน"));
     // step 1: only the armed player (Bob) is selectable
@@ -696,7 +728,7 @@ describe("Table: card conversion + distance", () => {
     await enterGame("LOG1", me, rest);
 
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, {
-      log: [
+      gameLogs: [
         { id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } },
         { id: "log_1", turn: 1, eventType: "draw", actorId: "p0", amount: 2, visibility: "public" },
       ],
@@ -715,7 +747,7 @@ describe("Table: card conversion + distance", () => {
       player("p3", { name: "Fem", gender: "female" }),
     ];
     const user = await enterGame("LIJIAN1", me, rest);
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // card-first: no targets until the discard card is chosen
@@ -743,7 +775,7 @@ describe("Table: card conversion + distance", () => {
     });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("ZHANGBA1", me, rest);
-    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentSeat: 0 });
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(await screen.findByRole("button", { name: /ใช้ทวน/ }));
     await user.click(screen.getByText("ท้อ"));

@@ -20,7 +20,7 @@ export interface HiddenCount {
   count: number;
 }
 
-export interface PlayerView {
+export interface ProjectedPlayer {
   id: string;
   seat: number;
   name: string;
@@ -40,9 +40,15 @@ export interface PlayerView {
   skillUsedThisTurn: Record<string, number>;
 }
 
-export interface GameView {
+// Renamed from the old "GameView" (Phase 5, SPEC §9.2): the shared package
+// now owns that name for the unified server-assembled view-model. This is
+// still exactly the same engine-internal projection — socket-free, the
+// single hidden-info source the bot-fuzz test relies on — just the raw game
+// slice the server composes into the real GameView (+ room meta, serverNow,
+// legalActions, connectionStatus, ...).
+export interface ProjectedGameState {
   viewerId: string;
-  players: PlayerView[];
+  players: ProjectedPlayer[];
   currentSeat: number;
   turnNumber: number;
   phase: Phase;
@@ -63,7 +69,7 @@ export interface GameView {
 // else's reveals together once the last non-lord has picked — both tracked
 // by `generalRevealed` (set in modes/identity.ts). Neutral placeholders are
 // sent instead of the real values so nothing leaks early.
-function projectPlayer(p: Player, viewerId: string): PlayerView {
+function projectPlayer(p: Player, viewerId: string): ProjectedPlayer {
   const roleVisible = p.id === viewerId || p.role === "lord" || !p.alive;
   const genVisible = p.id === viewerId || p.generalRevealed;
   return {
@@ -100,7 +106,7 @@ function projectDecision(pd: NonNullable<GameState["pendingDecision"]>, viewerId
   return { ...pd };
 }
 
-export function projectFor(state: GameState, viewerId: string): GameView {
+export function projectFor(state: GameState, viewerId: string): ProjectedGameState {
   return {
     viewerId,
     players: state.players.map((p) => projectPlayer(p, viewerId)),

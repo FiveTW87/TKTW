@@ -2,12 +2,17 @@ import type { PlayerView } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
 import { cardDisplay } from "../data/cardNames";
+import { generalSkills } from "../data/generalSkills";
 
 export function InspectModal({ player, onClose }: { player: PlayerView; onClose: () => void }) {
   const d = generalDisplay(player.generalId);
   const color = factionColor(player.faction);
   const handCount = Array.isArray(player.hand) ? player.hand.length : player.hand.count;
   const equipEntries = Object.entries(player.equipment).filter(([, c]) => c);
+  // SPEC §7.4: view public skills — only meaningful once the general is
+  // actually revealed (an un-revealed opponent is projected with generalId
+  // "" during selection, per view.ts's generalRevealed gating).
+  const skills = player.generalId !== "" ? generalSkills(player.generalId) : [];
 
   return (
     <ModalOverlay onClose={onClose}>
@@ -116,6 +121,46 @@ export function InspectModal({ player, onClose }: { player: PlayerView; onClose:
                     {cardDisplay(c.typeKey).name}
                   </span>
                 ))}
+              </div>
+            </>
+          )}
+
+          {skills.length > 0 && (
+            <>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", margin: "12px 0 7px" }}>สกิล</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {skills.map((s) => {
+                  const used = player.skillUsedThisTurn[s.id];
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        background: "var(--panel-bg)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: 6,
+                        padding: "7px 10px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span style={{ fontWeight: 700, fontSize: 12.5, color: "var(--ink)" }}>{s.name}</span>
+                        {s.lordOnly && (
+                          <span style={{ fontSize: 9, background: "var(--gold)", color: "#5a3d0a", borderRadius: 6, padding: "0 5px" }}>
+                            主公
+                          </span>
+                        )}
+                        {s.active && (
+                          <span style={{ fontSize: 9, background: "var(--red)", color: "#f6ecd2", borderRadius: 6, padding: "0 5px" }}>
+                            技
+                          </span>
+                        )}
+                        {s.active && used ? (
+                          <span style={{ fontSize: 9, color: "var(--ink-faint)", marginLeft: "auto" }}>ใช้แล้วเทิร์นนี้</span>
+                        ) : null}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.35, marginTop: 2 }}>{s.description}</div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

@@ -87,7 +87,7 @@ export function Table() {
     setZhangbaMode(false);
   }, [decisionKey]);
 
-  const me = gameView?.players.find((p) => p.id === gameView.viewerId);
+  const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
 
   useEffect(() => {
     return () => {
@@ -120,7 +120,7 @@ export function Table() {
   // steal. Everything else falls through to the inline row / dialog.
   useEffect(() => {
     if (!gameView || !me || !pending) return;
-    if (pending.playerId !== gameView.viewerId) return;
+    if (pending.playerId !== gameView.viewerPlayerId) return;
     if (autoHandledRef.current === pending.id) return;
 
     const accept = () => {
@@ -148,7 +148,7 @@ export function Table() {
     // card into ท้อ off-turn, so use the conversion-aware check.)
     if (pending.kind === "respondTao") {
       const hand = Array.isArray(me.hand) ? me.hand : [];
-      const isOwnTurn = gameView.currentSeat === me.seat;
+      const isOwnTurn = gameView.currentTurnPlayerId === me.id;
       if (!hand.some((c) => clientCountsAs(c, "tao", me.generalId, isOwnTurn))) pass();
       return;
     }
@@ -204,11 +204,11 @@ export function Table() {
   }
 
   const myHand: Card[] = Array.isArray(me.hand) ? me.hand : [];
-  const others = gameView.players.filter((p) => p.id !== gameView.viewerId);
-  const currentTurnPlayer = gameView.players.find((p) => p.seat === gameView.currentSeat);
-  const lastPlay = gameView.discardPile.length > 0 ? gameView.discardPile[gameView.discardPile.length - 1] : undefined;
+  const others = gameView.players.filter((p) => p.id !== gameView.viewerPlayerId);
+  const currentTurnPlayer = gameView.players.find((p) => p.id === gameView.currentTurnPlayerId);
+  const lastPlay = gameView.discardPileTop;
 
-  const isMyDecision = pending?.playerId === gameView.viewerId;
+  const isMyDecision = pending?.playerId === gameView.viewerPlayerId;
   const isMainAction = pending?.kind === "mainAction";
   const isDiscardTo = pending?.kind === "discardTo";
 
@@ -219,7 +219,7 @@ export function Table() {
 
   // Modal only for reactive decisions that aren't auto-handled / inline.
   const noWuxieInHand = !myHand.some((c) => c.typeKey === "wuxie");
-  const canRespondTao = myHand.some((c) => clientCountsAs(c, "tao", me.generalId, gameView.currentSeat === me.seat));
+  const canRespondTao = myHand.some((c) => clientCountsAs(c, "tao", me.generalId, gameView.currentTurnPlayerId === me.id));
   let showDecisionModal = false;
   if (pending && isMyDecision && !isMainAction && !isDiscardTo) {
     // judgmentReveal is handled on the board (tap the draw pile), not a modal.
@@ -518,7 +518,7 @@ export function Table() {
                 distance={dist}
                 inRange={dist <= weaponRange(me)}
                 compact={narrow}
-                connectionStatus={roomState?.seats[Number(p.id.slice(1))]?.connectionStatus}
+                connectionStatus={p.connectionStatus}
                 onClick={() => onTapTarget(p.id)}
                 onInspect={() => setInspecting(p)}
               />
@@ -560,7 +560,7 @@ export function Table() {
               <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "#f0d68a" }}>國</span>
               {pendingReveal && <div className="glow-target" />}
             </div>
-            <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{gameView.drawPile.count}</b></div>
+            <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{gameView.drawPileCount}</b></div>
           </div>
 
           {/* last played card */}
@@ -601,7 +601,7 @@ export function Table() {
 
           {/* phase */}
           <div style={{ textAlign: "center", zIndex: 1 }}>
-            <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>{PHASE_LABEL[gameView.phase] ?? gameView.phase}</div>
+            <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>{(gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase}</div>
             <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 4 }}>เทิร์น {gameView.turnNumber} · {currentTurnPlayer?.name ?? "-"}</div>
           </div>
 
@@ -791,7 +791,7 @@ export function Table() {
             </div>
             <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--card-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
-                {PHASE_LABEL[gameView.phase] ?? gameView.phase}
+                {(gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase}
               </span>
               {isMyDecision && isMainAction && (
                 <button onClick={submitEndPhase} disabled={busy} className="btn-primary" style={{ padding: "9px 18px", fontSize: 13, width: "100%" }}>
@@ -869,11 +869,11 @@ export function Table() {
         style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : "82vh", display: "flex", flexDirection: "column", padding: "14px 16px" }}
       >
         <div style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>ประวัติการเล่น</div>
-        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {gameView.log.length} เหตุการณ์</div>
+        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {gameView.gameLogs.length} เหตุการณ์</div>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-          {gameView.log.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ยังไม่มีเหตุการณ์</div>}
-          {[...gameView.log].reverse().map((entry, i) => (
-            <div key={gameView.log.length - i} style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.45, borderLeft: "2px solid var(--card-border-2)", paddingLeft: 8 }}>
+          {gameView.gameLogs.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ยังไม่มีเหตุการณ์</div>}
+          {[...gameView.gameLogs].reverse().map((entry, i) => (
+            <div key={gameView.gameLogs.length - i} style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.45, borderLeft: "2px solid var(--card-border-2)", paddingLeft: 8 }}>
               <span style={{ fontSize: 10, color: "var(--ink-faint)", marginRight: 5 }}>รอบ {entry.turn}</span>
               {resolveLogEntry(entry, gameView)}
             </div>

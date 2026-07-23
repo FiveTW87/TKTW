@@ -262,6 +262,51 @@ describe("SPEC 7.1/7.3: hidden information — general reveal", () => {
     const ownView = projectFor(session.state, pending.playerId);
     expect((ownView.pendingDecision?.data as { options?: string[] }).options?.length).toBeGreaterThan(0);
   });
+
+  // Phase 3 close-out — SPEC §7.1 audit: role projection. A non-lord's role
+  // is hidden from everyone but themselves until they die (or they're the
+  // lord, who's always public); the viewer's own role is always visible.
+  it("audit: an alive non-lord/non-self role is hidden; lord and self and the dead are visible", () => {
+    const session = createIdentityGame({ playerCount: 5, seed: 33 });
+    finishGeneralSelection(session, 5);
+    const lord = session.state.players.find((p) => p.role === "lord")!;
+    const alive = session.state.players.find((p) => p.id !== lord.id && p.alive)!;
+    const viewer = session.state.players.find((p) => p.id !== lord.id && p.id !== alive.id)!;
+
+    const view = projectFor(session.state, viewer.id);
+    // Own role: visible.
+    expect(view.players.find((p) => p.id === viewer.id)!.role).toBe(viewer.role);
+    // Lord's role: always public.
+    expect(view.players.find((p) => p.id === lord.id)!.role).toBe("lord");
+    // A different alive non-lord's role: hidden.
+    expect(view.players.find((p) => p.id === alive.id)!.role).toBeUndefined();
+
+    // Once that player dies, their role becomes visible to everyone (death
+    // reveal — killPlayer sets roleRevealed, and view.ts's roleVisible
+    // includes !p.alive).
+    alive.alive = false;
+    const viewAfterDeath = projectFor(session.state, viewer.id);
+    expect(viewAfterDeath.players.find((p) => p.id === alive.id)!.role).toBe(alive.role);
+  });
+
+  // Phase 3 close-out — SPEC §7.1 audit: hand projection. Nobody but the
+  // owner ever receives another player's actual hand — only its count.
+  it("audit: an opponent's hand is a {count}, never the real cards; own hand is the real array", () => {
+    const session = createIdentityGame({ playerCount: 4, seed: 44 });
+    finishGeneralSelection(session, 4);
+    const [me, opponent] = session.state.players;
+    const realOpponentHandLength = opponent!.hand.length;
+
+    const view = projectFor(session.state, me!.id);
+    const ownProjected = view.players.find((p) => p.id === me!.id)!.hand;
+    const opponentProjected = view.players.find((p) => p.id === opponent!.id)!.hand;
+
+    expect(Array.isArray(ownProjected)).toBe(true);
+    expect(ownProjected).toEqual(me!.hand);
+
+    expect(Array.isArray(opponentProjected)).toBe(false);
+    expect(opponentProjected).toEqual({ count: realOpponentHandLength });
+  });
 });
 
 describe("SPEC 2: win conditions", () => {

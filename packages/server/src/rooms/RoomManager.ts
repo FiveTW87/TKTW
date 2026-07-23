@@ -56,14 +56,24 @@ export interface GameRoom {
   /** Owned by gameFlow.ts; declared here since GameSession already makes
    *  GameRoom non-serializable, so there's no purity left to protect. */
   decisionTimer?: ReturnType<typeof setTimeout>;
-  /** ms-epoch deadline of the current pending decision (for the client
-   *  countdown / reconnect deadline restore). */
+  /** ms-epoch deadline of the current pending decision — surfaced per-viewer
+   *  as GameView.pendingDecision.expiresAt (Phase 5, §9.4). */
   decisionExpiresAt?: number;
+  /** ms-epoch the current pending decision's timer was armed — the other
+   *  half of §9.4's timer shape (GameView.pendingDecision.startedAt). */
+  decisionStartedAt?: number;
   /** SPEC 7.2: fires when the role-reveal screen's timer expires, flipping
    *  phase "revealing" -> "playing" and arming the lord's pickGeneral timer. */
   revealTimer?: ReturnType<typeof setTimeout>;
   /** ms-epoch deadline of the "revealing" phase (reconnect restore). */
   revealExpiresAt?: number;
+  /** SPEC §9.1 — clientActionId idempotency for game:answer. Maps a
+   *  successfully-applied clientActionId to the ack it produced, so a
+   *  lost-ack retry (same id) replays that success instead of failing as a
+   *  stale decisionId (the original attempt already advanced the decision).
+   *  Only successes are cached — a genuine rejection is safe to just
+   *  re-validate and re-reject identically. Reset every new match. */
+  answeredActionIds?: Map<string, { ok: true }>;
 }
 
 export const MIN_PLAYERS = 3;
@@ -231,6 +241,7 @@ export class RoomManager {
     room.matchId = randomUUID();
     room.matchStartedAt = Date.now();
     delete room.result;
+    room.answeredActionIds = new Map(); // fresh match -> fresh idempotency cache
     // SPEC 7.2: roles are already assigned inside createIdentityGame (the
     // engine session is paused at the lord's first pickGeneral), but the
     // server withholds it behind a brief reveal screen before general
@@ -257,6 +268,7 @@ export class RoomManager {
     delete room.seatAssignment;
     delete room.matchStartedAt;
     delete room.result;
+    delete room.answeredActionIds;
     room.phase = "lobby";
     if (room.seats.length === 0) room.emptySince = Date.now();
   }

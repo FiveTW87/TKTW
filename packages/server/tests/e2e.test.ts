@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import type { AddressInfo } from "node:net";
 import type { RoomStatePayload, MatchResult } from "@tktw/shared";
+import { gameViewSchema } from "@tktw/shared";
 import { createTktwServer, type TktwServer } from "../src/server";
 
 let server: TktwServer;
@@ -76,6 +77,20 @@ function waitForRoomState(
   });
 }
 
+// SPEC 8.2: the pending decision's engine seat (its GameView viewerPlayerId,
+// e.g. "p2") isn't necessarily this room's lobby seat of the same number
+// anymore — the seat permutation means "seat 2" in the lobby's join order
+// and engine seat "p2" can be totally different people. Every connected
+// socket gets its OWN view with its OWN viewerPlayerId in the SAME
+// broadcast, so racing all of them (register before the triggering emit,
+// same as p0View below) and matching on that id reliably finds which lobby
+// socket to answer (or deliberately answer WRONG) as.
+function findOwnerLobbySeat(views: { viewerPlayerId: string }[], engineId: string): number {
+  const idx = views.findIndex((v) => v.viewerPlayerId === engineId);
+  if (idx < 0) throw new Error(`no socket's game:view matched viewerPlayerId ${engineId}`);
+  return idx;
+}
+
 async function createAndFillRoom(names: string[]) {
   const sockets: ClientSocket[] = [];
   for (const name of names) sockets.push(await connectClient());
@@ -103,7 +118,7 @@ async function createAndFillRoom(names: string[]) {
 }
 
 type LiveView = {
-  viewerId: string;
+  viewerPlayerId: string;
   pendingDecision?: { id: string; playerId: string; kind: string; data?: Record<string, unknown> };
 };
 
@@ -138,10 +153,12 @@ function autoAnswerOwnDecisions(
     // permutation can put this same socket on a DIFFERENT engine seat than
     // its previous match, so caching the first value would silently start
     // answering nobody's decisions from the second match onward.
-    const myPlayerId = v.viewerId;
+    const myPlayerId = v.viewerPlayerId;
     const pd = v.pendingDecision;
     if (!pd || pd.playerId !== myPlayerId || !matchId.current || !roomCode.current) return;
-    const base = { roomCode: roomCode.current, matchId: matchId.current, decisionId: pd.id };
+    // SPEC §9.1: decisionId is already a unique one-shot id per decision —
+    // fine to reuse as this answer's idempotency key in tests.
+    const base = { roomCode: roomCode.current, matchId: matchId.current, decisionId: pd.id, clientActionId: pd.id };
     if (pd.kind === "drawCard") void emitAck(socket, "game:answer", { ...base, choice: "draw" });
     else if (pd.kind === "mainAction") void emitAck(socket, "game:answer", { ...base, choice: "endPhase" });
     else if (pd.kind === "discardTo" || pd.kind === "discardChosenBy") {
@@ -211,11 +228,11 @@ describe("room lifecycle", () => {
 
   it("host starting the game broadcasts an initial game:view to every seat", async () => {
     const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
-    const views = Promise.all(sockets.map((s) => waitForEvent<{ viewerId: string }>(s, "game:view")));
+    const views = Promise.all(sockets.map((s) => waitForEvent<{ viewerPlayerId: string }>(s, "game:view")));
     const ack = await emitAck<{ ok: boolean }>(sockets[0]!, "room:start", { roomCode });
     expect(ack.ok).toBe(true);
     const resolved = await views;
-    expect(resolved.map((v) => v.viewerId).sort()).toEqual(["p0", "p1", "p2"]);
+    expect(resolved.map((v) => v.viewerPlayerId).sort()).toEqual(["p0", "p1", "p2"]);
   });
 });
 
@@ -225,6 +242,9 @@ describe("answer authorization and validation", () => {
     const p0View = waitForEvent<{ pendingDecision?: { id: string; playerId: string } }>(
       sockets[0]!,
       "game:view",
+    );
+    const allViews = Promise.all(
+      sockets.map((s) => waitForEvent<{ viewerPlayerId: string }>(s, "game:view")),
     );
     const playing = waitForRoomState(sockets[0]!, (s) => s.phase === "playing");
     await emitAck(sockets[0]!, "room:start", { roomCode });
@@ -240,16 +260,16 @@ describe("answer authorization and validation", () => {
     const state = await playing;
 
     // SPEC 8.2: the pending decision's engine seat isn't necessarily this
-    // room's lobby seat of the same number anymore — go through the map the
-    // server broadcasts (lobbySeatOfEngineSeat) to find who actually holds
-    // it, so "the wrong player" reliably means a DIFFERENT seat.
-    const engineSeat = Number(view.pendingDecision!.playerId.slice(1));
-    const ownerLobbySeat = state.lobbySeatOfEngineSeat![engineSeat]!;
+    // room's lobby seat of the same number anymore — every socket's own
+    // view carries its own viewerPlayerId, so match on that instead.
+    const views = await allViews;
+    const ownerLobbySeat = findOwnerLobbySeat(views, view.pendingDecision!.playerId);
     const wrongLobbySeat = (ownerLobbySeat + 1) % sockets.length;
     const wrongAck = await emitAck<{ ok: boolean; error?: string }>(sockets[wrongLobbySeat]!, "game:answer", {
       roomCode,
       matchId: state.matchId,
       decisionId: view.pendingDecision!.id,
+      clientActionId: "act-wrong-player",
       pass: true,
     });
     expect(wrongAck.ok).toBe(false);
@@ -265,6 +285,7 @@ describe("answer authorization and validation", () => {
       roomCode,
       matchId: state.matchId,
       decisionId: "dec_not_real",
+      clientActionId: "act-stale-decision",
       pass: true,
     });
     expect(ack.ok).toBe(false);
@@ -276,17 +297,21 @@ describe("answer authorization and validation", () => {
       sockets[0]!,
       "game:view",
     );
+    const allViews = Promise.all(
+      sockets.map((s) => waitForEvent<{ viewerPlayerId: string }>(s, "game:view")),
+    );
     const playing = waitForRoomState(sockets[0]!, (s) => s.phase === "playing");
     await emitAck(sockets[0]!, "room:start", { roomCode });
     const view = await p0View;
-    const state = await playing;
-    const engineSeat = Number(view.pendingDecision!.playerId.slice(1));
-    const ownerLobbySeat = state.lobbySeatOfEngineSeat![engineSeat]!;
+    await playing;
+    const views = await allViews;
+    const ownerLobbySeat = findOwnerLobbySeat(views, view.pendingDecision!.playerId);
 
     const ack = await emitAck<{ ok: boolean; error?: string }>(sockets[ownerLobbySeat]!, "game:answer", {
       roomCode,
       matchId: "not-the-real-match-id",
       decisionId: view.pendingDecision!.id,
+      clientActionId: "act-stale-match",
       pass: true,
     });
     expect(ack.ok).toBe(false);
@@ -299,6 +324,9 @@ describe("answer authorization and validation", () => {
       sockets[0]!,
       "game:view",
     );
+    const allViews = Promise.all(
+      sockets.map((s) => waitForEvent<{ viewerPlayerId: string }>(s, "game:view")),
+    );
     const playing = waitForRoomState(sockets[0]!, (s) => s.phase === "playing");
     await emitAck(sockets[0]!, "room:start", { roomCode });
     const view = await p0View;
@@ -309,15 +337,16 @@ describe("answer authorization and validation", () => {
     const state = await playing;
     // SPEC 8.2: the lord (who picks first) can be any seat, and that engine
     // seat isn't necessarily this room's lobby seat of the same number
-    // anymore — go through the broadcast map to find who actually holds it.
-    const engineSeat = Number(view.pendingDecision!.playerId.slice(1));
-    const ownerLobbySeat = state.lobbySeatOfEngineSeat![engineSeat]!;
+    // anymore — every socket's own view carries its own viewerPlayerId.
+    const views = await allViews;
+    const ownerLobbySeat = findOwnerLobbySeat(views, view.pendingDecision!.playerId);
 
     const nextViews = Promise.all(sockets.map((s) => waitForEvent<{ pendingDecision?: unknown }>(s, "game:view")));
     const ack = await emitAck<{ ok: boolean }>(sockets[ownerLobbySeat]!, "game:answer", {
       roomCode,
       matchId: state.matchId,
       decisionId: view.pendingDecision!.id,
+      clientActionId: "act-correct-player",
       pass: true, // "just randomize my general" per pickGeneral's resolvePick semantics
     });
     expect(ack.ok).toBe(true);
@@ -334,13 +363,13 @@ describe("reconnect via session token", () => {
     // Let seat 1's view arrive before disconnecting it — SPEC 8.2's seat
     // permutation means lobby seat 1 isn't necessarily engine "p1" anymore,
     // so capture its actual engine id from this view instead of assuming it.
-    const seat1View = await waitForEvent<{ viewerId: string }>(sockets[1]!, "game:view");
+    const seat1View = await waitForEvent<{ viewerPlayerId: string }>(sockets[1]!, "game:view");
 
     sockets[1]!.disconnect();
     await new Promise((r) => setTimeout(r, 50));
 
     const reconnected = await connectClient();
-    const viewPromise = waitForEvent<{ viewerId: string }>(reconnected, "game:view");
+    const viewPromise = waitForEvent<{ viewerPlayerId: string }>(reconnected, "game:view");
     const ack = await emitAck<{ ok: boolean; seatIndex: number; phase: string }>(
       reconnected,
       "room:rejoin",
@@ -350,7 +379,7 @@ describe("reconnect via session token", () => {
     expect(ack.seatIndex).toBe(1);
     expect(ack.phase).toBe("playing");
     const view = await viewPromise;
-    expect(view.viewerId).toBe(seat1View.viewerId);
+    expect(view.viewerPlayerId).toBe(seat1View.viewerPlayerId);
   });
 
   it("rejects an unknown session token", async () => {
@@ -423,7 +452,7 @@ describe("quickstart with bots", () => {
     let roomCode = "";
     let matchId = "";
     // SPEC 8.2: the player->seat permutation means this socket's own engine
-    // seat (its GameView viewerId) is no longer necessarily "p0" just
+    // seat (its GameView viewerPlayerId) is no longer necessarily "p0" just
     // because it's lobby seat 0 — read it off the first view instead of
     // assuming the string.
     let myPlayerId = "";
@@ -439,14 +468,14 @@ describe("quickstart with bots", () => {
     // waitUntilView promises below independently observe the specific
     // checkpoints this test cares about.
     type View = {
-      viewerId: string;
+      viewerPlayerId: string;
       pendingDecision?: { id: string; playerId: string; kind: string; data?: Record<string, unknown> };
     };
     socket.on("game:view", (v: View) => {
-      if (!myPlayerId) myPlayerId = v.viewerId;
+      if (!myPlayerId) myPlayerId = v.viewerPlayerId;
       const pd = v.pendingDecision;
       if (!pd || pd.playerId !== myPlayerId || !roomCode || !matchId) return;
-      const base = { roomCode, matchId, decisionId: pd.id };
+      const base = { roomCode, matchId, decisionId: pd.id, clientActionId: pd.id };
       if (pd.kind === "drawCard") void emitAck(socket, "game:answer", { ...base, choice: "draw" });
       else if (pd.kind === "mainAction") void emitAck(socket, "game:answer", { ...base, choice: "endPhase" });
       else if (pd.kind === "discardTo" || pd.kind === "discardChosenBy") {
@@ -820,4 +849,84 @@ describe("SPEC 8: match lifecycle, result & rematch", () => {
     }
     throw new Error("waitFor: condition not met in time");
   }
+});
+
+// SPEC 9 — Shared Protocol / Projected Game View: the unified GameView shape
+// and the game:answer idempotency envelope.
+describe("SPEC 9: unified GameView & clientActionId idempotency", () => {
+  it("game:view carries the full §9.2 shape: room/match meta, serverNow, legalActions, connectionStatus per player", async () => {
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const p0View = waitForEvent<Record<string, unknown>>(sockets[0]!, "game:view");
+    const playing = waitForRoomState(sockets[0]!, (s) => s.phase === "playing");
+    await emitAck(sockets[0]!, "room:start", { roomCode });
+    const view = await p0View;
+    const state = await playing;
+
+    expect(view.roomCode).toBe(roomCode);
+    expect(view.matchId).toBe(state.matchId);
+    expect(view.matchStatus).toBe("active");
+    expect(typeof view.viewerPlayerId).toBe("string");
+    expect(typeof view.viewerSeatIndex).toBe("number");
+    expect(typeof view.serverNow).toBe("number");
+    expect(Array.isArray(view.players)).toBe(true);
+    const players = view.players as Array<Record<string, unknown>>;
+    expect(players).toHaveLength(3);
+    for (const p of players) {
+      expect(["connected", "reconnecting", "gone"]).toContain(p.connectionStatus);
+    }
+    // legalActions: non-empty ONLY for whoever the pending decision actually
+    // belongs to (SPEC's own hidden-info safety, see engine's legalActionsFor).
+    const pd = view.pendingDecision as { playerId: string } | undefined;
+    const legalActions = view.legalActions as Array<{ kind: string }>;
+    if (pd?.playerId === view.viewerPlayerId) {
+      expect(legalActions.length).toBeGreaterThan(0);
+    } else {
+      expect(legalActions).toEqual([]);
+    }
+  });
+
+  it("a real assembled game:view parses cleanly against the shared Zod GameView schema", async () => {
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const p0View = waitForEvent<unknown>(sockets[0]!, "game:view");
+    await emitAck(sockets[0]!, "room:start", { roomCode });
+    const view = await p0View;
+
+    const result = gameViewSchema.safeParse(view);
+    if (!result.success) {
+      throw new Error(`assembled game:view failed schema validation: ${JSON.stringify(result.error.issues, null, 2)}`);
+    }
+  });
+
+  it("a lost-ack retry with the same clientActionId replays success instead of failing as stale", async () => {
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const p0View = waitForEvent<{ pendingDecision?: { id: string; playerId: string } }>(
+      sockets[0]!,
+      "game:view",
+    );
+    const allViews = Promise.all(
+      sockets.map((s) => waitForEvent<{ viewerPlayerId: string }>(s, "game:view")),
+    );
+    const playing = waitForRoomState(sockets[0]!, (s) => s.phase === "playing");
+    await emitAck(sockets[0]!, "room:start", { roomCode });
+    const view = await p0View;
+    const state = await playing;
+    const views = await allViews;
+    const ownerLobbySeat = findOwnerLobbySeat(views, view.pendingDecision!.playerId);
+
+    const payload = {
+      roomCode,
+      matchId: state.matchId,
+      decisionId: view.pendingDecision!.id,
+      clientActionId: "act-idempotent-retry",
+      pass: true,
+    };
+    const first = await emitAck<{ ok: boolean }>(sockets[ownerLobbySeat]!, "game:answer", payload);
+    expect(first.ok).toBe(true);
+
+    // The SAME clientActionId again — the decisionId it referenced has
+    // already resolved (the game moved on), so without idempotency this
+    // would now fail as a stale/wrong-turn answer.
+    const retry = await emitAck<{ ok: boolean; error?: string }>(sockets[ownerLobbySeat]!, "game:answer", payload);
+    expect(retry.ok).toBe(true);
+  });
 });

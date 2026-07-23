@@ -43,6 +43,19 @@ function clearStoredSession(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+// SPEC §9.1: one clientActionId per decisionId, reused across retries of the
+// same logical answer (so a lost-ack resend is recognized server-side as the
+// same action rather than re-applied or rejected as stale).
+const actionIdByDecision = new Map<string, string>();
+function getOrCreateActionId(decisionId: string): string {
+  let id = actionIdByDecision.get(decisionId);
+  if (!id) {
+    id = crypto.randomUUID();
+    actionIdByDecision.set(decisionId, id);
+  }
+  return id;
+}
+
 interface GameStoreState {
   connected: boolean;
   /** True once the initial auto-rejoin attempt (or the decision that there
@@ -230,7 +243,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       pushDebug(`→ answer ${tag}`);
       // SPEC 8.3: stamped with matchId so the server can reject a stale
       // answer from a previous match (decisionIds restart at dec_1 each match).
-      const ack = await emitAck<SimpleAck>(ClientEvents.GameAnswer, { roomCode, matchId, ...fields });
+      // SPEC §9.1: a fresh clientActionId per logical answer — if the ack
+      // gets lost and this exact call is retried, reusing the id lets the
+      // server replay the original success instead of re-applying it.
+      const clientActionId = getOrCreateActionId(fields.decisionId);
+      const ack = await emitAck<SimpleAck>(ClientEvents.GameAnswer, {
+        roomCode,
+        matchId,
+        clientActionId,
+        ...fields,
+      });
       if (!ack.ok) {
         // Rejected — the decision is still pending, so clear the guard to
         // allow a corrected retry.
@@ -251,6 +273,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         await emitAck<SimpleAck>(ClientEvents.RoomLeave, { roomCode });
       }
       clearStoredSession();
+      actionIdByDecision.clear();
       set({
         roomCode: null,
         sessionToken: null,
@@ -274,6 +297,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         set({ error: ack.error });
         return;
       }
+      actionIdByDecision.clear();
       set({ gameView: null, matchResult: null, matchId: null, error: null });
     },
 

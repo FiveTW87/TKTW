@@ -86,7 +86,7 @@ export default function App() {
   // server-timed phase — checked ahead of pendingDecision.kind so a lord's
   // already-live pickGeneral decision doesn't jump straight to GeneralSelect
   // before the reveal window elapses.
-  const me = gameView?.players.find((p) => p.id === gameView.viewerId);
+  const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
   const content =
     !roomCode || !gameView ? (
       <Lobby />

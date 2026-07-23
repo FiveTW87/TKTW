@@ -49,6 +49,7 @@ export { createRng, type Rng } from "./core/rng";
 
 export * from "./types";
 export * from "./core/view";
+export * from "./core/legalActions";
 export * from "./core/decisions";
 export * from "./core/ctx";
 export { GENERALS, registerGeneral, type GeneralDef, type SkillDef } from "./generals/registry";

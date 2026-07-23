@@ -113,7 +113,7 @@ export function DecisionModal({
                   style={secondaryBtn}
                   onClick={() => void submit({ targetIds: [p.id] })}
                 >
-                  {p.id === gameView.viewerId ? `${p.name} (ตัวเอง)` : p.name}
+                  {p.id === gameView.viewerPlayerId ? `${p.name} (ตัวเอง)` : p.name}
                 </button>
               ))}
           </div>
@@ -174,8 +174,8 @@ function CardShape({
   // A card-conversion general (e.g. Guan Yu red→สังหาร, Zhen Ji black→หลบ) may
   // answer with a card whose literal type differs — offer those too. The engine
   // derives the type itself for reactive responses, so we submit just the id.
-  const me = gameView.players.find((p) => p.id === gameView.viewerId);
-  const isOwnTurn = !!me && gameView.currentSeat === me.seat;
+  const me = gameView.players.find((p) => p.id === gameView.viewerPlayerId);
+  const isOwnTurn = !!me && gameView.currentTurnPlayerId === me.id;
   const pool = shape.neededType
     ? myHand.filter((c) => clientCountsAs(c, shape.neededType!, me?.generalId ?? "", isOwnTurn))
     : myHand;
@@ -212,7 +212,7 @@ function CardShape({
   };
 
   if (awaitingTarget) {
-    const others = gameView.players.filter((p) => p.alive && p.id !== gameView.viewerId);
+    const others = gameView.players.filter((p) => p.alive && p.id !== gameView.viewerPlayerId);
     return (
       <div>
         <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 12 }}>เลือกเป้าหมายใหม่</div>

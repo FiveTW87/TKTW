@@ -4,8 +4,18 @@
 // happens after a decision resolves" logic isn't tangled up with socket.io
 // event wiring.
 import type { Server } from "socket.io";
-import { projectFor, respond, simpleBotAnswer, forfeitIdentityPlayer, summarizeMatch, type GameSession } from "@tktw/engine";
-import { ServerEvents, type RoomStatePayload, type RoomStateSeat } from "@tktw/shared";
+import {
+  projectFor,
+  respond,
+  simpleBotAnswer,
+  forfeitIdentityPlayer,
+  summarizeMatch,
+  legalActionsFor,
+  deriveLatestAndResolvingCard,
+  type GameSession,
+  type ProjectedPlayer,
+} from "@tktw/engine";
+import { ServerEvents, type RoomStatePayload, type RoomStateSeat, type GameView, type ConnectionStatus } from "@tktw/shared";
 import { seatPlayerId, RoomManager, type GameRoom } from "./RoomManager";
 import { defaultAnswerFor, DECISION_TIMEOUT_MS, GRACE_PERIOD_MS, REVEAL_DURATION_MS } from "../timeouts";
 
@@ -37,12 +47,77 @@ function lobbySeatOf(room: GameRoom, engineSeat: number): number {
  *  what just happened in the log. */
 export const BOT_ANSWER_DELAY_MS = 600;
 
+// Phase 5 (SPEC §9.2): assembles the unified GameView for one viewer —
+// projectFor(state) is still the single hidden-info source (engine-owned,
+// bot-fuzz-tested); everything else here is room meta the engine can't know
+// (roomCode/matchId/matchStatus/connectionStatus/serverNow/legalActions).
+function matchStatusOf(room: GameRoom): GameView["matchStatus"] {
+  if (room.phase === "ended") return "finished";
+  if (room.phase === "abandoned") return "abandoned";
+  return "active"; // "revealing" and "playing" are both an active match
+}
+
+function connectionStatusForEngineSeat(room: GameRoom, engineSeat: number): ConnectionStatus {
+  return room.seats[lobbySeatOf(room, engineSeat)]?.connectionStatus ?? "gone";
+}
+
+export function assembleGameView(room: GameRoom, lobbyIndex: number): GameView | undefined {
+  const session = room.session;
+  if (!session) return undefined;
+  const engineSeat = engineSeatOf(room, lobbyIndex);
+  const viewerId = seatPlayerId(engineSeat);
+  const projected = projectFor(session.state, viewerId);
+  const players: GameView["players"] = projected.players.map((p: ProjectedPlayer) => ({
+    ...p,
+    connectionStatus: connectionStatusForEngineSeat(room, p.seat),
+  }));
+  const currentTurnPlayerId = projected.players.find((p) => p.seat === projected.currentSeat)?.id;
+  const { latestPlayedCard, resolvingCard } = deriveLatestAndResolvingCard(projected.eventStack);
+
+  return {
+    roomCode: room.code,
+    matchId: room.matchId ?? "",
+    matchStatus: matchStatusOf(room),
+    viewerPlayerId: viewerId,
+    viewerSeatIndex: engineSeat,
+    players,
+    turnNumber: projected.turnNumber,
+    ...(currentTurnPlayerId ? { currentTurnPlayerId } : {}),
+    currentPhase: projected.phase,
+    ...(projected.pendingDecision
+      ? {
+          pendingDecision: {
+            ...projected.pendingDecision,
+            ...(room.decisionStartedAt ? { startedAt: room.decisionStartedAt } : {}),
+            ...(room.decisionExpiresAt ? { expiresAt: room.decisionExpiresAt } : {}),
+          },
+        }
+      : {}),
+    // legalActionsFor is viewer-gated internally (empty unless it's this
+    // viewer's own decision) — the RAW state.pendingDecision, not the
+    // already-redacted `projected` one, since the gating happens here.
+    legalActions: legalActionsFor(session.state.pendingDecision, viewerId),
+    drawPileCount: projected.drawPile.count,
+    discardPileCount: projected.discardPile.length,
+    ...(projected.discardPile.length > 0 ? { discardPileTop: projected.discardPile.at(-1)! } : {}),
+    // Public zone (unlike the draw pile) — the client's existing discard
+    // browser needs the whole array, not just count/top.
+    discardPile: projected.discardPile,
+    ...(latestPlayedCard ? { latestPlayedCard } : {}),
+    ...(resolvingCard ? { resolvingCard } : {}),
+    gameLogs: projected.log,
+    ...(room.result ? { result: room.result } : {}),
+    finished: projected.finished,
+    serverNow: Date.now(),
+  };
+}
+
 export function broadcastViews(io: Server, room: GameRoom): void {
   if (!room.session) return;
   room.seats.forEach((seat, i) => {
     if (!seat.connected || !seat.socketId) return;
-    const view = projectFor(room.session!.state, seatPlayerId(engineSeatOf(room, i)));
-    io.to(seat.socketId).emit(ServerEvents.GameView, view);
+    const view = assembleGameView(room, i);
+    if (view) io.to(seat.socketId).emit(ServerEvents.GameView, view);
   });
 }
 
@@ -50,32 +125,19 @@ function roomStateSeat(s: GameRoom["seats"][number]): RoomStateSeat {
   return { name: s.name, connected: s.connected, connectionStatus: s.connectionStatus, isHost: s.isHost, isBot: s.isBot };
 }
 
-// Inverts room.seatAssignment (lobbyIndex -> engineSeat) into engineSeat ->
-// lobbyIndex, so the client can map a GameView board player (engine-seat
-// ordered) back onto this room's (lobby-order) connection status without the
-// two orderings needing to coincide. Absent outside an active match.
-function lobbySeatOfEngineSeat(room: GameRoom): number[] | undefined {
-  if (!room.seatAssignment) return undefined;
-  const out = new Array<number>(room.seatAssignment.length);
-  room.seatAssignment.forEach((engineSeat, lobbyIndex) => {
-    out[engineSeat] = lobbyIndex;
-  });
-  return out;
-}
-
-/** Broadcast the room-level meta (seats + connection status + match/deadline)
- *  PER SOCKET, so each client also learns its own current seat index — that
- *  survives a lobby re-index without trusting a locally-cached value. */
+/** Broadcast the room-level meta (seats + connection status + phase/reveal
+ *  deadline) PER SOCKET, so each client also learns its own current seat
+ *  index — that survives a lobby re-index without trusting a locally-cached
+ *  value. Once a match is actually playing, per-decision timing lives on
+ *  GameView.pendingDecision instead (Phase 5, §9.4) — this only still needs
+ *  its own deadline field for "revealing", which has no GameView yet. */
 export function broadcastRoomState(io: Server, room: GameRoom): void {
-  const seatMap = lobbySeatOfEngineSeat(room);
   const base: Omit<RoomStatePayload, "yourSeatIndex"> = {
     code: room.code,
     phase: room.phase,
     seats: room.seats.map(roomStateSeat),
     ...(room.matchId ? { matchId: room.matchId } : {}),
-    ...(room.decisionExpiresAt ? { decisionExpiresAt: room.decisionExpiresAt } : {}),
     ...(room.revealExpiresAt ? { revealExpiresAt: room.revealExpiresAt } : {}),
-    ...(seatMap ? { lobbySeatOfEngineSeat: seatMap } : {}),
   };
   room.seats.forEach((seat, i) => {
     if (!seat.socketId) return;
@@ -89,6 +151,7 @@ function clearRoomTimer(room: GameRoom): void {
     delete room.decisionTimer;
   }
   delete room.decisionExpiresAt;
+  delete room.decisionStartedAt;
 }
 
 function clearRevealTimer(room: GameRoom): void {
@@ -183,7 +246,9 @@ export function scheduleTimeout(
   const decisionId = pending.id;
   const isBotTurn = isBotDecision(room, pending.playerId);
   const delay = isBotTurn ? botDelayMs : timeoutMs;
-  room.decisionExpiresAt = Date.now() + delay;
+  const now = Date.now();
+  room.decisionStartedAt = now;
+  room.decisionExpiresAt = now + delay;
 
   room.decisionTimer = setTimeout(() => {
     // The decision may have already been answered (or the room GC'd) by

@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import { projectFor, respond, type PlayerAnswer } from "@tktw/engine";
+import { respond, type PlayerAnswer } from "@tktw/engine";
 import {
   createRoomSchema,
   joinRoomSchema,
@@ -21,6 +21,7 @@ import {
   armGraceTimer,
   forfeitAndContinue,
   engineSeatOf,
+  assembleGameView,
 } from "./rooms/gameFlow";
 
 interface SocketData {
@@ -54,8 +55,8 @@ function resyncSeatIndices(io: Server, room: GameRoom): void {
 }
 
 function sendViewTo(room: GameRoom, seatIndex: number, socket: Socket): void {
-  if (!room.session) return;
-  socket.emit(ServerEvents.GameView, projectFor(room.session.state, seatPlayerId(engineSeatOf(room, seatIndex))));
+  const view = assembleGameView(room, seatIndex);
+  if (view) socket.emit(ServerEvents.GameView, view);
 }
 
 // zod's .optional() yields `T | undefined` keys that are always *present*,
@@ -280,6 +281,14 @@ export function registerSocketHandlers(
         return fail(ack, new RoomError("stale match"), "stale match");
       }
 
+      // SPEC §9.1: if the ack for a PREVIOUS successful answer never made it
+      // back to the client (network blip), a retry with the same
+      // clientActionId would otherwise fail as "no pending decision"/"not
+      // your decision" — the original attempt already advanced things.
+      // Replay the stored success instead of re-applying or misreporting it.
+      const cached = room.answeredActionIds?.get(parsed.data.clientActionId);
+      if (cached) return ok(ack);
+
       const pending = room.session.state.pendingDecision;
       const myPlayerId = seatPlayerId(engineSeatOf(room, data.seatIndex));
       if (!pending) return fail(ack, new RoomError("no pending decision"), "no pending decision");
@@ -293,9 +302,11 @@ export function registerSocketHandlers(
         // The atomicity audit's whole payoff: a thrown respond() call is
         // guaranteed to have left state and pendingDecision exactly as they
         // were, so it's safe to just report the error back — the client
-        // can retry the same decision, no room-level recovery needed.
+        // can retry the same decision, no room-level recovery needed. Not
+        // cached: a genuine rejection is safe to just re-validate later.
         return fail(ack, err, "invalid move");
       }
+      (room.answeredActionIds ??= new Map()).set(parsed.data.clientActionId, { ok: true });
       ok(ack);
       runAfterRespond(room);
     });

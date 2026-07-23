@@ -1,13 +1,13 @@
 // ENG-009 — turn a structured GameLogEntry (eventType + ids) into a Thai line.
 // The engine never stores Thai as identity; localization lives entirely here.
-import type { GameView, LogEntry } from "@tktw/shared";
+import type { GameView, GameLogView } from "@tktw/shared";
 import { cardDisplay } from "./cardNames";
 import { skillById } from "./generalSkills";
 import { roleDisplay } from "./roles";
 
 const SUIT_TH: Record<string, string> = { spade: "โพดำ", heart: "โพแดง", club: "ดอกจิก", diamond: "ข้าวหลามตัด" };
 
-export function resolveLogEntry(entry: LogEntry, view: GameView): string {
+export function resolveLogEntry(entry: GameLogView, view: GameView): string {
   const name = (id: string | undefined): string =>
     id ? view.players.find((p) => p.id === id)?.name ?? id : "?";
   const card = (t: string | undefined): string => (t ? cardDisplay(t).name : "");

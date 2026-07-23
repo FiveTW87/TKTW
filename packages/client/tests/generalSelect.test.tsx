@@ -93,13 +93,14 @@ describe("General select screen", () => {
     const user = await enterRoom("PICKME");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [basePlayer("p0", 0), basePlayer("p1", 1), basePlayer("p2", 2)],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 0,
-      phase: "prepare",
-      drawPile: { count: 90 },
-      discardPile: [],
+      currentPhase: "prepare",
+      drawPileCount: 90,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: {
         id: "dec_1",
@@ -108,7 +109,7 @@ describe("General select screen", () => {
         data: { options: ["caocao", "liubei", "sunquan", "guanyu", "zhaoyun"] },
       },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText("เลือกนายพลของคุณ")).toBeInTheDocument());
@@ -128,20 +129,21 @@ describe("General select screen", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const answerCall = sentEvents.find((e) => e.event === "game:answer")!;
-    expect(answerCall.payload).toEqual({ roomCode: "PICKME", matchId: "test-match", decisionId: "dec_1", choice: "caocao" });
+    expect(answerCall.payload).toEqual({ roomCode: "PICKME", matchId: "test-match", decisionId: "dec_1", choice: "caocao", clientActionId: expect.any(String) });
   });
 
   it("shows a waiting indicator (not the picker) when it's someone else's pick", async () => {
     await enterRoom("WAITED");
 
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
       players: [basePlayer("p0", 0), basePlayer("p1", 1), basePlayer("p2", 2)],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: 0,
-      phase: "prepare",
-      drawPile: { count: 90 },
-      discardPile: [],
+      currentPhase: "prepare",
+      drawPileCount: 90,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       pendingDecision: {
         id: "dec_2",
@@ -150,7 +152,7 @@ describe("General select screen", () => {
         data: { options: ["huanggai", "sunshangxiang", "zhouyu"] },
       },
       finished: false,
-      log: [],
+      gameLogs: [],
     });
 
     await waitFor(() => expect(screen.getByText(/รอ p1 เลือกนายพล/)).toBeInTheDocument());

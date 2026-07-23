@@ -61,10 +61,18 @@ export const quickstartWithBotsSchema = z.object({
 // new match, so decisionId alone can't tell a stale answer from a previous
 // match apart from a legitimate one in the current match — the server
 // rejects any answer whose matchId doesn't match room.matchId.
+//
+// clientActionId (SPEC §9.1): idempotency key for THIS specific command.
+// If the ack for a successful answer is lost (network blip) and the client
+// retries with the SAME clientActionId, the server replays the original
+// success ack instead of re-applying the answer (which would otherwise fail
+// as "stale decisionId" even though the original attempt actually
+// succeeded) — see server rooms/gameFlow.ts's per-match seen-id cache.
 export const answerSchema = z.object({
   roomCode: roomCodeSchema,
   matchId: z.string().min(1),
   decisionId: z.string().min(1),
+  clientActionId: z.string().min(1).max(64),
   choice: z.string().max(64).optional(),
   cardIds: z.array(z.string().max(64)).max(10).optional(),
   targetIds: z.array(z.string().max(64)).max(10).optional(),

@@ -13,9 +13,9 @@ export function GeneralSelect() {
   const pending = gameView?.pendingDecision;
   if (!gameView || !pending) return null;
 
-  const isMine = pending.playerId === gameView.viewerId;
+  const isMine = pending.playerId === gameView.viewerPlayerId;
   const options = (pending.data.options as string[] | undefined) ?? [];
-  const me = gameView.players.find((p) => p.id === gameView.viewerId);
+  const me = gameView.players.find((p) => p.id === gameView.viewerPlayerId);
   const isLord = me?.role === "lord";
   const waitingName = gameView.players.find((p) => p.id === pending.playerId)?.name ?? pending.playerId;
 

@@ -69,7 +69,7 @@ const sampleResult: MatchResult = {
     { id: "p2", seat: 2, name: "Carol", role: "rebel", generalId: "sunquan", alive: false, kills: 0, damageTaken: 3 },
     { id: "p3", seat: 3, name: "Dave", role: "traitor", generalId: "lubu", alive: false, kills: 0, damageTaken: 2 },
   ],
-  log: [],
+  gameLogs: [],
 };
 
 async function enterFinishedRoom(roomCode: string, result: MatchResult): Promise<ReturnType<typeof userEvent.setup>> {
@@ -85,17 +85,18 @@ async function enterFinishedRoom(roomCode: string, result: MatchResult): Promise
 
   fakeSocket.fire("room:state", { code: roomCode, phase: "ended", seats: [], matchId: result.matchId });
   fakeSocket.fire("game:view", {
-    viewerId: "p0",
+    viewerPlayerId: "p0",
+    viewerSeatIndex: 0,
     players: [],
-    currentSeat: 0,
+    currentTurnPlayerId: "p0",
     turnNumber: result.turnNumber,
-    phase: "end",
-    drawPile: { count: 0 },
-    discardPile: [],
+    currentPhase: "end",
+    drawPileCount: 0,
+    discardPile: [], discardPileCount: 0,
     eventStack: [],
     finished: true,
     winners: result.winners,
-    log: [],
+    gameLogs: [],
   });
   fakeSocket.fire("game:result", result);
   await waitFor(() => expect(screen.getByText("ชัยชนะ!")).toBeInTheDocument());
@@ -134,16 +135,17 @@ describe("Result screen (SPEC 8.4)", () => {
     await waitFor(() => expect(screen.getByText("NOWIN1")).toBeInTheDocument());
     fakeSocket.fire("room:state", { code: "NOWIN1", phase: "ended", seats: [], matchId: result.matchId });
     fakeSocket.fire("game:view", {
-      viewerId: "p0",
+      viewerPlayerId: "p0",
+    viewerSeatIndex: 0,
       players: [],
-      currentSeat: 0,
+      currentTurnPlayerId: "p0",
       turnNumber: result.turnNumber,
-      phase: "end",
-      drawPile: { count: 0 },
-      discardPile: [],
+      currentPhase: "end",
+      drawPileCount: 0,
+      discardPile: [], discardPileCount: 0,
       eventStack: [],
       finished: true,
-      log: [],
+      gameLogs: [],
     });
     fakeSocket.fire("game:result", result);
     await waitFor(() => expect(screen.getByText("เกมยุติ — ไม่มีผู้ชนะ")).toBeInTheDocument());

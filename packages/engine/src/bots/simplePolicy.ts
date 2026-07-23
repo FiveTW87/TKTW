@@ -6,10 +6,10 @@
 // (same seed -> byte-identical state) still holds.
 import type { GameSession } from "../core/decisions";
 import type { EquipSlot, PlayerAnswer } from "../types";
-import { projectFor, type GameView, type PlayerView } from "../core/view";
+import { projectFor, type ProjectedGameState, type ProjectedPlayer } from "../core/view";
 import { cardDef } from "../core/cardData";
 
-function seatDistance(view: GameView, aId: string, bId: string): number {
+function seatDistance(view: ProjectedGameState, aId: string, bId: string): number {
   const alive = view.players.filter((p) => p.alive).sort((x, y) => x.seat - y.seat);
   const ids = alive.map((p) => p.id);
   const i = ids.indexOf(aId);
@@ -19,12 +19,12 @@ function seatDistance(view: GameView, aId: string, bId: string): number {
   return Math.min((j - i + n) % n, (i - j + n) % n);
 }
 
-function netDistance(view: GameView, a: PlayerView, b: PlayerView): number {
+function netDistance(view: ProjectedGameState, a: ProjectedPlayer, b: ProjectedPlayer): number {
   const base = seatDistance(view, a.id, b.id);
   return Math.max(1, base - (a.equipment.horseMinus ? 1 : 0) + (b.equipment.horsePlus ? 1 : 0));
 }
 
-function inAttackRange(view: GameView, a: PlayerView, b: PlayerView): boolean {
+function inAttackRange(view: ProjectedGameState, a: ProjectedPlayer, b: ProjectedPlayer): boolean {
   const weapon = a.equipment.weapon;
   const range = weapon ? (cardDef(weapon.typeKey).attackRange ?? 1) : 1;
   return range >= netDistance(view, a, b);
@@ -34,7 +34,7 @@ function inAttackRange(view: GameView, a: PlayerView, b: PlayerView): boolean {
 // Rotationally symmetric on purpose — see the note in an earlier revision:
 // scanning view.players in raw array order instead always favours
 // low-numbered seats as targets, giving high seats a survivorship bias.
-function seatOrderAfter(view: GameView, fromId: string): string[] {
+function seatOrderAfter(view: ProjectedGameState, fromId: string): string[] {
   const alive = view.players.filter((p) => p.alive).sort((x, y) => x.seat - y.seat);
   const ids = alive.map((p) => p.id);
   const idx = ids.indexOf(fromId);
@@ -42,23 +42,23 @@ function seatOrderAfter(view: GameView, fromId: string): string[] {
   return [...ids.slice(idx), ...ids.slice(0, idx)].slice(1);
 }
 
-function othersInOrder(view: GameView, me: PlayerView): PlayerView[] {
+function othersInOrder(view: ProjectedGameState, me: ProjectedPlayer): ProjectedPlayer[] {
   return seatOrderAfter(view, me.id)
     .map((id) => view.players.find((p) => p.id === id)!)
     .filter((p) => p.alive);
 }
 
-// Hand SIZE is public even when contents aren't (PlayerView.hand is
+// Hand SIZE is public even when contents aren't (ProjectedPlayer.hand is
 // {count} for non-self players) — enough to predict ขงเบ้ง's "กลเมืองร้าง"
 // (handless -> immune to สังหาร/ดวล) without seeing anyone's actual cards.
-function isHandEmpty(p: PlayerView): boolean {
+function isHandEmpty(p: ProjectedPlayer): boolean {
   return Array.isArray(p.hand) ? p.hand.length === 0 : p.hand.count === 0;
 }
 
 // ขงเบ้ง's immunity is the one canBeTargetedBy restriction that isn't
 // tied to a single card type (unlike ลกซุน's, special-cased at each call
 // site below) — สังหาร and ดวล both need it, so it's centralised here.
-function immuneToShaOrDuel(p: PlayerView): boolean {
+function immuneToShaOrDuel(p: ProjectedPlayer): boolean {
   return p.generalId === "zhugeliang" && isHandEmpty(p);
 }
 

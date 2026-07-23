@@ -1,7 +1,7 @@
 // The lobby/room-level shapes both server and client need to agree on —
-// distinct from GameView (the engine's own hidden-info-filtered state),
-// which is re-exported as-is from @tktw/engine in index.ts.
-import type { MatchSummary } from "@tktw/engine";
+// distinct from GameView (Phase 5's unified, Zod-typed view-model in
+// ./protocol/views.ts).
+import type { MatchResultView } from "./protocol/views";
 // "abandoned" = the match ended early because everyone else forfeited/left —
 // distinct from "ended" (a real win/loss result) so the client can say so.
 // "revealing" = SPEC 7.2's brief role-reveal screen: roles are already
@@ -31,30 +31,22 @@ export interface RoomStatePayload {
   yourSeatIndex?: number;
   /** Set once the match starts; part of the reconnect restore payload. */
   matchId?: string;
-  /** ms-epoch deadline of the current pending decision, for the countdown /
-   *  reconnect deadline restore (full serverNow/expiresAt is Phase 5). */
-  decisionExpiresAt?: number;
   /** ms-epoch deadline of the "revealing" phase (SPEC 7.2) — set only while
    *  phase === "revealing", so a rejoin during reveal restores the same
-   *  countdown instead of resetting it. */
+   *  countdown instead of resetting it. Once a match is actually playing,
+   *  the equivalent per-decision deadline lives on GameView.pendingDecision
+   *  (Phase 5, §9.4) instead — "revealing" has no GameView yet, so this is
+   *  the one phase that still needs its own timer field here. */
   revealExpiresAt?: number;
-  /** SPEC 8.2: each match randomizes a fresh player->seat permutation, so
-   *  engine seat k is no longer necessarily lobby seat k. Maps engine seat
-   *  index -> this room's (stable, lobby-order) seats array index, so the
-   *  client can look up a board player's connectionStatus without engine
-   *  seat and lobby seat needing to coincide. Present only while a match's
-   *  seat assignment exists (i.e. not in "lobby"). */
-  lobbySeatOfEngineSeat?: number[];
 }
 
-/** SPEC 8.4 — engine's pure MatchSummary plus the server-only bits it can't
- *  compute itself (matchId identity, wall-clock duration). Broadcast once a
- *  match finishes (ServerEvents.MatchResult) and re-sent on a rejoin into an
- *  "ended" room. */
-export interface MatchResult extends MatchSummary {
-  matchId: string;
-  durationMs: number;
-}
+/** SPEC 8.4 / 9.2 — engine's pure MatchSummary plus the server-only bits it
+ *  can't compute itself (matchId identity, wall-clock duration), Zod-typed
+ *  as MatchResultView (./protocol/views.ts) so there's one definition, not
+ *  two structurally-identical ones. Broadcast once a match finishes
+ *  (ServerEvents.MatchResult), re-sent on a rejoin into an "ended" room, and
+ *  also embedded as GameView.result. */
+export type MatchResult = MatchResultView;
 
 export type SimpleAck = { ok: true } | { ok: false; error: string };
 

@@ -96,25 +96,24 @@ Legend:
 
 ## Phase 3 — Hidden Information / Selection
 
-> Code-complete for the data/authority + minimal-wiring scope agreed via `/grill-me`:
-> engine (role↔seat randomization, `generalRevealed` gating), shared (`revealing` RoomPhase),
-> server (reveal-phase timer + rejoin/grace handling), client (RoleRevealModal wired to the
-> real phase). engine 225 · server 20 · client 49, typecheck clean on all 4 packages.
-> Still open: formal audits below, DevTools network inspection, and GPT Security Review
-> (user-triggered). Player→seat reshuffle per match/rematch deferred to Phase 4 (§8.2).
+> **Closed.** Reconciled against Phase 4 (the seat-reshuffle item) and filled the last two small
+> gaps: role/hand projection now have dedicated regression tests (`identity.test.ts`), and the
+> inspect panel shows public skills (`InspectModal.tsx` + `table.test.tsx`). engine 239 · client 54,
+> typecheck clean. Only two items are left, and both are intentionally left to the user: DevTools
+> network inspection (manual pass) and GPT Security Review (user-triggered).
 
-- [ ] Audit Role projection
-- [ ] Audit hand projection
-- [ ] Audit General choices
-- [ ] Audit private Skill decisions
-- [ ] Audit reconnect payload
+- [x] Audit Role projection (`identity.test.ts`: alive non-lord hidden, lord/self/dead visible)
+- [x] Audit hand projection (`identity.test.ts`: opponent hand is `{count}`, own hand is the real array)
+- [x] Audit General choices (`identity.test.ts`: pickGeneral candidates never reach a non-responder)
+- [x] Audit private Skill decisions (`guandou.test.ts`: peeked card ids owner-only)
+- [x] Audit reconnect payload (rejoin's `sendViewTo` → `projectFor`, same per-viewer filter; e2e-tested)
 - [x] Implement Role reveal screen before General selection
   - [x] แสดงเฉพาะ Role ของตน
   - [x] ใช้ Deadline เดิมเมื่อ Rejoin
   - [x] เจ้าเมืองเป็น Public ตามกฎ
-- [ ] Randomize Match Seat and Role independently
+- [x] Randomize Match Seat and Role independently
   - [x] Match แรก (role→seat)
-  - [ ] Rematch (player→seat reshuffle — Phase 4)
+  - [x] Rematch (player→seat reshuffle — done in Phase 4, `RoomManager.startGame` `seatAssignment`)
   - [x] เจ้าเมืองไม่ผูก Seat 1
   - [x] เจ้าเมืองเริ่มเทิร์นแรกจาก Seat ที่สุ่มได้
 - [x] General selection timer
@@ -126,9 +125,9 @@ Legend:
 - [x] Non-lords select privately in seat order and reveal together
 - [x] Own choices only
 - [x] Random/Confirm/Waiting
-- [ ] View public skills
-- [ ] Network payload inspection
-- [ ] GPT Security Review
+- [x] View public skills (`InspectModal.tsx` now lists `generalSkills()` — name/description, 主公/技 badges)
+- [ ] Network payload inspection (manual DevTools pass — user-triggered)
+- [ ] GPT Security Review (user-triggered)
 
 ## Phase 4 — Match End / Rematch
 
@@ -167,18 +166,32 @@ Legend:
 
 ## Phase 5 — Projected View / Protocol
 
-- [ ] GameView
-- [ ] PlayerView
-- [ ] DecisionView
-- [ ] LegalActionView
-- [ ] GameLogView
-- [ ] MatchResultView
-- [ ] serverNow/expiresAt
-- [ ] Equipment/Delayed Tricks
-- [ ] Latest vs resolving card
-- [ ] Zod validation
-- [ ] Projection snapshots
-- [ ] GPT Protocol Review
+> Code-complete for the scope locked via `/grill-me`: one unified server-assembled `GameView`
+> (`@tktw/shared/protocol/views.ts`, Zod schemas + `z.infer` types — one source of truth), decision-scoped
+> `legalActions` (`engine/core/legalActions.ts`'s `legalActionsFor`, viewer-gated so only the actual
+> decision-owner ever gets a non-empty list), and a `clientActionId` idempotency envelope on
+> `game:answer` only (per-match `answeredActionIds` cache replays the original success ack on a
+> lost-ack retry instead of misreporting "stale"). Engine's projection type renamed to
+> `ProjectedGameState`/`ProjectedPlayer` to free up `GameView` for the shared package. Client consumes
+> the unified view exclusively (`gameStore.ts`), never engine internals (§9.5 gate already held).
+> Full migration of every `gameView.*` field reference across Table.tsx/DecisionModal.tsx/
+> GeneralSelect.tsx/Result.tsx/PlayerTile.tsx (including fixing a real latent bug — Phase 4's
+> `connectionStatus` cross-referenced from `roomState.seats[...]` by parsing the player id, now read
+> directly off each `PlayerView`). engine 246 · server 38 · client 54, typecheck clean across all 4
+> packages. Only GPT Protocol Review is left, and it's user-triggered.
+
+- [x] GameView (`shared/protocol/views.ts` `gameViewSchema`; assembled server-side in `gameFlow.ts`'s `assembleGameView`)
+- [x] PlayerView (adds server-injected `connectionStatus` via `seatAssignment`, not a client-side cross-ref)
+- [x] DecisionView (`startedAt`/`expiresAt` timer fields, §9.4)
+- [x] LegalActionView (decision-scoped, from `engine/core/legalActions.ts`'s `legalActionsFor`; viewer-gated hidden-info test in `legalActions.test.ts`)
+- [x] GameLogView
+- [x] MatchResultView (wraps Phase 4's `MatchResult` — one Zod-derived definition, no duplicate)
+- [x] serverNow/expiresAt (`assembleGameView` stamps `serverNow: Date.now()`; timers carried alongside)
+- [x] Equipment/Delayed Tricks (`judgmentZone` on `PlayerView`, unchanged from Phase 3 shape)
+- [x] Latest vs resolving card (`engine/core/legalActions.ts`'s `deriveLatestAndResolvingCard`, from the wuxie-window `eventStack`)
+- [x] Zod validation (schemas are the single source; `z.infer` types, validated at assemble/test boundary per locked scope — not client hot-path)
+- [x] Projection snapshots (`legalActions.test.ts` + server `e2e.test.ts`'s "SPEC 9" block: full shape assertion + `gameViewSchema.safeParse`)
+- [ ] GPT Protocol Review (user-triggered)
 
 ## Phase 6 — Thai Naming
 

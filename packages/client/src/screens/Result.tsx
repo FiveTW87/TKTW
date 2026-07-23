@@ -26,7 +26,7 @@ export function Result() {
 
   if (!result) return null;
 
-  const myId = gameView?.viewerId;
+  const myId = gameView?.viewerPlayerId;
   const myRole = myId ? result.players.find((p) => p.id === myId)?.role : undefined;
   const noWinner = result.endReason === "no_winner";
   const won = !noWinner && myRole ? result.winners.includes(myRole) : false;
