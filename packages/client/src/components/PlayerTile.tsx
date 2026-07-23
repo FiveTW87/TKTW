@@ -22,24 +22,28 @@ export function PlayerTile({
   distance,
   inRange,
   compact,
+  density,
   connectionStatus,
   onClick,
   onInspect,
 }: {
   player: PlayerView;
   isCurrentTurn: boolean;
-  targetable?: boolean;
-  selected?: boolean;
+  targetable?: boolean | undefined;
+  selected?: boolean | undefined;
   /** สังหาร reach from the viewer to this player (undefined = don't show). */
-  distance?: number;
+  distance?: number | undefined;
   /** True if within the viewer's current weapon range. */
-  inRange?: boolean;
+  inRange?: boolean | undefined;
   /** Narrow layout (mobile) — tighter min width. */
   compact?: boolean;
+  /** SPEC §11.3 density mode from playerCount — "head" shrinks to a portrait
+   *  chip for 9–10 players. Falls back to `compact`/full when omitted. */
+  density?: "medium" | "compact" | "head";
   /** Socket connection status of this seat (from RoomState). */
   connectionStatus?: ConnectionStatus | undefined;
-  onClick?: () => void;
-  onInspect?: () => void;
+  onClick?: (() => void) | undefined;
+  onInspect?: (() => void) | undefined;
 }) {
   const d = generalDisplay(player.generalId);
   const color = factionColor(player.faction);
@@ -47,6 +51,64 @@ export function PlayerTile({
   const equipEntries = Object.entries(player.equipment).filter(([, c]) => c) as [string, Card][];
   // Role seal shows only when publicly known (lord, or a revealed/dead player).
   const role = player.role && (player.roleRevealed || player.role === "lord") ? roleDisplay(player.role) : undefined;
+  const isHead = density === "head";
+  const isCompact = compact || density === "compact";
+
+  if (isHead) {
+    return (
+      <div
+        onClick={targetable ? onClick : undefined}
+        style={{
+          position: "relative",
+          width: 84,
+          background: "var(--card-bg-2)",
+          border: "1px solid var(--card-border-2)",
+          borderRadius: 6,
+          overflow: "hidden",
+          boxShadow: "0 3px 10px rgba(60,40,15,.14)",
+          opacity: player.alive ? 1 : 0.6,
+          cursor: targetable ? "pointer" : "default",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ height: 18, background: color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span> : <span style={{ fontFamily: "var(--font-glyph)", fontSize: 11, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>}
+        </div>
+        <div className="card-back" style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "6px auto 4px" }}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "#5c4a2d" }}>{d.glyph}</span>
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 4px" }}>{player.name}</div>
+        <div style={{ display: "flex", gap: 1, justifyContent: "center", margin: "3px 0 6px", flexWrap: "wrap" }}>
+          {Array.from({ length: player.maxHp }).map((_, i) => (
+            <span key={i} className="hp-dot" style={{ width: 6, height: 6, background: i < player.hp ? "var(--red)" : "transparent" }} />
+          ))}
+        </div>
+        {isCurrentTurn && <div className="glow-turn" />}
+        {targetable && (
+          <>
+            <div className="glow-target" />
+            <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", background: "var(--target-red)", color: "#f6ecd2", fontSize: 8, padding: "1px 6px", borderRadius: 8, zIndex: 2 }}>
+              {selected ? "เลือกแล้ว" : "เลือก"}
+            </div>
+          </>
+        )}
+        {onInspect && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onInspect(); }}
+            title="ดูอุปกรณ์/รายละเอียด"
+            style={{ position: "absolute", bottom: 2, right: 2, zIndex: 3, width: 16, height: 16, borderRadius: "50%", background: "rgba(246,236,210,.9)", border: "1px solid var(--panel-border-2)", cursor: "pointer", fontSize: 8, lineHeight: 1, padding: 0 }}
+          >
+            🔍
+          </button>
+        )}
+        {!player.alive && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(46,37,25,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 12, color: "rgba(246,236,210,.9)", fontWeight: 900 }}>陣亡</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -54,7 +116,7 @@ export function PlayerTile({
       style={{
         position: "relative",
         flex: 1,
-        minWidth: compact ? 118 : 150,
+        minWidth: isCompact ? 118 : 150,
         background: "var(--card-bg-2)",
         border: "1px solid var(--card-border-2)",
         borderRadius: 6,

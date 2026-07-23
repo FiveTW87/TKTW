@@ -112,13 +112,13 @@ describe("Table: main action card play", () => {
       gameLogs: [{ id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } }],
     });
 
-    await waitFor(() => expect(screen.getByText("สังหาร")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("จู่โจม")).toBeInTheDocument());
 
     // no confirm bar and no targetable badge until a card is chosen
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
     expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
 
-    await user.click(screen.getByText("สังหาร"));
+    await user.click(screen.getByText("จู่โจม"));
 
     // selecting a card raises the confirm bar and lights up targets
     const confirmBtn = await screen.findByRole("button", { name: "ยืนยัน" });
@@ -135,7 +135,7 @@ describe("Table: main action card play", () => {
     expect(payload.targetIds).toEqual(["p1"]);
   });
 
-  it("ท้อ opens a target picker when others are hurt, and heals the chosen player", async () => {
+  it("ท้อคืนชีพ opens a target picker when others are hurt, and heals the chosen player", async () => {
     const user = await enterRoom("TAOHELP");
 
     fakeSocket.fire("game:view", {
@@ -157,8 +157,8 @@ describe("Table: main action card play", () => {
       gameLogs: [],
     });
 
-    await waitFor(() => expect(screen.getByText("ท้อ")).toBeInTheDocument());
-    await user.click(screen.getByText("ท้อ"));
+    await waitFor(() => expect(screen.getByText("ท้อคืนชีพ")).toBeInTheDocument());
+    await user.click(screen.getByText("ท้อคืนชีพ"));
 
     // must NOT auto-play — there's a choice of who to help
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
@@ -175,7 +175,7 @@ describe("Table: main action card play", () => {
     expect(payload.targetIds).toEqual(["p1"]);
   });
 
-  it("ท้อ heals you immediately (one tap) when you're the only one hurt", async () => {
+  it("ท้อคืนชีพ heals you immediately (one tap) when you're the only one hurt", async () => {
     const user = await enterRoom("TAOSELF");
 
     fakeSocket.fire("game:view", {
@@ -197,8 +197,8 @@ describe("Table: main action card play", () => {
       gameLogs: [],
     });
 
-    await waitFor(() => expect(screen.getByText("ท้อ")).toBeInTheDocument());
-    await user.click(screen.getByText("ท้อ"));
+    await waitFor(() => expect(screen.getByText("ท้อคืนชีพ")).toBeInTheDocument());
+    await user.click(screen.getByText("ท้อคืนชีพ"));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { cardIds: string[]; targetIds: string[]; choice: string };
@@ -252,7 +252,7 @@ describe("Table: main action card play", () => {
     });
 
     await waitFor(() => expect(screen.getByText(/^Bob:/)).toBeInTheDocument());
-    expect(screen.getByText(/^Bob:/).textContent).toContain("หลบ");
+    expect(screen.getByText(/^Bob:/).textContent).toContain("หลบคม");
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
   });
 });
@@ -285,13 +285,13 @@ describe("Table: reactive decision dialog", () => {
       gameLogs: [],
     });
 
-    await waitFor(() => expect(screen.getByText(/จะลง "หลบ" ไหม/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/จะลง "หลบคม" ไหม/)).toBeInTheDocument());
     const dialog = within(screen.getByRole("dialog"));
     // only the shan card should be offered — sha shouldn't show up as an option
-    expect(dialog.getByText("หลบ")).toBeInTheDocument();
-    expect(dialog.queryByText("สังหาร")).not.toBeInTheDocument();
+    expect(dialog.getByText("หลบคม")).toBeInTheDocument();
+    expect(dialog.queryByText("จู่โจม")).not.toBeInTheDocument();
 
-    await user.click(dialog.getByText("หลบ"));
+    await user.click(dialog.getByText("หลบคม"));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
@@ -324,7 +324,7 @@ describe("Table: reactive decision dialog", () => {
     expect(call.payload).toEqual({ roomCode: "DODGE02", matchId: "test-match", decisionId: "dec_shan_decline", pass: true, clientActionId: expect.any(String) });
   });
 
-  it("double-tapping the หลบ card sends the answer only once (no duplicate → no freeze)", async () => {
+  it("double-tapping the หลบคม card sends the answer only once (no duplicate → no freeze)", async () => {
     const user = await enterRoom("DODGE03");
 
     fakeSocket.fire("game:view", {
@@ -347,7 +347,7 @@ describe("Table: reactive decision dialog", () => {
     });
 
     const dialog = within(await screen.findByRole("dialog"));
-    const card = dialog.getByText("หลบ");
+    const card = dialog.getByText("หลบคม");
     // deliberately click twice — the store must drop the 2nd (ack for the 1st
     // is intentionally left unresolved here, so the guard is what's tested)
     await user.click(card);
@@ -363,7 +363,7 @@ describe("Table: character skills + use-skill", () => {
   it("shows the general's skills, and using an active skill sends choice:useSkill with the right skillId", async () => {
     const user = await enterRoom("SKILL01");
 
-    // sunquan has an active skill (zhiheng / ถ่วงดุลอำนาจ)
+    // sunquan has an active skill (zhiheng / ชั่งดุลใต้หล้า)
     fakeSocket.fire("game:view", {
       viewerPlayerId: "p0",
       viewerSeatIndex: 0,
@@ -390,13 +390,13 @@ describe("Table: character skills + use-skill", () => {
     });
 
     // both sunquan skills are narrated
-    expect(await screen.findByText("ถ่วงดุลอำนาจ")).toBeInTheDocument();
-    expect(screen.getByText("ผนึกกำลัง")).toBeInTheDocument();
+    expect(await screen.findByText("ชั่งดุลใต้หล้า")).toBeInTheDocument();
+    expect(screen.getByText("แคว้นง่อค้ำชู")).toBeInTheDocument();
 
     // click the active skill's "ใช้สกิล" button
     await user.click(screen.getByRole("button", { name: /ใช้สกิล/ }));
     // pick a card to discard, then confirm
-    await user.click(screen.getByText("สังหาร"));
+    await user.click(screen.getByText("จู่โจม"));
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
@@ -407,7 +407,7 @@ describe("Table: character skills + use-skill", () => {
     expect(payload.cardIds).toEqual(["spade_5_1"]);
   });
 
-  it("a target-less skill (ถ่วงดุลอำนาจ) never lights up opponents; card-count gates confirm", async () => {
+  it("a target-less skill (ชั่งดุลใต้หล้า) never lights up opponents; card-count gates confirm", async () => {
     const user = await enterRoom("NOTGT");
     fakeSocket.fire("game:view", {
       viewerPlayerId: "p0",
@@ -431,12 +431,12 @@ describe("Table: character skills + use-skill", () => {
       gameLogs: [],
     });
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
-    // no opponents become targetable (ถ่วงดุลอำนาจ takes no target)
+    // no opponents become targetable (ชั่งดุลใต้หล้า takes no target)
     expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
     // confirm disabled until a card is chosen (needs ≥1 card)
     const confirm = await screen.findByRole("button", { name: "ยืนยัน" });
     expect(confirm).toBeDisabled();
-    await user.click(screen.getByText("สังหาร"));
+    await user.click(screen.getByText("จู่โจม"));
     expect(confirm).toBeEnabled();
   });
 
@@ -520,7 +520,7 @@ function fireView(self: ReturnType<typeof player>, rest: ReturnType<typeof playe
 describe("Table: inspect panel shows public skills (SPEC 7.4)", () => {
   it("opening an opponent's inspect panel lists their general's skills", async () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
-    // sunquan has two named skills (ถ่วงดุลอำนาจ / ผนึกกำลัง) already asserted
+    // sunquan has two named skills (ชั่งดุลใต้หล้า / แคว้นง่อค้ำชู) already asserted
     // elsewhere in this file for the general-select screen.
     const rest = [player("p1", { name: "Bob", generalId: "sunquan", faction: "wu" }), player("p2")];
     const user = await enterGame("INSPECT1", me, rest);
@@ -528,8 +528,8 @@ describe("Table: inspect panel shows public skills (SPEC 7.4)", () => {
     // p1 (sunquan) renders before p2 among opponents — inspect p1's tile.
     await user.click(screen.getAllByTitle("ดูอุปกรณ์/รายละเอียด")[0]!);
 
-    expect(await screen.findByText("ถ่วงดุลอำนาจ")).toBeInTheDocument();
-    expect(screen.getByText("ผนึกกำลัง")).toBeInTheDocument();
+    expect(await screen.findByText("ชั่งดุลใต้หล้า")).toBeInTheDocument();
+    expect(screen.getByText("แคว้นง่อค้ำชู")).toBeInTheDocument();
   });
 });
 
@@ -566,8 +566,8 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
       },
     });
 
-    expect(await screen.findByText("สังหาร")).toBeInTheDocument();
-    expect(screen.getByText("ท้อ")).toBeInTheDocument();
+    expect(await screen.findByText("จู่โจม")).toBeInTheDocument();
+    expect(screen.getByText("ท้อคืนชีพ")).toBeInTheDocument();
   });
 
   it("judgmentReveal is answered by tapping the draw pile (no modal)", async () => {
@@ -586,14 +586,14 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     ).toBe(true);
   });
 
-  it("playing สายฟ้า (shandian) needs no target picker — placed on self", async () => {
+  it("playing อสนีบาตเวียนค่าย (shandian) needs no target picker — placed on self", async () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true, hand: [{ id: "sd1", typeKey: "shandian", suit: "spade", rank: 9 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("SHANDIAN1", me, rest);
 
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
-    await user.click(screen.getByText("สายฟ้า"));
+    await user.click(screen.getByText("อสนีบาตเวียนค่าย"));
     // no target step — it plays immediately with no targetIds
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { choice: string; cardIds: string[]; targetIds: string[] };
@@ -623,7 +623,7 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     expect(payload.targetIds).toEqual(["p1"]);
   });
 
-  it("respondTao auto-passes when you hold nothing that counts as ท้อ", async () => {
+  it("respondTao auto-passes when you hold nothing that counts as ท้อคืนชีพ", async () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true, hand: [{ id: "x1", typeKey: "sha", suit: "spade", rank: 5 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("TAOPASS", me, rest);
@@ -654,7 +654,7 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
 });
 
 describe("Table: card conversion + distance", () => {
-  it("Guan Yu can answer a respondSha (duel) with a red card that isn't literally สังหาร", async () => {
+  it("Guan Yu can answer a respondSha (duel) with a red card that isn't literally จู่โจม", async () => {
     const me = player("p0", { generalId: "guanyu", faction: "shu", hand: [{ id: "heart_5_1", typeKey: "guohe", suit: "heart", rank: 5 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("WUSHENG1", me, rest);
@@ -662,20 +662,20 @@ describe("Table: card conversion + distance", () => {
     fireView(me, rest, { id: "dec_rs", kind: "respondSha", playerId: "p0", data: { opponentId: "p1", reason: "juedou" } }, { currentTurnPlayerId: "p1" });
 
     const dialog = within(await screen.findByRole("dialog"));
-    await user.click(dialog.getByText("ข้ามสะพานรื้อ")); // the red guohe, offered via wusheng
+    await user.click(dialog.getByText("ข้ามน้ำรื้อสะพาน")); // the red guohe, offered via wusheng
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { cardIds: string[] };
     expect(payload.cardIds).toEqual(["heart_5_1"]);
   });
 
-  it("Guan Yu plays a red หลบ as a main-action สังหาร (sends asType:sha)", async () => {
+  it("Guan Yu plays a red หลบคม as a main-action จู่โจม (sends asType:sha)", async () => {
     const me = player("p0", { generalId: "guanyu", faction: "shu", role: "lord", roleRevealed: true, hand: [{ id: "heart_1_2", typeKey: "shan", suit: "heart", rank: 1 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     const user = await enterGame("WUSHENG2", me, rest);
 
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
-    await user.click(screen.getByText("หลบ")); // not dimmed — playable as สังหาร
+    await user.click(screen.getByText("หลบคม")); // not dimmed — playable as จู่โจม
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
     await user.click(screen.getAllByText("เลือก")[0]!);
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
@@ -694,9 +694,9 @@ describe("Table: card conversion + distance", () => {
 
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
-    await user.click(screen.getByText("ท้อ")); // red ท้อ → heal OR attack
+    await user.click(screen.getByText("ท้อคืนชีพ")); // red ท้อคืนชีพ → heal OR attack
     expect(await screen.findByText(/เล่น .*เป็น/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /สังหาร/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /จู่โจม/ })).toBeInTheDocument();
   });
 
   it("jiedao picks targets one at a time: armed player first, then someone they can reach", async () => {
@@ -752,7 +752,7 @@ describe("Table: card conversion + distance", () => {
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // card-first: no targets until the discard card is chosen
     expect(screen.queryAllByText(/^เลือก$/).length).toBe(0);
-    await user.click(screen.getByText("หลบ"));
+    await user.click(screen.getByText("หลบคม"));
     // only the 2 males become targetable (female excluded)
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
 
@@ -767,7 +767,7 @@ describe("Table: card conversion + distance", () => {
     expect(payload.targetIds).toEqual(["p1", "p2"]);
   });
 
-  it("zhangba button plays 2 cards as a สังหาร", async () => {
+  it("zhangba button plays 2 cards as a จู่โจม", async () => {
     const me = player("p0", {
       generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true,
       equipment: { weapon: { id: "z1", typeKey: "zhangba", suit: "spade", rank: 12 } },
@@ -778,8 +778,8 @@ describe("Table: card conversion + distance", () => {
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(await screen.findByRole("button", { name: /ใช้ทวน/ }));
-    await user.click(screen.getByText("ท้อ"));
-    await user.click(screen.getByText("หลบ")); // 2 cards
+    await user.click(screen.getByText("ท้อคืนชีพ"));
+    await user.click(screen.getByText("หลบคม")); // 2 cards
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
     await user.click(screen.getAllByText("เลือก")[0]!);
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
@@ -828,7 +828,7 @@ describe("Table: skill routing", () => {
     expect(payload.pass).toBeUndefined();
     expect(payload.choice).toBeUndefined();
     // toast names the skill (a 2nd instance beyond the character-card list); no modal
-    await waitFor(() => expect(screen.getAllByText("วีรบุรุษเจ้าเล่ห์").length).toBe(2));
+    await waitFor(() => expect(screen.getAllByText("พลิกภัยเป็นกล").length).toBe(2));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -853,7 +853,7 @@ describe("Table: skill routing", () => {
     fireView(me, rest, { id: "dec_hj2", kind: "activateSkill", playerId: "p0", data: { skillId: "caocao_hujia", point: "OnNeedDodge" } });
 
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/คุ้มกันราชา/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/ใต้ธงวุย/)).toBeInTheDocument();
     // did NOT auto-answer
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
   });
@@ -880,7 +880,7 @@ describe("Table: skill routing", () => {
 });
 
 describe("Table: response-only cards can't be played on your turn", () => {
-  it("tapping a หลบ during mainAction does nothing (no answer sent)", async () => {
+  it("tapping a หลบคม during mainAction does nothing (no answer sent)", async () => {
     const me = player("p0", {
       generalId: "caocao",
       faction: "wei",
@@ -896,13 +896,13 @@ describe("Table: response-only cards can't be played on your turn", () => {
 
     fireView(me, rest, { id: "dec_ro", kind: "mainAction", playerId: "p0", data: {} });
 
-    // the หลบ card is visible but un-tappable — clicking it sends nothing
-    await user.click(await screen.findByText("หลบ"));
+    // the หลบคม card is visible but un-tappable — clicking it sends nothing
+    await user.click(await screen.findByText("หลบคม"));
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
 
-    // สังหาร still works normally
-    await user.click(screen.getByText("สังหาร"));
+    // จู่โจม still works normally
+    await user.click(screen.getByText("จู่โจม"));
     expect(await screen.findByRole("button", { name: "ยืนยัน" })).toBeInTheDocument();
   });
 });
@@ -921,7 +921,7 @@ describe("Table: smart card play", () => {
 
     fireView(me, rest, { id: "dec_eq", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("ม้าเซ็กเทา"));
+    await user.click(await screen.findByText("เซ็กเธาว์"));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { choice: string; cardIds: string[]; targetIds: string[] };
@@ -946,7 +946,7 @@ describe("Table: smart card play", () => {
 
     fireView(me, rest, { id: "dec_eq2", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("ม้าเตกเลา"));
+    await user.click(await screen.findByText("เต๊กเลา"));
 
     // confirm bar appears; nothing auto-played; opponents NOT targetable
     expect(await screen.findByRole("button", { name: "ยืนยัน" })).toBeInTheDocument();
@@ -956,7 +956,7 @@ describe("Table: smart card play", () => {
 });
 
 describe("Table: askWuxie auto-pass", () => {
-  it("auto-passes an askWuxie prompt when the player holds no ไร้ช่องโหว่", async () => {
+  it("auto-passes an askWuxie prompt when the player holds no ลบล้างกลศึก", async () => {
     const me = player("p0", { generalId: "zhaoyun", faction: "shu", hand: [{ id: "spade_3_1", typeKey: "sha", suit: "spade", rank: 3 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("WUXIE01", me, rest);
@@ -968,7 +968,7 @@ describe("Table: askWuxie auto-pass", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("still shows the askWuxie dialog when the player holds a ไร้ช่องโหว่", async () => {
+  it("still shows the askWuxie dialog when the player holds a ลบล้างกลศึก", async () => {
     const me = player("p0", { generalId: "zhaoyun", faction: "shu", hand: [{ id: "spade_9_1", typeKey: "wuxie", suit: "spade", rank: 9 }] });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("WUXIE02", me, rest);
@@ -980,8 +980,8 @@ describe("Table: askWuxie auto-pass", () => {
   });
 });
 
-describe("Table: สังหาร usage limit (the second-สังหาร freeze)", () => {
-  it("tapping a 2nd สังหาร when the once-a-turn limit is spent shows a notice and sends nothing", async () => {
+describe("Table: จู่โจม usage limit (the second-จู่โจม freeze)", () => {
+  it("tapping a 2nd จู่โจม when the once-a-turn limit is spent shows a notice and sends nothing", async () => {
     const me = player("p0", {
       generalId: "caocao",
       faction: "wei",
@@ -995,7 +995,7 @@ describe("Table: สังหาร usage limit (the second-สังหาร f
 
     fireView(me, rest, { id: "dec_shalim", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("สังหาร"));
+    await user.click(await screen.findByText("จู่โจม"));
 
     // a notice appears, no confirm bar, and NOTHING is sent to the server
     expect(await screen.findByText(/ได้ครั้งเดียวต่อเทิร์น/)).toBeInTheDocument();
@@ -1003,7 +1003,7 @@ describe("Table: สังหาร usage limit (the second-สังหาร f
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
   });
 
-  it("allows a 2nd สังหาร when a crossbow is equipped", async () => {
+  it("allows a 2nd จู่โจม when a crossbow is equipped", async () => {
     const me = player("p0", {
       generalId: "caocao",
       faction: "wei",
@@ -1018,7 +1018,7 @@ describe("Table: สังหาร usage limit (the second-สังหาร f
 
     fireView(me, rest, { id: "dec_shacb", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("สังหาร"));
+    await user.click(await screen.findByText("จู่โจม"));
     // no block — the confirm flow starts (targets light up)
     expect(screen.queryByText(/ได้ครั้งเดียวต่อเทิร์น/)).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
@@ -1026,7 +1026,7 @@ describe("Table: สังหาร usage limit (the second-สังหาร f
 });
 
 describe("Table: single-target cap (the reported freeze)", () => {
-  it("tapping a 2nd opponent for a single-target สังหาร replaces the 1st, and confirm sends exactly one target", async () => {
+  it("tapping a 2nd opponent for a single-target จู่โจม replaces the 1st, and confirm sends exactly one target", async () => {
     const me = player("p0", {
       generalId: "caocao",
       faction: "wei",
@@ -1039,7 +1039,7 @@ describe("Table: single-target cap (the reported freeze)", () => {
 
     fireView(me, rest, { id: "dec_cap", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("สังหาร"));
+    await user.click(await screen.findByText("จู่โจม"));
     // both opponents become targetable
     await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
 
@@ -1058,7 +1058,7 @@ describe("Table: single-target cap (the reported freeze)", () => {
     expect(payload.targetIds).toHaveLength(1); // never 2 — the freeze is impossible now
   });
 
-  it("confirm stays disabled for a single-target สังหาร until exactly one target is chosen", async () => {
+  it("confirm stays disabled for a single-target จู่โจม until exactly one target is chosen", async () => {
     const me = player("p0", {
       generalId: "caocao",
       faction: "wei",
@@ -1071,7 +1071,7 @@ describe("Table: single-target cap (the reported freeze)", () => {
 
     fireView(me, rest, { id: "dec_cap2", kind: "mainAction", playerId: "p0", data: {} });
 
-    await user.click(await screen.findByText("สังหาร"));
+    await user.click(await screen.findByText("จู่โจม"));
     // confirm bar shows but is disabled with no target picked
     const confirm = await screen.findByRole("button", { name: "ยืนยัน" });
     expect(confirm).toBeDisabled();
@@ -1082,7 +1082,7 @@ describe("Table: single-target cap (the reported freeze)", () => {
 });
 
 describe("Table: Lu Bu needed-count", () => {
-  it("respondShan with needed=2 tells the target to play both หลบ at once", async () => {
+  it("respondShan with needed=2 tells the target to play both หลบคม at once", async () => {
     const me = player("p0", { generalId: "zhaoyun", faction: "shu", hand: [{ id: "heart_2_1", typeKey: "shan", suit: "heart", rank: 2 }] });
     const rest = [player("p1", { name: "Lu Bu", generalId: "lubu", faction: "qun" }), player("p2")];
     await enterGame("LUBU01", me, rest);
@@ -1092,5 +1092,81 @@ describe("Table: Lu Bu needed-count", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/2 ใบถึงจะรอด/)).toBeInTheDocument();
     expect(within(dialog).getByText(/เลือก 2 ใบพร้อมกัน/)).toBeInTheDocument();
+  });
+});
+
+// Phase 7 — SPEC §11.3/§11.11: circular board seating at every density mode
+// (3-5 medium / 6-8 compact / 9-10 head), local player always rendered as
+// the self dock (its own hand + character card, distinct from opponents).
+describe("Table: circular board seating (SPEC §11.3)", () => {
+  it.each([3, 5, 8, 10])("renders self + all %i opponents on the board", async (count) => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = Array.from({ length: count - 1 }, (_, i) => player(`p${i + 1}`, { name: `Opp${i + 1}` }));
+    await enterGame(`SEAT${count}`, me, rest);
+
+    // self dock: character card + hand area, unique to the local player
+    expect(screen.getByText("การ์ดในมือ · 0 ใบ")).toBeInTheDocument();
+    // every opponent's name renders somewhere on the board
+    for (const p of rest) {
+      expect(screen.getAllByText(p.name).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// Bug list: "Add Death Dialog with spectate/leave actions" — shown once the
+// viewer's own PlayerView flips alive:false.
+describe("Table: Death Dialog", () => {
+  it("shows spectate/leave options when the viewer dies, and dismisses on spectate", async () => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "rebel", roleRevealed: true, alive: false, hand: { count: 0 } });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterRoom("DEATH01");
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [me, ...rest],
+      currentTurnPlayerId: "p1",
+      turnNumber: 3,
+      currentPhase: "play",
+      drawPileCount: 50,
+      discardPile: [], discardPileCount: 0,
+      eventStack: [],
+      pendingDecision: { id: "dec_watch", kind: "respondShan", playerId: "p1", data: { sourceId: "p1" } },
+      finished: false,
+      gameLogs: [],
+    });
+
+    expect(await screen.findByText("คุณเสียชีวิตแล้ว")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ดูเกมต่อ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ออกจากห้อง" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "ดูเกมต่อ" }));
+    expect(screen.queryByText("คุณเสียชีวิตแล้ว")).not.toBeInTheDocument();
+  });
+
+  it("leave from the death dialog sends room:leave", async () => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "rebel", roleRevealed: true, alive: false, hand: { count: 0 } });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterRoom("DEATH02");
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [me, ...rest],
+      currentTurnPlayerId: "p1",
+      turnNumber: 3,
+      currentPhase: "play",
+      drawPileCount: 50,
+      discardPile: [], discardPileCount: 0,
+      eventStack: [],
+      pendingDecision: { id: "dec_watch2", kind: "respondShan", playerId: "p1", data: { sourceId: "p1" } },
+      finished: false,
+      gameLogs: [],
+    });
+
+    expect(await screen.findByText("คุณเสียชีวิตแล้ว")).toBeInTheDocument();
+    // NB: Lobby has its own "ออกจากห้อง" link — scope the query to the dialog
+    // itself so this can't accidentally match a stale Lobby render.
+    const dialog = within(screen.getByRole("dialog"));
+    await user.click(dialog.getByRole("button", { name: "ออกจากห้อง" }));
+    await waitFor(() => expect(sentEvents.some((e) => e.event === "room:leave")).toBe(true));
   });
 });

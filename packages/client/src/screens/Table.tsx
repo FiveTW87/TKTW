@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import type { Card, PlayerView } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
-import { PlayerTile } from "../components/PlayerTile";
-import { HandCard, CardTooltip } from "../components/HandCard";
+import { GameBoard } from "../components/board/GameBoard";
+import { SelfDock, type CardTapState } from "../components/board/SelfDock";
+import { GameHistoryPanel } from "../components/board/GameHistoryPanel";
 import { DecisionModal } from "../components/DecisionModal";
 import { InspectModal } from "../components/InspectModal";
+import { DeathDialog } from "../components/DeathDialog";
 import { ModalOverlay, ModalPanel } from "../components/Modal";
 import { SkillToast, type ToastData } from "../components/SkillToast";
 import { describeDecision } from "../data/decisionCopy";
-import { resolveLogEntry } from "../data/logResolver";
-import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../data/cardNames";
-import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
+import { cardDisplay } from "../data/cardNames";
+import { generalDisplay } from "../data/generalNames";
 import { generalSkills, skillById } from "../data/generalSkills";
-import { cardMeta, needsManualTarget, targetCount, playableAsMainAction, type EquipSlot } from "../data/cardMeta";
+import { cardMeta, needsManualTarget, targetCount, type EquipSlot } from "../data/cardMeta";
 import { skillInteraction, sameFactionTeammateAlive, activeSkillSpec } from "../data/skillInteraction";
 import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/conversions";
 import { attackDistance, weaponRange } from "../data/distance";
-import { roleDisplay } from "../data/roles";
 import { useIsNarrow } from "../lib/useIsNarrow";
-import { RulesButton } from "../components/RulesModal";
+import { useInteraction } from "../hooks/useInteraction";
+import { HandCard } from "../components/HandCard";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -29,8 +30,6 @@ const PHASE_LABEL: Record<string, string> = {
   end: "เฟสจบเทิร์น",
 };
 
-const SUIT_COLOR: Record<string, string> = { heart: "#a8322a", diamond: "#a8322a", spade: "#2e2519", club: "#2e2519" };
-
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
   { slot: "armor", label: "เกราะ", glyph: "甲" },
@@ -40,30 +39,30 @@ const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
 
 export function Table() {
   const gameView = useGameStore((s) => s.gameView);
-  const roomState = useGameStore((s) => s.roomState);
   const answer = useGameStore((s) => s.answer);
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const debug = useGameStore((s) => s.debug);
   const [showDebug, setShowDebug] = useState(false);
-  const narrow = useIsNarrow(); // mobile / small-tablet: stack the layout
+  const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
 
-  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
-  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
-  const [skillMode, setSkillMode] = useState<string | null>(null);
-  // ทวนงูจั้งปา (zhangba): a weapon "mode" where 2 hand cards substitute for a
-  // สังหาร. Separate from skillMode because it submits playCard, not useSkill.
-  const [zhangbaMode, setZhangbaMode] = useState(false);
-  // When a card is being played AS another type (conversion skill, e.g. Guan
-  // Yu's red→สังหาร), the type to send as answer.asType. null = play literally.
-  const [selectedAsType, setSelectedAsType] = useState<string | null>(null);
-  // When a tapped card can be played multiple ways, the pending "play as?" choice.
-  const [playChoices, setPlayChoices] = useState<{ card: Card; options: MainActionPlay[] } | null>(null);
+  const pending = gameView?.pendingDecision;
+  const decisionKey = pending?.id ?? null;
+
+  // SPEC §11.1 — card/target/skill selection lives in a dedicated interaction
+  // reducer, reset whenever the authoritative decision changes.
+  const [interaction, dispatch] = useInteraction(decisionKey);
+  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode, selectedAsType } = interaction;
+
+  // Dialog / animation state stays local (SPEC §11.1's 4-way split) — never
+  // reset by the decision-change effect above.
   const [busy, setBusy] = useState(false);
   const [inspecting, setInspecting] = useState<PlayerView | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
+  const [playChoices, setPlayChoices] = useState<{ card: Card; options: MainActionPlay[] } | null>(null);
+  const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
   const prevHandIdsRef = useRef<Set<string>>(new Set());
   const autoHandledRef = useRef<string | null>(null);
@@ -75,17 +74,6 @@ export function Table() {
     if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => setNotice(null), 1900);
   };
-
-  const pending = gameView?.pendingDecision;
-  const decisionKey = pending?.id ?? null;
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setSelectedCardIds([]);
-    setSelectedTargetIds([]);
-    setSkillMode(null);
-    setZhangbaMode(false);
-  }, [decisionKey]);
 
   const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
 
@@ -205,7 +193,6 @@ export function Table() {
 
   const myHand: Card[] = Array.isArray(me.hand) ? me.hand : [];
   const others = gameView.players.filter((p) => p.id !== gameView.viewerPlayerId);
-  const currentTurnPlayer = gameView.players.find((p) => p.id === gameView.currentTurnPlayerId);
   const lastPlay = gameView.discardPileTop;
 
   const isMyDecision = pending?.playerId === gameView.viewerPlayerId;
@@ -276,8 +263,8 @@ export function Table() {
   // cards are chosen (so you pick the card to spend, THEN the targets).
   const skillCardsReady = zhangbaMode ? selectedCardIds.length >= 2 : !skillSpec || selectedCardIds.length >= skillSpec.minCards;
   const targetsActive = isMyDecision && isMainAction && targetRange.max > 0 && skillCardsReady && (skillMode !== null || selectedNeedsTarget || selectedIsTao || zhangbaMode);
-  // Your own character card (not a PlayerTile) can be a target too — for ท้อ
-  // (help self) and for หัวโต๋'s ถุงยาเขียว (heal self).
+  // Your own character card (not an opponent panel) can be a target too — for
+  // ท้อ (help self) and for หัวโต๋'s ถุงยาเขียว (heal self).
   const selfTaoTargetable = !!targetsActive && selectedIsTao && isTaoTarget(me);
   const selfTargetable = selfTaoTargetable || (!!targetsActive && isQingnang && isTaoTarget(me));
   const showConfirmBar = isMyDecision && isMainAction && (skillMode !== null || zhangbaMode || selectedCardIds.length > 0);
@@ -293,12 +280,15 @@ export function Table() {
 
   // Tapping a target respects the max: at the cap, a new tap replaces the
   // oldest pick (so a single-target action always ends with exactly one).
-  const toggleTarget = (playerId: string) =>
-    setSelectedTargetIds((prev) => {
-      if (prev.includes(playerId)) return prev.filter((id) => id !== playerId);
-      if (prev.length < targetRange.max) return [...prev, playerId];
-      return [...prev.slice(1), playerId]; // at cap → drop oldest, add new
-    });
+  const toggleTarget = (playerId: string) => {
+    const prev = selectedTargetIds;
+    const next = prev.includes(playerId)
+      ? prev.filter((id) => id !== playerId)
+      : prev.length < targetRange.max
+      ? [...prev, playerId]
+      : [...prev.slice(1), playerId]; // at cap → drop oldest, add new
+    dispatch({ type: "SELECT_TARGETS", ids: next });
+  };
 
   // ยืมดาบฆ่าคน (jiedao) is picked one target at a time: [0] = an armed player,
   // [1] = someone that armed player can actually reach. Whether each opponent
@@ -329,12 +319,13 @@ export function Table() {
   };
   const onTapTarget = (pid: string) => {
     if (isJiedao) {
-      setSelectedTargetIds((prev) => {
-        if (prev[0] === pid) return []; // re-tap the armed player → reset both steps
-        if (prev[1] === pid) return [prev[0]!]; // re-tap the victim → drop it
-        if (prev.length === 0) return [pid]; // step 1: the armed player
-        return [prev[0]!, pid]; // step 2: the victim (replaces any prior victim)
-      });
+      const prev = selectedTargetIds;
+      const next =
+        prev[0] === pid ? [] // re-tap the armed player → reset both steps
+        : prev[1] === pid ? [prev[0]!] // re-tap the victim → drop it
+        : prev.length === 0 ? [pid] // step 1: the armed player
+        : [prev[0]!, pid]; // step 2: the victim (replaces any prior victim)
+      dispatch({ type: "SELECT_TARGETS", ids: next });
       return;
     }
     toggleTarget(pid);
@@ -350,13 +341,7 @@ export function Table() {
       setBusy(false);
     }
   };
-  const resetSelection = () => {
-    setSelectedCardIds([]);
-    setSelectedTargetIds([]);
-    setSkillMode(null);
-    setSelectedAsType(null);
-    setZhangbaMode(false);
-  };
+  const resetSelection = () => dispatch({ type: "RESET" });
 
   // A สังหาร past its once-a-turn limit would just bounce off the server and
   // leave the player stuck re-erroring — block it up front with a hint. (The
@@ -375,7 +360,7 @@ export function Table() {
     const effType = opt.typeKey;
     const asType = opt.asType ?? null;
     if (shaOverLimit(effType)) {
-      showNotice('ลง "สังหาร" ได้ครั้งเดียวต่อเทิร์น (ยกเว้นมีหน้าไม้กล)');
+      showNotice(`ลง "${cardDisplay("sha").name}" ได้ครั้งเดียวต่อเทิร์น (ยกเว้นมี${cardDisplay("crossbow").name})`);
       return;
     }
     if (effType === "tao") {
@@ -389,15 +374,15 @@ export function Table() {
         void runAnswer({ decisionId: pending.id, choice: "playCard", cardIds: [card.id], targetIds: [] });
         return;
       }
-      setSelectedCardIds([card.id]);
-      setSelectedAsType(null);
-      setSelectedTargetIds(injuredPlayers.length === 1 ? [injuredPlayers[0]!.id] : []);
+      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
+      dispatch({ type: "SET_AS_TYPE", asType: null });
+      dispatch({ type: "SELECT_TARGETS", ids: injuredPlayers.length === 1 ? [injuredPlayers[0]!.id] : [] });
       return;
     }
     if (needsManualTarget(effType)) {
-      setSelectedCardIds([card.id]);
-      setSelectedAsType(asType);
-      setSelectedTargetIds([]);
+      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
+      dispatch({ type: "SET_AS_TYPE", asType });
+      dispatch({ type: "SELECT_TARGETS", ids: [] });
       return;
     }
     // no manual target: equipment replacing an occupied slot asks to confirm
@@ -405,9 +390,9 @@ export function Table() {
     const meta = cardMeta(card.typeKey);
     const replacing = !asType && meta.targetRule === "equipment" && meta.slot && !!me.equipment[meta.slot as EquipSlot];
     if (replacing) {
-      setSelectedCardIds([card.id]);
-      setSelectedAsType(null);
-      setSelectedTargetIds([]);
+      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
+      dispatch({ type: "SET_AS_TYPE", asType: null });
+      dispatch({ type: "SELECT_TARGETS", ids: [] });
       return;
     }
     void runAnswer({ decisionId: pending.id, choice: "playCard", cardIds: [card.id], targetIds: [], ...(asType ? { asType } : {}) });
@@ -421,12 +406,14 @@ export function Table() {
     if (skillMode || isDiscardTo || zhangbaMode) {
       // ENG-002: a discard can't select more than the required count.
       const selectable = (pending.data as { selectableCardIds?: string[] }).selectableCardIds;
-      setSelectedCardIds((prev) => {
-        if (prev.includes(card.id)) return prev.filter((id) => id !== card.id);
-        if (isDiscardTo && selectable && !selectable.includes(card.id)) return prev; // not discardable
-        if (isDiscardTo && mustDiscard > 0 && prev.length >= mustDiscard) return prev; // at the cap
-        return [...prev, card.id];
-      });
+      const prev = selectedCardIds;
+      if (prev.includes(card.id)) {
+        dispatch({ type: "SELECT_CARDS", ids: prev.filter((id) => id !== card.id) });
+        return;
+      }
+      if (isDiscardTo && selectable && !selectable.includes(card.id)) return; // not discardable
+      if (isDiscardTo && mustDiscard > 0 && prev.length >= mustDiscard) return; // at the cap
+      dispatch({ type: "SELECT_CARDS", ids: [...prev, card.id] });
       return;
     }
     if (!isMainAction) return;
@@ -444,6 +431,15 @@ export function Table() {
       return;
     }
     setPlayChoices({ card, options: opts }); // "play as?" chooser
+  };
+
+  const getCardState = (c: Card): CardTapState => {
+    const inSelectMode = skillMode !== null || zhangbaMode;
+    const canPlay = isMainAction && mainActionPlays(c, me.generalId).length > 0;
+    const taoBlocked = c.typeKey === "tao" && isMainAction && !someoneInjured && !inSelectMode;
+    const tappable = selecting && (inSelectMode || !isMainAction || canPlay) && !taoBlocked;
+    const dimmed = isMainAction && !inSelectMode && (!canPlay || taoBlocked);
+    return { tappable, dimmed };
   };
 
   const submitConfirm = () => {
@@ -466,6 +462,10 @@ export function Table() {
 
   const skills = generalSkills(me.generalId);
   const waitingCopy = pending && !isMyDecision ? describeDecision(pending, gameView) : null;
+  const responderLabel =
+    pending && !isMyDecision && waitingCopy
+      ? `${gameView.players.find((p) => p.id === pending!.playerId)?.name ?? pending!.playerId}: ${waitingCopy.title}`
+      : null;
 
   const chosenCardNames = selectedCardIds.map((id) => cardDisplay(myHand.find((c) => c.id === id)?.typeKey ?? "").name).filter(Boolean);
   const chosenTargetNames = selectedTargetIds.map((id) => gameView.players.find((p) => p.id === id)?.name).filter(Boolean);
@@ -490,397 +490,141 @@ export function Table() {
   } else if (isJiedao) {
     // step-aware hint: pick an armed player, then who they must attack
     const step = selectedTargetIds.length === 0 ? "เลือกคนที่มีอาวุธ" : selectedTargetIds.length === 1 ? "เลือกเป้าที่คนนั้นตีถึง" : "พร้อมยืนยัน";
-    confirmText = `ยืมดาบฆ่าคน — ${step}` + (chosenTargetNames.length ? ` (${chosenTargetNames.join(" → ")})` : "");
+    confirmText = `${cardDisplay("jiedao").name} — ${step}` + (chosenTargetNames.length ? ` (${chosenTargetNames.join(" → ")})` : "");
   } else if (zhangbaMode) {
     const step = selectedCardIds.length < 2 ? `เลือกการ์ด 2 ใบ (เลือกแล้ว ${selectedCardIds.length})` : !targetCountOk ? "เลือกเป้าในระยะ" : "พร้อมยืนยัน";
-    confirmText = `ทวนงูจั้งปา (2 ใบ = สังหาร) — ${step}` + (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "");
+    confirmText = `${cardDisplay("zhangba").name} (2 ใบ = ${cardDisplay("sha").name}) — ${step}` + (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "");
   } else {
     const needMore = selectedNeedsTarget && !targetCountOk;
     const needLabel = targetRange.min === targetRange.max ? `เลือกเป้าหมาย ${targetRange.min} คน` : `เลือกเป้าหมาย ${targetRange.min}-${targetRange.max} คน`;
     confirmText = `ลง "${chosenCardNames.join(", ")}"` + (needMore ? ` — ${needLabel} (เลือกแล้ว ${selectedTargetIds.length})` : chosenTargetNames.length ? ` ใส่ ${chosenTargetNames.join(", ")}` : "");
   }
 
+  const selectingLabel = skillMode ? "เลือกการ์ดสำหรับสกิล" : zhangbaMode ? "เลือกการ์ด 2 ใบสำหรับทวน" : isDiscardTo ? "เลือกการ์ดที่จะทิ้ง" : "แตะการ์ดเพื่อเล่น";
+  const phaseLabel = (gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase ?? "";
+  const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
+  const zhangbaAvailable = me.equipment.weapon?.typeKey === "zhangba" && isMyDecision && isMainAction;
+
+  const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
+
   return (
-    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: narrow ? "flex-start" : "center", padding: narrow ? 8 : 20, paddingBottom: 110, position: "relative" }}>
-      <div style={{ display: "flex", gap: narrow ? 10 : 16, width: "100%", maxWidth: 1360, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap", margin: "0 auto" }}>
-      <div className="panel-plain" style={{ flex: "1 1 720px", maxWidth: 1040, minWidth: 0, padding: narrow ? 12 : 22, position: "relative" }}>
-        {/* opponents row */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-          {others.map((p) => {
-            const dist = attackDistance(me, p, gameView.players);
-            return (
-              <PlayerTile
-                key={p.id}
-                player={p}
-                isCurrentTurn={currentTurnPlayer?.id === p.id}
-                targetable={targetableFor(p)}
-                selected={selectedTargetIds.includes(p.id)}
-                distance={dist}
-                inRange={dist <= weaponRange(me)}
-                compact={narrow}
-                connectionStatus={p.connectionStatus}
-                onClick={() => onTapTarget(p.id)}
-                onInspect={() => setInspecting(p)}
-              />
-            );
-          })}
-        </div>
-
-        {/* central mat */}
-        <div className="mat" style={{ margin: "14px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 34, padding: 20, minHeight: 132, position: "relative" }}>
-          <div style={{ position: "absolute", top: 8, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-glyph)", fontSize: 40, color: "rgba(120,90,40,.1)", letterSpacing: 8 }}>
-            三國鼎立
-          </div>
-          {/* draw pile — also the "flip your judgment card" affordance */}
-          <div style={{ textAlign: "center", zIndex: 1, position: "relative" }}>
-            {pendingReveal && (
-              <div className="anim-rise" style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "var(--target-red)", color: "#f6ecd2", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 8, boxShadow: "0 6px 16px rgba(0,0,0,.3)", zIndex: 5 }}>
-                {revealCopy?.title ?? "แตะเปิดการ์ดตัดสิน"} ▼
-              </div>
-            )}
-            <div
-              className="pile-pulse"
-              onClick={pendingReveal && !busy && pending ? () => void runAnswer({ decisionId: pending.id, choice: "reveal" }) : undefined}
-              role={pendingReveal ? "button" : undefined}
-              aria-label={pendingReveal ? "เปิดการ์ดตัดสิน" : undefined}
-              style={{
-                position: "relative",
-                width: 62,
-                height: 88,
-                borderRadius: 6,
-                background: "radial-gradient(circle at 50% 45%, #b23a2e, #8f2a22)",
-                border: "1px solid var(--gold-light)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto",
-                cursor: pendingReveal ? "pointer" : "default",
-              }}
-            >
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "#f0d68a" }}>國</span>
-              {pendingReveal && <div className="glow-target" />}
-            </div>
-            <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{gameView.drawPileCount}</b></div>
-          </div>
-
-          {/* last played card */}
-          <div style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}>
-            {lastPlay ? (
-              <div
-                className="anim-pop"
-                key={lastPlay.id}
-                style={{
-                  width: 72,
-                  height: 100,
-                  margin: "0 auto",
-                  borderRadius: 6,
-                  background: "var(--card-bg)",
-                  border: "1px solid var(--card-border-2)",
-                  boxShadow: "0 6px 16px rgba(60,40,15,.22)",
-                  padding: 6,
-                  position: "relative",
-                  transform: "rotate(-4deg)",
-                }}
-              >
-                <div style={{ position: "absolute", top: 4, left: 6, lineHeight: 1, textAlign: "center" }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, color: SUIT_COLOR[lastPlay.suit] }}>{rankLabel(lastPlay.rank)}</div>
-                  <div style={{ fontSize: 11, color: SUIT_COLOR[lastPlay.suit] }}>{suitGlyph(lastPlay.suit)}</div>
-                </div>
-                <div style={{ marginTop: 20, textAlign: "center" }}>
-                  <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "#4a3c28" }}>{cardDisplay(lastPlay.typeKey).glyph}</span>
-                </div>
-                <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--ink)" }}>
-                  {cardDisplay(lastPlay.typeKey).name}
-                </div>
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>
-            )}
-            <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
-          </div>
-
-          {/* phase */}
-          <div style={{ textAlign: "center", zIndex: 1 }}>
-            <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>{(gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase}</div>
-            <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 4 }}>เทิร์น {gameView.turnNumber} · {currentTurnPlayer?.name ?? "-"}</div>
-          </div>
-
-          {/* discard pile — click to browse the full pile */}
-          <div style={{ textAlign: "center", zIndex: 1 }}>
-            <button
-              onClick={() => gameView.discardPile.length > 0 && setShowDiscard(true)}
-              title="ดูกองทิ้งทั้งหมด"
-              style={{ all: "unset", cursor: gameView.discardPile.length > 0 ? "pointer" : "default" }}
-            >
-              <div style={{ width: 62, height: 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-                <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "rgba(120,90,40,.4)" }}>棄</span>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองทิ้ง · <b>{gameView.discardPile.length}</b> {gameView.discardPile.length > 0 && <span style={{ color: "var(--red)" }}>· ดู</span>}</div>
-            </button>
-          </div>
-        </div>
-
-        {/* your area */}
-        <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", gap: narrow ? 10 : 14, alignItems: "stretch" }}>
-          {/* LEFT: character details (+ pending judgment cards) — also a
-              ท้อ self-target when helping. glow-target is a CHILD overlay (not
-              the class on this box) so the box stays in flow / clickable. */}
-          <div
-            onClick={selfTargetable ? () => toggleTarget(me.id) : undefined}
-            style={{
-              position: "relative",
-              width: narrow ? "100%" : 230,
-              flexShrink: 0,
-              background: "var(--card-bg-2)",
-              border: `2px solid ${selectedTargetIds.includes(me.id) ? "var(--gold)" : factionColor(me.faction)}`,
-              borderRadius: 6,
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-              cursor: selfTargetable ? "pointer" : "default",
-              boxShadow: selectedTargetIds.includes(me.id) ? "0 0 14px rgba(217,165,49,.65)" : undefined,
+    <div style={{ position: "relative" }}>
+      <GameBoard
+        gameView={gameView}
+        me={me}
+        others={others}
+        currentTurnPlayerId={gameView.currentTurnPlayerId}
+        targetableFor={targetableFor}
+        selectedTargetIds={selectedTargetIds}
+        onTapTarget={onTapTarget}
+        onInspect={setInspecting}
+        attackDistanceFor={(p) => attackDistance(me, p, gameView.players)}
+        weaponRangeSelf={weaponRange(me)}
+        phaseLabel={phaseLabel}
+        responderLabel={responderLabel}
+        actionPrompt={null}
+        pendingReveal={!!pendingReveal}
+        revealTitle={revealCopy?.title}
+        onReveal={() => pending && void runAnswer({ decisionId: pending.id, choice: "reveal" })}
+        busy={busy}
+        lastPlay={lastPlay}
+        onOpenDiscard={() => setShowDiscard(true)}
+        selfDock={
+          <SelfDock
+            me={me}
+            skills={skills}
+            myHand={myHand}
+            drawnIds={drawnIds}
+            selecting={selecting}
+            selectingLabel={selectingLabel}
+            getCardState={getCardState}
+            selectedCardIds={selectedCardIds}
+            onTapCard={onTapCard}
+            selfTargetable={selfTargetable}
+            selfTargetSelected={selectedTargetIds.includes(me.id)}
+            onToggleSelfTarget={() => toggleTarget(me.id)}
+            pendingActivateId={pendingActivateId}
+            pendingActivateMode={pendingActivateMode}
+            skillMode={skillMode}
+            busy={busy}
+            onUseSkill={(skillId) => {
+              resetSelection();
+              dispatch({ type: "SET_SKILL_MODE", skillId });
             }}
-          >
-            <div style={{ height: 28, background: factionColor(me.faction), display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "rgba(255,255,255,.95)" }}>{generalDisplay(me.generalId).glyph}</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, color: "rgba(255,255,255,.95)" }}>
-                {roleDisplay(me.role) && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(0,0,0,.28)", borderRadius: 8, padding: "1px 7px", fontWeight: 700 }}>
-                    <span className={`seal ${roleDisplay(me.role)!.cls}`} style={{ width: 14, height: 14, fontSize: 9 }}>{roleDisplay(me.role)!.cn}</span>
-                    {roleDisplay(me.role)!.name}
+            onAnswerActivate={answerActivate}
+            isMyDecision={isMyDecision}
+            isMainAction={isMainAction}
+            zhangbaAvailable={!!zhangbaAvailable}
+            zhangbaMode={zhangbaMode}
+            onToggleZhangba={() => {
+              if (zhangbaMode) { resetSelection(); return; }
+              if (shaOverLimit("sha")) { showNotice(`ลง "${cardDisplay("sha").name}" ได้ครั้งเดียวต่อเทิร์น`); return; }
+              resetSelection();
+              dispatch({ type: "SET_ZHANGBA_MODE", on: true });
+            }}
+            phaseLabel={phaseLabel}
+            showEndPhase={isMyDecision && isMainAction}
+            onEndPhase={submitEndPhase}
+            onLeave={() => {
+              if (window.confirm("ออกตอนนี้ = ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้ ต้องการออกหรือไม่?")) {
+                void leaveRoom();
+              }
+            }}
+            equipSlots={equipSlotsWithCards}
+          />
+        }
+      />
+
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 12px 110px" }}>
+        <div style={{ width: "100%", maxWidth: 1040 }}>
+          {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
+          {isMyDecision && pending?.kind === "drawCard" && (
+            <div className="anim-rise" style={floatBar}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
+              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
+                เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
+                {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
+                  <span style={{ color: "var(--red)", marginLeft: 8 }}>
+                    ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
                   </span>
                 )}
-                คุณ
               </span>
+              <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
             </div>
-            <div style={{ display: "flex", gap: 10, padding: 10 }}>
-              <div className="card-back" style={{ width: 56, height: 74, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "#5c4a2d" }}>{generalDisplay(me.generalId).glyph}</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{me.name}</div>
-                <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>{generalDisplay(me.generalId).name} · {factionLabel(me.faction)}</div>
-                <div style={{ display: "flex", gap: 3, marginTop: 7, flexWrap: "wrap" }}>
-                  {Array.from({ length: me.maxHp }).map((_, i) => (
-                    <span key={i} className="hp-dot" style={{ width: 12, height: 12, background: i < me.hp ? "var(--red)" : "transparent" }} />
-                  ))}
-                </div>
-              </div>
-            </div>
-            {/* pending judgment cards (delayed tricks awaiting judgment) */}
-            {me.judgmentZone.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, margin: "0 10px 8px" }}>
-                <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>ไพ่ตัดสิน:</span>
-                {me.judgmentZone.map((j) => (
-                  <span key={j.id} style={{ fontSize: 11, background: "#b0442f", color: "#f6ecd2", borderRadius: 5, padding: "3px 8px" }}>{cardDisplay(j.typeKey).name}</span>
-                ))}
-              </div>
-            )}
-            {/* skills */}
-            <div style={{ flex: 1, margin: "0 10px 10px", background: "#f9f2dd", border: "1px solid #dccba0", borderRadius: 5, padding: "9px 10px" }}>
-              {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
-              {skills.map((s) => {
-                const used = me.skillUsedThisTurn[s.id] ?? 0;
-                const inlinePending = s.id === pendingActivateId && pendingActivateMode === "inline";
-                const spentForTurn = s.active && used >= activeSkillSpec(s.id).maxPerTurn;
-                return (
-                  <div
-                    key={s.id}
-                    style={{
-                      marginBottom: 8,
-                      ...(inlinePending
-                        ? { background: "rgba(217,165,49,.18)", border: "1px solid var(--gold)", borderRadius: 6, padding: "6px 7px" }
-                        : {}),
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <span style={{ fontWeight: 700, fontSize: 12, color: factionColor(me.faction) }}>{s.name}</span>
-                      {s.lordOnly && <span style={{ fontSize: 8, background: "var(--gold)", color: "#5a3d0a", borderRadius: 6, padding: "0 5px" }}>主公</span>}
-                      {used > 0 && <span style={{ fontSize: 9, color: "var(--ink-faint)" }}>ใช้แล้ว {used}</span>}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.4 }}>{s.description}</div>
-                    {inlinePending && (
-                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                        <button onClick={() => answerActivate(true)} disabled={busy} className="btn-primary" style={{ flex: 1, padding: 5, fontSize: 11.5, borderRadius: 5 }}>
-                          ใช้เลย
-                        </button>
-                        <button onClick={() => answerActivate(false)} disabled={busy} className="btn-secondary" style={{ flex: 1, padding: 5, fontSize: 11.5, borderRadius: 5 }}>
-                          ไม่ใช้
-                        </button>
-                      </div>
-                    )}
-                    {!inlinePending && s.active && isMyDecision && isMainAction && (
-                      <button
-                        onClick={() => {
-                          if (spentForTurn) return;
-                          resetSelection();
-                          setSkillMode(s.id);
-                        }}
-                        disabled={busy || spentForTurn}
-                        className="btn-primary"
-                        style={{ marginTop: 5, width: "100%", padding: 6, fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 5, opacity: skillMode === s.id ? 1 : 0.92, boxShadow: skillMode === s.id ? "0 0 10px rgba(217,165,49,.6)" : undefined }}
-                      >
-                        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13 }}>技</span>
-                        {spentForTurn ? "ใช้ครบแล้วเทิร์นนี้" : skillMode === s.id ? "กำลังใช้..." : "ใช้สกิล"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {selfTargetable && <div className="glow-target" />}
-          </div>
+          )}
 
-          {/* MIDDLE: hand */}
-          <div style={{ flex: 1, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: "9px 12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
-                {selecting && <span style={{ fontSize: 11, color: "var(--red)" }}>{skillMode ? "เลือกการ์ดสำหรับสกิล" : zhangbaMode ? "เลือกการ์ด 2 ใบสำหรับทวน" : isDiscardTo ? "เลือกการ์ดที่จะทิ้ง" : "แตะการ์ดเพื่อเล่น"}</span>}
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {myHand.map((c) => {
-                  // In a "select cards to spend" mode (skill discard / ทวนงูจั้งปา /
-                  // discard phase) ANY card is selectable. Otherwise, response-only
-                  // cards (หลบ/ไร้ช่องโหว่) can't be played proactively — grey them out —
-                  // unless a conversion skill (Guan Yu red→สังหาร) makes them playable.
-                  const inSelectMode = skillMode !== null || zhangbaMode;
-                  const canPlay = isMainAction && mainActionPlays(c, me.generalId).length > 0;
-                  const taoBlocked = c.typeKey === "tao" && isMainAction && !someoneInjured && !inSelectMode;
-                  const tappable = selecting && (inSelectMode || !isMainAction || canPlay) && !taoBlocked;
-                  return (
-                    <HandCard
-                      key={c.id}
-                      card={c}
-                      selected={selectedCardIds.includes(c.id)}
-                      dimmed={isMainAction && !inSelectMode && (!canPlay || taoBlocked)}
-                      animateIn={drawnIds.has(c.id)}
-                      onClick={tappable ? () => onTapCard(c) : undefined}
-                    />
-                  );
-                })}
-                {myHand.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>ไม่มีการ์ดในมือ</div>}
-              </div>
+          {/* confirm bar (tap-select flow) */}
+          {showConfirmBar && (
+            <div className="anim-rise" style={floatBar}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>選</span>
+              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600, maxWidth: 460 }}>{confirmText || "เลือกการ์ด/เป้าหมาย"}</span>
+              <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ยืนยัน</button>
+              <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ padding: "9px 16px", fontSize: 14 }}>ยกเลิก</button>
             </div>
+          )}
 
-          {/* RIGHT: equipment zone + phase + end-turn */}
-          <div style={{ width: narrow ? "100%" : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5 }}>เขตอุปกรณ์</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {EQUIP_SLOTS.map(({ slot, label, glyph }) => (
-                  <EquipSlotTile key={slot} label={label} glyph={glyph} card={me.equipment[slot as EquipSlot]} />
-                ))}
-              </div>
-              {/* active weapon abilities (small buttons at the end of the gear zone) */}
-              {me.equipment.weapon?.typeKey === "zhangba" && isMyDecision && isMainAction && (
-                <button
-                  onClick={() => {
-                    if (zhangbaMode) { resetSelection(); return; }
-                    if (shaOverLimit("sha")) { showNotice('ลง "สังหาร" ได้ครั้งเดียวต่อเทิร์น'); return; }
-                    resetSelection();
-                    setZhangbaMode(true);
-                  }}
-                  disabled={busy}
-                  className={zhangbaMode ? "btn-primary" : "btn-secondary"}
-                  style={{ marginTop: 8, width: "100%", padding: "7px 8px", fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-                >
-                  <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13 }}>蛇</span>
-                  {zhangbaMode ? "ยกเลิกทวน" : "ใช้ทวน (2 ใบ = สังหาร)"}
-                </button>
-              )}
+          {/* discard bar */}
+          {isMyDecision && isDiscardTo && (
+            <div className="anim-rise" style={floatBar}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>棄</span>
+              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>การ์ดเกินมือ — ทิ้ง {selectedCardIds.length}/{mustDiscard} ใบ</span>
+              <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ทิ้งการ์ดที่เลือก</button>
             </div>
-            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--card-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
-                {(gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase}
-              </span>
-              {isMyDecision && isMainAction && (
-                <button onClick={submitEndPhase} disabled={busy} className="btn-primary" style={{ padding: "9px 18px", fontSize: 13, width: "100%" }}>
-                  จบเทิร์น
-                </button>
-              )}
-              {/* Rules — sits right by the phase indicator, always reachable */}
-              <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
-              {/* Leaving mid-match is a forfeit — warn before it kills the character. */}
-              <button
-                onClick={() => {
-                  if (window.confirm("ออกตอนนี้ = ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้ ต้องการออกหรือไม่?")) {
-                    void leaveRoom();
-                  }
-                }}
-                style={{ width: "100%", padding: "6px 10px", fontSize: 11, background: "transparent", color: "var(--ink-faint)", border: "1px solid var(--card-border-2)", borderRadius: 5, cursor: "pointer" }}
-              >
-                ออกจากเกม
-              </button>
-            </div>
-          </div>
+          )}
+
+          {error && <div style={{ color: "var(--target-red)", fontSize: 13, marginTop: 10, textAlign: "center" }}>{error}</div>}
         </div>
 
-        {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
-        {isMyDecision && pending?.kind === "drawCard" && (
-          <div className="anim-rise" style={floatBar}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
-            <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
-              เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
-              {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
-                <span style={{ color: "var(--red)", marginLeft: 8 }}>
-                  ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
-                </span>
-              )}
-            </span>
-            <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
-          </div>
-        )}
-
-        {/* confirm bar (tap-select flow) */}
-        {showConfirmBar && (
-          <div className="anim-rise" style={floatBar}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>選</span>
-            <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600, maxWidth: 460 }}>{confirmText || "เลือกการ์ด/เป้าหมาย"}</span>
-            <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ยืนยัน</button>
-            <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ padding: "9px 16px", fontSize: 14 }}>ยกเลิก</button>
-          </div>
-        )}
-
-        {/* discard bar */}
-        {isMyDecision && isDiscardTo && (
-          <div className="anim-rise" style={floatBar}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>棄</span>
-            <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>การ์ดเกินมือ — ทิ้ง {selectedCardIds.length}/{mustDiscard} ใบ</span>
-            <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ทิ้งการ์ดที่เลือก</button>
-          </div>
-        )}
-
-        {/* waiting indicator */}
-        {pending && !isMyDecision && waitingCopy && (
-          <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, background: "radial-gradient(120% 120% at 50% 0%, #fbf5e3, #f1e7ca)", border: "1px solid var(--panel-border-2)", borderRadius: 10, padding: "10px 16px", opacity: 0.9 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18, color: "var(--ink-faint)" }}>{waitingCopy.icon}</span>
-            <span style={{ fontSize: 13, color: "var(--ink-muted)" }}>
-              {gameView.players.find((p) => p.id === pending!.playerId)?.name ?? pending!.playerId}: {waitingCopy.title}
-            </span>
-          </div>
-        )}
-
-        {error && <div style={{ color: "var(--target-red)", fontSize: 13, marginTop: 10, textAlign: "center" }}>{error}</div>}
-      </div>
-
-      {/* RIGHT: game history / log */}
-      <aside
-        className="panel-plain"
-        style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : "82vh", display: "flex", flexDirection: "column", padding: "14px 16px" }}
-      >
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>ประวัติการเล่น</div>
-        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {gameView.gameLogs.length} เหตุการณ์</div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-          {gameView.gameLogs.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ยังไม่มีเหตุการณ์</div>}
-          {[...gameView.gameLogs].reverse().map((entry, i) => (
-            <div key={gameView.gameLogs.length - i} style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.45, borderLeft: "2px solid var(--card-border-2)", paddingLeft: 8 }}>
-              <span style={{ fontSize: 10, color: "var(--ink-faint)", marginRight: 5 }}>รอบ {entry.turn}</span>
-              {resolveLogEntry(entry, gameView)}
-            </div>
-          ))}
+        {/* game history, alongside the board on desktop / stacked on narrow */}
+        <div style={{ position: "fixed", right: narrow ? undefined : 16, bottom: narrow ? undefined : 16, top: narrow ? undefined : 90, width: narrow ? "100%" : 300 }}>
+          {!narrow && <GameHistoryPanel gameView={gameView} narrow={narrow} />}
         </div>
-      </aside>
       </div>
+      {narrow && (
+        <div style={{ padding: "0 12px 110px" }}>
+          <GameHistoryPanel gameView={gameView} narrow={narrow} />
+        </div>
+      )}
 
       {toast && <SkillToast toast={toast} />}
       {notice && (
@@ -908,6 +652,13 @@ export function Table() {
       )}
       {showDecisionModal && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
       {inspecting && <InspectModal player={inspecting} onClose={() => setInspecting(null)} />}
+      {showDeathDialog && (
+        <DeathDialog
+          role={me.role}
+          onSpectate={() => setDeathDialogDismissedFor(gameView.matchId)}
+          onLeave={() => void leaveRoom()}
+        />
+      )}
       {playChoices && (
         <ModalOverlay onClose={() => setPlayChoices(null)}>
           <ModalPanel width={360}>
@@ -1011,61 +762,6 @@ export function Table() {
           ))}
           {debug.length === 0 && <div style={{ opacity: 0.6 }}>(ยังไม่มี event)</div>}
         </div>
-      )}
-    </div>
-  );
-}
-
-// One equipment slot in the player's gear zone, with a hover tooltip
-// explaining what the equipped weapon/armor/horse actually does.
-function EquipSlotTile({ label, glyph, card }: { label: string; glyph: string; card: Card | undefined }) {
-  const [hovered, setHovered] = useState(false);
-  const filled = !!card;
-  const range = card ? cardMeta(card.typeKey).attackRange : undefined;
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        position: "relative",
-        width: "100%",
-        minWidth: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: filled ? "var(--panel-bg)" : "transparent",
-        border: filled ? "1px solid var(--panel-border)" : "1px dashed var(--card-border-2)",
-        borderRadius: 5,
-        padding: "6px 8px",
-        opacity: filled ? 1 : 0.6,
-        cursor: filled ? "help" : "default",
-      }}
-    >
-      <span
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 4,
-          flexShrink: 0,
-          background: filled ? "var(--red)" : "#e3d7b8",
-          color: filled ? "#f6ecd2" : "#a99a70",
-          fontFamily: "var(--font-glyph-2)",
-          fontSize: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {glyph}
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {filled ? cardDisplay(card.typeKey).name : label}
-        </div>
-        <div style={{ fontSize: 10, color: "var(--ink-faint)" }}>{filled ? (range ? `ระยะ ${range}` : label) : "ว่าง"}</div>
-      </div>
-      {hovered && filled && card && cardInfo(card.typeKey) && (
-        <CardTooltip name={cardDisplay(card.typeKey).name} info={cardInfo(card.typeKey)} />
       )}
     </div>
   );
