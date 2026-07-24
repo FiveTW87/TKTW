@@ -18,7 +18,7 @@ function Centered({ children }: { children: ReactNode }) {
  *  dropped mid-room — the game stays visible underneath (SPEC 6.4/6.6). */
 function ReconnectingOverlay() {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(30,20,10,.55)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(12,8,5,.6)" }}>
       <div className="panel" style={{ padding: "22px 30px", textAlign: "center", color: "var(--ink)" }}>
         <div style={{ fontSize: 26, marginBottom: 8 }}>🔌</div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 18 }}>กำลังเชื่อมต่อกลับเข้าสู่ห้อง...</div>

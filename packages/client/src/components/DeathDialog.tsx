@@ -31,7 +31,7 @@ export function DeathDialog({
           <button onClick={onSpectate} className="btn-primary" style={{ padding: "10px 22px", fontSize: 14 }}>
             ดูเกมต่อ
           </button>
-          <button onClick={onLeave} className="btn-secondary" style={{ padding: "10px 22px", fontSize: 14 }}>
+          <button onClick={onLeave} className="btn-danger" style={{ padding: "10px 22px", fontSize: 14 }}>
             ออกจากห้อง
           </button>
         </div>
