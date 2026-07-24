@@ -1206,3 +1206,26 @@ describe("Table: Death Dialog", () => {
     await waitFor(() => expect(sentEvents.some((e) => e.event === "room:leave")).toBe(true));
   });
 });
+
+// Phase 9 structural rebuild — SeatTile.dc.html's delayed tricks render as
+// separate purple cards beside the seat tile (not chips inside it), for both
+// opponents (PlayerTile) and self (SelfDock).
+describe("Table: delayed tricks render beside the seat tile", () => {
+  it("shows a titled trick card for both self and an opponent with a judgment-zone card", async () => {
+    const me = player("p0", {
+      generalId: "caocao",
+      faction: "wei",
+      role: "lord",
+      roleRevealed: true,
+      judgmentZone: [{ id: "j1", typeKey: "lebusishu", suit: "spade", rank: 5 }],
+    });
+    const rest = [
+      player("p1", { name: "Bob", judgmentZone: [{ id: "j2", typeKey: "shandian", suit: "club", rank: 9 }] }),
+      player("p2"),
+    ];
+    await enterGame("DELAYED1", me, rest);
+
+    expect(screen.getByTitle("สุขจนลืมจ๊ก")).toBeInTheDocument(); // self's lebusishu
+    expect(screen.getByTitle("อสนีบาตเวียนค่าย")).toBeInTheDocument(); // Bob's shandian
+  });
+});

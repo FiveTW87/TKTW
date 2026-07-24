@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { Card, PlayerView, ConnectionStatus } from "@tktw/shared";
-import { generalDisplay, factionColor } from "../data/generalNames";
+import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
 import { cardDisplay, cardInfo } from "../data/cardNames";
 import { CardTooltip } from "./HandCard";
 import { roleDisplay } from "../data/roles";
+import { DelayedTrickList } from "./board/DelayedTrickCard";
 
 // A recognizable icon per equipment slot — clearer at a glance than the card's
 // Chinese glyph (and the two horse slots share 馬, so this also tells − from +).
@@ -110,62 +111,98 @@ export function PlayerTile({
     );
   }
 
+  // SeatTile.dc.html composition: portrait (seat-number badge) + info column
+  // + a faction ribbon on the right edge, all inside one bordered box; delayed
+  // tricks render as separate purple cards BESIDE the box, not chips inside it.
+  const boxW = isCompact ? 168 : 208;
+  const portW = isCompact ? 52 : 62;
+  const portH = isCompact ? 60 : 72;
+
   return (
-    <div
-      onClick={targetable ? onClick : undefined}
-      style={{
-        position: "relative",
-        flex: 1,
-        minWidth: isCompact ? 118 : 150,
-        background: "linear-gradient(#241a11,#180f09)",
-        border: "1px solid var(--panel-border-2)",
-        borderRadius: 6,
-        overflow: "hidden",
-        boxShadow: "0 4px 12px rgba(0,0,0,.5)",
-        opacity: player.alive ? 1 : 0.6,
-        cursor: targetable ? "pointer" : "default",
-      }}
-    >
-      <div style={{ height: 24, background: color, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 7px" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 14, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>
-        {role ? <span className={`seal ${role.cls}`} title={role.name}>{role.cn}</span> : <span className="seal seal-unknown">?</span>}
-      </div>
-      <div style={{ display: "flex", gap: 8, padding: 8 }}>
+    <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
+      <div
+        onClick={targetable ? onClick : undefined}
+        style={{
+          position: "relative",
+          width: boxW,
+          flexShrink: 0,
+          background: "linear-gradient(#241a11,#180f09)",
+          border: "1px solid var(--panel-border-2)",
+          borderRadius: 12,
+          overflow: "hidden",
+          boxShadow: "0 6px 16px rgba(0,0,0,.5)",
+          opacity: player.alive ? 1 : 0.6,
+          cursor: targetable ? "pointer" : "default",
+          padding: 8,
+          display: "flex",
+          gap: 8,
+        }}
+      >
+        {isCurrentTurn && <div className="glow-turn" style={{ borderRadius: 12 }} />}
+
+        {/* portrait, with the seat number badge (SeatTile's seatBadgeBg/Fg) */}
         <div
           className="card-back"
           style={{
-            width: 44,
-            height: 56,
-            borderRadius: 3,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: portW,
+            height: portH,
+            borderRadius: 8,
+            overflow: "hidden",
+            border: "2px solid var(--panel-border-2)",
             flexShrink: 0,
+            position: "relative",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: isCompact ? 22 : 26, color: "rgba(240,220,180,.45)", lineHeight: 1.1 }}>{d.glyph}</span>
+          <span
+            style={{
+              position: "absolute",
+              top: 3,
+              left: 3,
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              background: "rgba(20,14,9,.85)",
+              color: "var(--gold-light)",
+              fontFamily: "var(--font-glyph-2)",
+              fontWeight: 900,
+              fontSize: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 1px 4px rgba(0,0,0,.5)",
+            }}
+          >
+            {player.seat + 1}
+          </span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {player.name}
+
+        {/* info column */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: 16 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 15, color: "var(--ink)", lineHeight: 1 }}>{d.glyph}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{player.name}</span>
+            {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 14, height: 14, fontSize: 8, flexShrink: 0 }}>{role.cn}</span> : <span className="seal seal-unknown" style={{ width: 14, height: 14, fontSize: 8, flexShrink: 0 }}>?</span>}
           </div>
-          <div style={{ fontSize: 10, color: "var(--ink-faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
           {connectionStatus === "reconnecting" && (
             <div style={{ fontSize: 9, color: "var(--gold)", whiteSpace: "nowrap" }}>🔌 กำลังเชื่อมต่อกลับ...</div>
           )}
           {connectionStatus === "gone" && (
             <div style={{ fontSize: 9, color: "var(--target-red)", whiteSpace: "nowrap" }}>⚠ เสียชีวิต (หลุดการเชื่อมต่อ)</div>
           )}
-          <div style={{ display: "flex", gap: 2, marginTop: 5, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 3, marginTop: 6, flexWrap: "wrap" }}>
             {Array.from({ length: player.maxHp }).map((_, i) => (
               <span
                 key={i}
                 className="hp-dot"
-                style={{ width: 8, height: 8, background: i < player.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }}
+                style={{ width: 9, height: 9, background: i < player.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }}
               />
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", paddingTop: 6, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--ink-muted)" }}>
               <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(var(--gold-deep),var(--gold-bronze))", display: "inline-block" }} />
               {handCount}
@@ -174,107 +211,119 @@ export function PlayerTile({
               <EquipChip key={slot} slot={slot} card={card} />
             ))}
           </div>
-          {player.judgmentZone.length > 0 && (
-            <div style={{ display: "flex", gap: 3, marginTop: 5, flexWrap: "wrap" }}>
-              {player.judgmentZone.map((j) => (
-                <span key={j.id} style={{ fontSize: 9, background: "var(--purple)", color: "#f0e4cc", borderRadius: 2, padding: "1px 4px" }}>
-                  {cardDisplay(j.typeKey).glyph}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
 
-      {distance !== undefined && player.alive && (
-        <span
-          title={inRange ? "อยู่ในระยะโจมตีของคุณ" : "เกินระยะโจมตีปกติ"}
-          style={{
-            position: "absolute",
-            bottom: 5,
-            left: 5,
-            zIndex: 3,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 2,
-            fontSize: 10,
-            fontWeight: 700,
-            lineHeight: 1,
-            padding: "2px 6px",
-            borderRadius: 8,
-            background: inRange ? "rgba(60,125,82,.92)" : "rgba(60,44,24,.75)",
-            color: "#f6ecd2",
-          }}
-        >
-          ⟷ {distance}
-        </span>
-      )}
-
-      {isCurrentTurn && <div className="glow-turn" />}
-      {targetable && (
-        <>
-          <div className="glow-target" />
-          <div
-            style={{
-              position: "absolute",
-              top: 4,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "var(--target-red)",
-              color: "#f6ecd2",
-              fontSize: 9,
-              padding: "1px 8px",
-              borderRadius: 10,
-              zIndex: 2,
-            }}
-          >
-            {selected ? "เลือกแล้ว" : "เลือก"}
-          </div>
-        </>
-      )}
-      {onInspect && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onInspect();
-          }}
-          title="ดูอุปกรณ์/รายละเอียด"
-          style={{
-            position: "absolute",
-            bottom: 5,
-            right: 5,
-            zIndex: 3,
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            background: "rgba(20,14,9,.85)",
-            border: "1px solid var(--panel-border-2)",
-            cursor: "pointer",
-            fontSize: 10,
-            lineHeight: 1,
-            color: "var(--ink-muted)",
-            padding: 0,
-          }}
-        >
-          🔍
-        </button>
-      )}
-      {!player.alive && (
+        {/* faction ribbon — right edge, matches SeatTile's vertical strip */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            background: "rgba(12,8,5,.65)",
+            top: 0,
+            right: 0,
+            width: 20,
+            height: "100%",
+            background: color,
+            opacity: 0.9,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 22, color: "#e0917a", fontWeight: 900 }}>陣亡</span>
-          {roleDisplay(player.role) && <span style={{ fontSize: 11, color: "#f0e4cc", fontWeight: 700 }}>{roleDisplay(player.role)!.name}</span>}
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>
+            {factionLabel(player.faction).slice(0, 1)}
+          </span>
         </div>
-      )}
+
+        {distance !== undefined && player.alive && (
+          <span
+            title={inRange ? "อยู่ในระยะโจมตีของคุณ" : "เกินระยะโจมตีปกติ"}
+            style={{
+              position: "absolute",
+              bottom: 5,
+              left: 5,
+              zIndex: 3,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: 1,
+              padding: "2px 6px",
+              borderRadius: 8,
+              background: inRange ? "rgba(60,125,82,.92)" : "rgba(60,44,24,.75)",
+              color: "#f6ecd2",
+            }}
+          >
+            ⟷ {distance}
+          </span>
+        )}
+
+        {targetable && (
+          <>
+            <div className="glow-target" style={{ borderRadius: 12 }} />
+            <div
+              style={{
+                position: "absolute",
+                top: 4,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "var(--target-red)",
+                color: "#f6ecd2",
+                fontSize: 9,
+                padding: "1px 8px",
+                borderRadius: 10,
+                zIndex: 2,
+              }}
+            >
+              {selected ? "เลือกแล้ว" : "เลือก"}
+            </div>
+          </>
+        )}
+        {onInspect && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect();
+            }}
+            title="ดูอุปกรณ์/รายละเอียด"
+            style={{
+              position: "absolute",
+              bottom: 5,
+              right: 24,
+              zIndex: 3,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "rgba(20,14,9,.85)",
+              border: "1px solid var(--panel-border-2)",
+              cursor: "pointer",
+              fontSize: 10,
+              lineHeight: 1,
+              color: "var(--ink-muted)",
+              padding: 0,
+            }}
+          >
+            🔍
+          </button>
+        )}
+        {!player.alive && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(12,8,5,.65)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 22, color: "#e0917a", fontWeight: 900 }}>陣亡</span>
+            {roleDisplay(player.role) && <span style={{ fontSize: 11, color: "#f0e4cc", fontWeight: 700 }}>{roleDisplay(player.role)!.name}</span>}
+          </div>
+        )}
+      </div>
+
+      <DelayedTrickList cards={player.judgmentZone} />
     </div>
   );
 }

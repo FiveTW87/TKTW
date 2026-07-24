@@ -5,6 +5,27 @@ import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardName
 
 const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
+// RT's centralZone label pill — a small badge above each zone's card visual.
+function ZoneLabel({ children }: { children: string }) {
+  return (
+    <div
+      style={{
+        display: "inline-block",
+        fontSize: 10,
+        fontWeight: 600,
+        color: "var(--ink-muted)",
+        background: "rgba(60,44,24,.7)",
+        border: "1px solid var(--panel-border-2)",
+        borderRadius: 4,
+        padding: "1px 8px",
+        marginBottom: 6,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 // SPEC §11.5 — draw pile / latest played card / discard pile, centered on the
 // board. Delayed Tricks are intentionally NOT rendered here — they attach to
 // the target's panel (see OpponentPanel / SelfDock's judgmentZone chips).
@@ -38,6 +59,7 @@ export function CentralZone({
 
       {/* draw pile — also the "flip your judgment card" affordance */}
       <div style={{ textAlign: "center", zIndex: 1, position: "relative" }}>
+        <ZoneLabel>กองจั่ว</ZoneLabel>
         {pendingReveal && (
           <div className="anim-rise" style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "var(--target-red)", color: "#f6ecd2", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 8, boxShadow: "0 6px 16px rgba(0,0,0,.3)", zIndex: 5 }}>
             {revealTitle ?? "แตะเปิดการ์ดตัดสิน"} ▼
@@ -75,6 +97,7 @@ export function CentralZone({
         onMouseLeave={() => setHoveredLast(false)}
         onClick={() => setHoveredLast((v) => !v)}
       >
+        <ZoneLabel>เพิ่งเล่น</ZoneLabel>
         {lastPlay ? (
           <div
             className="anim-pop"
@@ -116,6 +139,7 @@ export function CentralZone({
 
       {/* discard pile — click to browse the full pile */}
       <div style={{ textAlign: "center", zIndex: 1 }}>
+        <ZoneLabel>กองทิ้ง</ZoneLabel>
         <button
           onClick={() => discardCount > 0 && onOpenDiscard()}
           title="ดูกองทิ้งทั้งหมด"

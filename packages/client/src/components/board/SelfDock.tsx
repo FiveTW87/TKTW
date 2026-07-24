@@ -8,6 +8,7 @@ import { roleDisplay } from "../../data/roles";
 import { activeSkillSpec } from "../../data/skillInteraction";
 import { cardMeta } from "../../data/cardMeta";
 import type { SkillDisplay } from "../../data/generalSkills";
+import { DelayedTrickList } from "./DelayedTrickCard";
 
 export interface CardTapState {
   tappable: boolean;
@@ -82,62 +83,69 @@ export function SelfDock({
   return (
     <div style={{ display: "flex", flexDirection: "row", gap: 14, alignItems: "stretch", width: "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
-          self-target when helping. glow-target is a CHILD overlay (not the
-          class on this box) so the box stays in flow / clickable. */}
-      <div
-        onClick={selfTargetable ? onToggleSelfTarget : undefined}
-        style={{
-          position: "relative",
-          width: 230,
-          flexShrink: 0,
-          background: "linear-gradient(#241a11,#160f09)",
-          border: `2px solid ${selfTargetSelected ? "var(--gold)" : factionColor(me.faction)}`,
-          borderRadius: 6,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          cursor: selfTargetable ? "pointer" : "default",
-          boxShadow: selfTargetSelected ? "0 0 14px rgba(217,165,49,.65)" : undefined,
-        }}
-      >
-        <div style={{ height: 28, background: factionColor(me.faction), display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px" }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "rgba(255,255,255,.95)" }}>{generalDisplay(me.generalId).glyph}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, color: "rgba(255,255,255,.95)" }}>
-            {role && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(0,0,0,.28)", borderRadius: 8, padding: "1px 7px", fontWeight: 700 }}>
-                <span className={`seal ${role.cls}`} style={{ width: 14, height: 14, fontSize: 9 }}>{role.cn}</span>
-                {role.name}
+          self-target when helping. Uses the same SeatTile.dc.html composition
+          as opponents (portrait+badge / info / faction ribbon), sized larger
+          for self, with delayed tricks as separate purple cards beside it —
+          not the old faction-bar-header shape. */}
+      <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+          <div
+            onClick={selfTargetable ? onToggleSelfTarget : undefined}
+            style={{
+              position: "relative",
+              width: 250,
+              flexShrink: 0,
+              background: "linear-gradient(#241a11,#160f09)",
+              border: `1px solid ${selfTargetSelected ? "var(--gold)" : "var(--panel-border-3)"}`,
+              borderRadius: 12,
+              overflow: "hidden",
+              boxShadow: selfTargetSelected ? "0 0 14px rgba(217,165,49,.65)" : "0 10px 30px rgba(0,0,0,.6)",
+              cursor: selfTargetable ? "pointer" : "default",
+              padding: 8,
+              display: "flex",
+              gap: 8,
+            }}
+          >
+            {/* portrait, with the seat number badge (gold — self, per SeatTile.dc.html) */}
+            <div
+              className="card-back"
+              style={{ width: 78, height: 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            >
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
+              <span style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: "50%", background: "var(--gold)", color: "#3a2708", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
+                {me.seat + 1}
               </span>
-            )}
-            คุณ
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 10, padding: 10 }}>
-          <div className="card-back" style={{ width: 56, height: 74, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "rgba(240,220,180,.5)" }}>{generalDisplay(me.generalId).glyph}</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{me.name}</div>
-            <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>{generalDisplay(me.generalId).name} · {factionLabel(me.faction)}</div>
-            <div style={{ display: "flex", gap: 3, marginTop: 7, flexWrap: "wrap" }}>
-              {Array.from({ length: me.maxHp }).map((_, i) => (
-                <span key={i} className="hp-dot" style={{ width: 12, height: 12, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
-              ))}
             </div>
+            {/* info column */}
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: 16 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ fontFamily: "var(--font-glyph)", fontSize: 20, color: "var(--ink)", lineHeight: 1 }}>{generalDisplay(me.generalId).glyph}</span>
+                <span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{me.name}</span>
+              </div>
+              {role && (
+                <div style={{ marginTop: 4, display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 5, background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 5, padding: "1px 8px", fontSize: 10, color: "var(--green-light)" }}>
+                  <span className={`seal ${role.cls}`} style={{ width: 13, height: 13, fontSize: 8 }}>{role.cn}</span>
+                  {role.name} · คุณ
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 3, marginTop: 6, flexWrap: "wrap" }}>
+                {Array.from({ length: me.maxHp }).map((_, i) => (
+                  <span key={i} className="hp-dot" style={{ width: 11, height: 11, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
+                ))}
+              </div>
+            </div>
+            {/* faction ribbon — right edge */}
+            <div style={{ position: "absolute", top: 0, right: 0, width: 22, height: "100%", background: factionColor(me.faction), opacity: 0.9, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 14, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>{factionLabel(me.faction).slice(0, 1)}</span>
+            </div>
+            {selfTargetable && <div className="glow-target" style={{ borderRadius: 12 }} />}
           </div>
+          {/* pending judgment cards (delayed tricks awaiting judgment) — attached
+              beside this panel, per bug list "Attach Delayed Tricks to target". */}
+          <DelayedTrickList cards={me.judgmentZone} />
         </div>
-        {/* pending judgment cards (delayed tricks awaiting judgment) — attached
-            to this panel, per bug list "Attach Delayed Tricks to target". */}
-        {me.judgmentZone.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, margin: "0 10px 8px" }}>
-            <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>ไพ่ตัดสิน:</span>
-            {me.judgmentZone.map((j) => (
-              <span key={j.id} style={{ fontSize: 11, background: "var(--purple)", color: "#f0e4cc", borderRadius: 5, padding: "3px 8px" }}>{cardDisplay(j.typeKey).name}</span>
-            ))}
-          </div>
-        )}
         {/* skills */}
-        <div style={{ flex: 1, margin: "0 10px 10px", background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: "9px 10px" }}>
+        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: "9px 10px" }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -182,7 +190,6 @@ export function SelfDock({
             );
           })}
         </div>
-        {selfTargetable && <div className="glow-target" />}
       </div>
 
       {/* MIDDLE: hand */}
@@ -212,10 +219,10 @@ export function SelfDock({
       {/* RIGHT: equipment zone + phase + end-turn */}
       <div style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5 }}>เขตอุปกรณ์</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5, textAlign: "center" }}>ของสวมใส่</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
             {equipSlots.map(({ slot, label, glyph, card }) => (
-              <EquipSlotTile key={slot} label={label} glyph={glyph} card={card} />
+              <EquipSlotCell key={slot} label={label} glyph={glyph} card={card} />
             ))}
           </div>
           {zhangbaAvailable && (
@@ -249,7 +256,9 @@ export function SelfDock({
   );
 }
 
-function EquipSlotTile({ label, glyph, card }: { label: string; glyph: string; card: Card | undefined }) {
+// Mockup's RT equip grid: slot label on top, a colored icon square, item name
+// below — replacing the old horizontal icon+label+desc row.
+function EquipSlotCell({ label, glyph, card }: { label: string; glyph: string; card: Card | undefined }) {
   const [hovered, setHovered] = useState(false);
   const filled = !!card;
   const range = card ? cardMeta(card.typeKey).attackRange : undefined;
@@ -257,44 +266,28 @@ function EquipSlotTile({ label, glyph, card }: { label: string; glyph: string; c
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{
-        position: "relative",
-        width: "100%",
-        minWidth: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: filled ? "var(--panel-bg)" : "transparent",
-        border: filled ? "1px solid var(--panel-border)" : "1px dashed var(--card-border-2)",
-        borderRadius: 5,
-        padding: "6px 8px",
-        opacity: filled ? 1 : 0.6,
-        cursor: filled ? "help" : "default",
-      }}
+      style={{ position: "relative", textAlign: "center", cursor: filled ? "help" : "default" }}
     >
-      <span
+      <div style={{ fontSize: 9, color: "var(--ink-faint)", marginBottom: 3 }}>{label}</div>
+      <div
         style={{
-          width: 22,
-          height: 22,
-          borderRadius: 4,
-          flexShrink: 0,
+          height: 44,
+          borderRadius: 6,
           background: filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
-          color: filled ? "#2e1f08" : "#5c4a2d",
-          fontFamily: "var(--font-glyph-2)",
-          fontSize: 12,
+          border: filled ? "none" : "1px dashed var(--panel-border-2)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        {glyph}
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {filled ? cardDisplay(card.typeKey).name : label}
-        </div>
-        <div style={{ fontSize: 10, color: "var(--ink-faint)" }}>{filled ? (range ? `ระยะ ${range}` : label) : "ว่าง"}</div>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
       </div>
+      <div style={{ fontSize: 9, color: "var(--ink-muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {filled ? cardDisplay(card.typeKey).name : "ว่าง"}
+      </div>
+      {filled && range !== undefined && (
+        <div style={{ fontSize: 8, color: "var(--ink-faint)" }}>ระยะ {range}</div>
+      )}
       {hovered && filled && card && cardInfo(card.typeKey) && (
         <CardTooltip name={cardDisplay(card.typeKey).name} info={cardInfo(card.typeKey)!} />
       )}
