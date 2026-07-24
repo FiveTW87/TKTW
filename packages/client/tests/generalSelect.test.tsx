@@ -75,9 +75,12 @@ async function enterRoom(roomCode: string) {
   const user = userEvent.setup();
   render(<App />);
   fakeSocket.fire("connect");
-  await waitFor(() => expect(screen.getByPlaceholderText("ใส่ชื่อของคุณ")).toBeInTheDocument());
-  await user.type(screen.getByPlaceholderText("ใส่ชื่อของคุณ"), "Alice");
-  await user.click(screen.getByRole("button", { name: "สร้างห้องใหม่" }));
+  // Home (R0) shows "สร้างห้องใหม่" as the landing button that opens the
+  // entry dialog (R0D); the dialog's own submit button is "สร้างห้อง".
+  await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+  await waitFor(() => expect(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ").length).toBeGreaterThan(0));
+  await user.type(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ")[0]!, "Alice");
+  await user.click(screen.getByRole("button", { name: "สร้างห้อง" }));
   await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
   respondTo("room:create", { ok: true, roomCode, sessionToken: "c".repeat(20), seatIndex: 0 });
   await waitFor(() => expect(screen.getByText(roomCode)).toBeInTheDocument());

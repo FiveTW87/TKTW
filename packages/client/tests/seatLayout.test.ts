@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { relativeSeat, densityMode, arcPosition } from "../src/lib/seatLayout";
+import { relativeSeat, densityMode, arcPosition, lobbyRingPosition } from "../src/lib/seatLayout";
 
 describe("relativeSeat (SPEC §11.3)", () => {
   it("is 0 for the viewer's own seat", () => {
@@ -58,5 +58,21 @@ describe("arcPosition", () => {
   it("a single opponent (2-player game) centers on the arc", () => {
     const pos = arcPosition(1, 2);
     expect(pos.leftPct).toBeCloseTo(50, 0);
+  });
+});
+
+describe("lobbyRingPosition (SPEC §11.2 — waiting-room seat ring)", () => {
+  it("puts relSeat 0 (self) at the bottom of the ring", () => {
+    const pos = lobbyRingPosition(0, 10);
+    expect(pos.leftPct).toBeCloseTo(50, 0);
+    expect(pos.topPct).toBeGreaterThan(85); // near the bottom edge
+  });
+
+  it("spreads all N seats (including self) across distinct positions", () => {
+    for (const playerCount of [3, 5, 8, 10]) {
+      const positions = Array.from({ length: playerCount }, (_, i) => lobbyRingPosition(i, playerCount));
+      const keys = new Set(positions.map((p) => `${p.leftPct.toFixed(1)},${p.topPct.toFixed(1)}`));
+      expect(keys.size).toBe(playerCount);
+    }
   });
 });

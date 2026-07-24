@@ -62,10 +62,10 @@ describe("Lobby -> waiting room -> start", () => {
     render(<App />);
     fakeSocket.fire("connect");
 
-    await waitFor(() => expect(screen.getByPlaceholderText("ใส่ชื่อของคุณ")).toBeInTheDocument());
-
-    await user.type(screen.getByPlaceholderText("ใส่ชื่อของคุณ"), "Alice");
-    await user.click(screen.getByRole("button", { name: "สร้างห้องใหม่" }));
+    await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+    await waitFor(() => expect(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ").length).toBeGreaterThan(0));
+    await user.type(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ")[0]!, "Alice");
+    await user.click(screen.getByRole("button", { name: "สร้างห้อง" }));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
     const createCall = sentEvents.find((e) => e.event === "room:create")!;
@@ -85,7 +85,7 @@ describe("Lobby -> waiting room -> start", () => {
       ],
     });
 
-    const startBtn = await screen.findByRole("button", { name: /เริ่มเกม/ });
+    const startBtn = await screen.findByRole("button", { name: /เริ่มศึก/ });
     await waitFor(() => expect(startBtn).toBeEnabled());
 
     await user.click(startBtn);
@@ -99,9 +99,10 @@ describe("Lobby -> waiting room -> start", () => {
     render(<App />);
     fakeSocket.fire("connect");
 
-    await waitFor(() => expect(screen.getByPlaceholderText("ใส่ชื่อของคุณ")).toBeInTheDocument());
-    await user.type(screen.getByPlaceholderText("ใส่ชื่อของคุณ"), "Alice");
-    await user.click(screen.getByRole("button", { name: "สร้างห้องใหม่" }));
+    await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+    await waitFor(() => expect(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ").length).toBeGreaterThan(0));
+    await user.type(screen.getAllByPlaceholderText("ใส่ชื่อของคุณ")[0]!, "Alice");
+    await user.click(screen.getByRole("button", { name: "สร้างห้อง" }));
     await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
     respondTo("room:create", { ok: true, roomCode: "GHIJKL", sessionToken: "b".repeat(20), seatIndex: 0 });
     await waitFor(() => expect(screen.getByText("GHIJKL")).toBeInTheDocument());
@@ -112,7 +113,7 @@ describe("Lobby -> waiting room -> start", () => {
       seats: [{ name: "Alice", connected: true, isHost: true }],
     });
 
-    const startBtn = await screen.findByRole("button", { name: /เริ่มเกม/ });
+    const startBtn = await screen.findByRole("button", { name: /เริ่มศึก/ });
     expect(startBtn).toBeDisabled();
   });
 });

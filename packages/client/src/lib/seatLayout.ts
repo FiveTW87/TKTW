@@ -43,3 +43,21 @@ export function arcPosition(relSeat: number, playerCount: number): { leftPct: nu
   const topPct = cy - ry * Math.sin(rad);
   return { leftPct, topPct };
 }
+
+/** Lobby's waiting-room ring (SPEC §11.2 mockup) — unlike `arcPosition`, self
+ *  IS one of the N ring slots (fixed at the bottom), since there's no hand/
+ *  dock to reserve room for yet. Spreads all N seats evenly around a full
+ *  ellipse, starting at the bottom and going clockwise. */
+export function lobbyRingPosition(relSeat: number, playerCount: number): { leftPct: number; topPct: number } {
+  if (playerCount <= 0) return { leftPct: 50, topPct: 50 };
+  const angleStep = (2 * Math.PI) / playerCount;
+  const angle = Math.PI / 2 + relSeat * angleStep; // start at bottom (90°), clockwise
+  const cx = 50;
+  const cy = 50;
+  const rx = 44;
+  const ry = 42;
+  return {
+    leftPct: cx + rx * Math.cos(angle),
+    topPct: cy + ry * Math.sin(angle),
+  };
+}
