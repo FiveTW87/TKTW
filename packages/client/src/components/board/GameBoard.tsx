@@ -56,7 +56,7 @@ export function GameBoard({
   const playerCount = gameView.players.length;
   const density = densityMode(playerCount);
   const currentTurnPlayer = gameView.players.find((p) => p.id === currentTurnPlayerId);
-  const ringHeight = density === "head" ? 380 : density === "compact" ? 420 : 460;
+  const ringMinHeight = density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
     <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "70px 12px 24px", position: "relative" }}>
@@ -71,8 +71,10 @@ export function GameBoard({
       />
 
       {/* the ring: opponents on the arc + central zone, sharing one relative
-          container so arc percentages resolve against the same box */}
-      <div className="panel-plain" style={{ position: "relative", width: "100%", maxWidth: 1040, height: ringHeight, marginBottom: 14 }}>
+          container so arc percentages resolve against the same box. Flex-grows
+          to fill whatever vertical/horizontal space the viewport has, instead
+          of a small fixed box that leaves the rest of the screen blank. */}
+      <div className="panel-plain" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: 14 }}>
         {others.map((p) => {
           const dist = attackDistanceFor(p);
           return (

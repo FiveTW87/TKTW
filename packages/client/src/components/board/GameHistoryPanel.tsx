@@ -8,7 +8,7 @@ export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; nar
   return (
     <aside
       className="panel-plain"
-      style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : "82vh", display: "flex", flexDirection: "column", padding: "14px 16px" }}
+      style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : undefined, display: "flex", flexDirection: "column", padding: "14px 16px" }}
     >
       <div style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>ประวัติการเล่น</div>
       <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {logs.length} เหตุการณ์</div>

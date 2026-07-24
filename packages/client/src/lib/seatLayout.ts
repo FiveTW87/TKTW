@@ -30,9 +30,13 @@ export function arcPosition(relSeat: number, playerCount: number): { leftPct: nu
   const index = relSeat - 1; // 0-based among the "others"
   const t = others === 1 ? 0.5 : index / (others - 1); // 0..1 across the arc
   // Sweep from 200° to -20° (i.e. slightly past horizontal on both ends) so
-  // even a 2-opponent game doesn't look dead-center-stacked.
-  const startDeg = 200;
-  const endDeg = -20;
+  // even a wide game doesn't look dead-center-stacked. With exactly 2
+  // opponents that sweep degenerates to just its two low-lying endpoints
+  // (both near the horizontal), leaving the whole upper half of the ring
+  // empty — so a 2-opponent game uses a narrower, higher sweep instead.
+  const totalSweep = others <= 2 ? 100 : 220;
+  const startDeg = 90 + totalSweep / 2;
+  const endDeg = 90 - totalSweep / 2;
   const deg = startDeg + (endDeg - startDeg) * t;
   const rad = (deg * Math.PI) / 180;
   const cx = 50;
