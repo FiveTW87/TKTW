@@ -37,13 +37,12 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
         style={{
           width: 440,
           maxWidth: "90vw",
-          background: "radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6)",
-          border: "1px solid var(--panel-border-2)",
+          background: "linear-gradient(#241a11,#160f09)",
+          border: "1px solid var(--panel-border-3)",
           borderRadius: 12,
           padding: "34px 40px",
           textAlign: "center",
-          boxShadow:
-            "0 22px 60px rgba(40,25,10,.6), inset 0 0 0 6px rgba(255,255,255,.28), inset 0 0 0 7px rgba(166,129,47,.4)",
+          boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         }}
       >
         <div style={{ fontSize: 12, letterSpacing: 3, color: "var(--ink-faint)" }}>บทบาทของคุณ</div>
@@ -53,26 +52,26 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
             height: 104,
             borderRadius: "50%",
             margin: "16px auto 18px",
-            background: "radial-gradient(circle at 38% 34%, #e0b64a, #c88f1e)",
+            background: "radial-gradient(circle at 38% 34%, #e0b64a, #b07f1e)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "3px solid #f2e7cf",
-            boxShadow: "0 8px 24px rgba(150,110,20,.45)",
+            border: "3px solid var(--gold-light)",
+            boxShadow: "0 10px 34px rgba(180,130,30,.5)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 56, color: "#5a3d0a" }}>{info.cn}</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 56, color: "#3a2708" }}>{info.cn}</span>
         </div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--red)" }}>{info.name}</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--gold-light)", fontWeight: 900 }}>{info.name}</div>
         <div style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 4 }}>
           รับบทโดย {general.name}
         </div>
         <div
           style={{
             fontSize: 13.5,
-            color: "#4a3c28",
+            color: "var(--ink-muted)",
             lineHeight: 1.6,
-            background: "var(--panel-bg-2)",
+            background: "var(--panel-bg)",
             border: "1px solid var(--panel-border)",
             borderRadius: 8,
             padding: "14px 16px",
@@ -82,21 +81,7 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
         >
           {info.goal}
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: "linear-gradient(#c0463a,#9a3128)",
-            color: "#f6ecd2",
-            border: "1px solid var(--gold-light)",
-            borderRadius: 7,
-            padding: "13px 48px",
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "0 6px 16px rgba(90,30,20,.3)",
-            letterSpacing: 1,
-          }}
-        >
+        <button onClick={onClose} className="btn-primary" style={{ padding: "13px 48px", fontSize: 16, letterSpacing: 1 }}>
           เริ่มศึก ⚔
         </button>
       </div>

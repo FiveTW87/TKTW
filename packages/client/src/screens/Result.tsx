@@ -41,16 +41,16 @@ export function Result() {
               height: 72,
               borderRadius: "50%",
               margin: "0 auto 12px",
-              background: "radial-gradient(circle at 38% 34%, #c0463a, #8f2a22)",
+              background: "radial-gradient(circle at 38% 34%, var(--gold-deep), var(--gold-bronze))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "2px solid #f2e7cf",
+              border: "3px solid var(--gold-light)",
             }}
           >
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 36, color: "#f6ecd2" }}>{won ? "勝" : "終"}</span>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 36, color: "#2e1f08" }}>{won ? "勝" : "終"}</span>
           </div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 26, color: "var(--red)" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 26, color: noWinner ? "var(--ink-muted)" : won ? "var(--gold)" : "var(--target-red)", fontWeight: 900 }}>
             {noWinner ? "เกมยุติ — ไม่มีผู้ชนะ" : won ? "ชัยชนะ!" : "จบเกม"}
           </div>
           <div style={{ marginTop: 6, color: "var(--ink-muted)", fontSize: 13 }}>
@@ -119,7 +119,7 @@ export function Result() {
           <button onClick={() => void returnToLobby()} className="btn-primary" style={{ padding: "13px 32px", fontSize: 15 }}>
             กลับห้องเพื่อเล่นต่อ
           </button>
-          <button onClick={() => void leaveRoom()} className="btn-secondary" style={{ padding: "13px 26px", fontSize: 15 }}>
+          <button onClick={() => void leaveRoom()} className="btn-danger" style={{ padding: "13px 26px", fontSize: 15 }}>
             ออกจากห้อง
           </button>
         </div>

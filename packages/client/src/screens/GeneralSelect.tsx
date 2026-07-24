@@ -51,7 +51,7 @@ export function GeneralSelect() {
                   fontSize: 13,
                   fontWeight: 700,
                   color: remaining <= 5 ? "var(--target-red)" : "var(--ink-muted)",
-                  background: "rgba(0,0,0,.06)",
+                  background: "rgba(0,0,0,.3)",
                   borderRadius: 8,
                   padding: "3px 10px",
                 }}
@@ -81,9 +81,9 @@ export function GeneralSelect() {
                 style={{
                   width: 196,
                   borderRadius: 9,
-                  background: "linear-gradient(#f9f2db,#f1e7ca)",
-                  border: `2px solid ${isSelected ? "var(--gold)" : "var(--card-border-2)"}`,
-                  boxShadow: isSelected ? "0 0 16px rgba(217,165,49,.55)" : "0 4px 10px rgba(60,40,15,.15)",
+                  background: "linear-gradient(#241a11,#160f09)",
+                  border: `2px solid ${isSelected ? "var(--gold)" : "var(--panel-border-2)"}`,
+                  boxShadow: isSelected ? "0 0 16px rgba(217,165,49,.55)" : "0 4px 10px rgba(0,0,0,.4)",
                   overflow: "hidden",
                   cursor: isMine ? "pointer" : "default",
                   position: "relative",
@@ -99,14 +99,14 @@ export function GeneralSelect() {
                   className="card-back"
                   style={{ height: 92, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid var(--card-border-2)" }}
                 >
-                  <span style={{ fontFamily: "var(--font-glyph)", fontSize: 52, color: "#5c4a2d" }}>{d.glyph}</span>
+                  <span style={{ fontFamily: "var(--font-glyph)", fontSize: 52, color: "rgba(240,220,180,.45)" }}>{d.glyph}</span>
                 </div>
                 <div style={{ padding: 11, minHeight: 92 }}>
                   {skills.map((s) => (
                     <div key={s.id} style={{ marginBottom: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <span style={{ fontWeight: 700, fontSize: 12.5, color }}>{s.name}</span>
-                        {s.lordOnly && <span style={{ fontSize: 9, background: "var(--gold)", color: "#5a3d0a", borderRadius: 6, padding: "0 5px" }}>主公</span>}
+                        {s.lordOnly && <span style={{ fontSize: 9, background: "var(--gold)", color: "#3a2708", borderRadius: 6, padding: "0 5px" }}>主公</span>}
                         {s.active && <span style={{ fontSize: 9, background: "var(--red)", color: "#f6ecd2", borderRadius: 6, padding: "0 5px" }}>技</span>}
                       </div>
                       <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.35 }}>{s.description}</div>
@@ -122,15 +122,15 @@ export function GeneralSelect() {
                       width: 36,
                       height: 36,
                       borderRadius: "50%",
-                      background: "radial-gradient(circle at 38% 34%, #c0463a, #8f2a22)",
-                      border: "2px solid #f2e7cf",
-                      boxShadow: "0 3px 10px rgba(90,30,20,.4)",
+                      background: "radial-gradient(circle at 38% 34%, var(--gold-deep), var(--gold-bronze))",
+                      border: "2px solid var(--gold-light)",
+                      boxShadow: "0 3px 10px rgba(0,0,0,.4)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "#f6ecd2" }}>選</span>
+                    <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "#2e1f08" }}>選</span>
                   </div>
                 )}
               </div>
