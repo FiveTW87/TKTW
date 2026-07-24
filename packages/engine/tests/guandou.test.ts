@@ -40,9 +40,9 @@ describe("ENG-007 guandou", () => {
   it("rejects an ordering with a duplicate card id", () => {
     const session = guandouGame(702);
     const pd = session.state.pendingDecision!;
-    const options = (pd.data as { options: string[] }).options;
+    const options = (pd.data as { options: { id: string }[] }).options;
     expect(() =>
-      respond(session, { decisionId: pd.id, playerId: "p0", cardIds: [options[0]!, options[0]!] }),
+      respond(session, { decisionId: pd.id, playerId: "p0", cardIds: [options[0]!.id, options[0]!.id] }),
     ).toThrow(/duplicate/);
   });
 
@@ -57,8 +57,8 @@ describe("ENG-007 guandou", () => {
   it("accepts a valid ordering and advances", () => {
     const session = guandouGame(7022);
     const pd = session.state.pendingDecision!;
-    const options = (pd.data as { options: string[] }).options;
-    respond(session, { decisionId: pd.id, playerId: "p0", cardIds: [options[0]!] });
+    const options = (pd.data as { options: { id: string }[] }).options;
+    respond(session, { decisionId: pd.id, playerId: "p0", cardIds: [options[0]!.id] });
     expect(session.state.pendingDecision!.kind).not.toBe("guandouOrder");
   });
 

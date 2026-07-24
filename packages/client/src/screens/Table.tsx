@@ -509,6 +509,11 @@ export function Table() {
 
   return (
     <div style={{ position: "relative" }}>
+      {/* Board + history share ONE flex row (column when narrow) so history
+          always owns its own reserved column and never floats over the board
+          — previously a position:fixed sidebar could overlap GameBoard's own
+          independently-centered viewport-height block at normal desktop widths. */}
+      <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh" }}>
       <GameBoard
         gameView={gameView}
         me={me}
@@ -575,54 +580,61 @@ export function Table() {
         }
       />
 
-      <div style={{ display: "flex", justifyContent: "center", padding: "0 12px 110px" }}>
-        <div style={{ width: "100%", maxWidth: 1040 }}>
-          {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
-          {isMyDecision && pending?.kind === "drawCard" && (
-            <div className="anim-rise" style={floatBar}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
-              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
-                เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
-                {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
-                  <span style={{ color: "var(--red)", marginLeft: 8 }}>
-                    ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
-                  </span>
-                )}
-              </span>
-              <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
-            </div>
-          )}
-
-          {/* confirm bar (tap-select flow) */}
-          {showConfirmBar && (
-            <div className="anim-rise" style={floatBar}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>選</span>
-              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600, maxWidth: 460 }}>{confirmText || "เลือกการ์ด/เป้าหมาย"}</span>
-              <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ยืนยัน</button>
-              <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ padding: "9px 16px", fontSize: 14 }}>ยกเลิก</button>
-            </div>
-          )}
-
-          {/* discard bar */}
-          {isMyDecision && isDiscardTo && (
-            <div className="anim-rise" style={floatBar}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>棄</span>
-              <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>การ์ดเกินมือ — ทิ้ง {selectedCardIds.length}/{mustDiscard} ใบ</span>
-              <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ทิ้งการ์ดที่เลือก</button>
-            </div>
-          )}
-
-          {error && <div style={{ color: "var(--target-red)", fontSize: 13, marginTop: 10, textAlign: "center" }}>{error}</div>}
-        </div>
-
-        {/* game history, alongside the board on desktop / stacked on narrow */}
-        <div style={{ position: "fixed", right: narrow ? undefined : 16, bottom: narrow ? undefined : 16, top: narrow ? undefined : 90, width: narrow ? "100%" : 300 }}>
-          {!narrow && <GameHistoryPanel gameView={gameView} narrow={narrow} />}
-        </div>
+      <GameHistoryPanel gameView={gameView} narrow={narrow} />
       </div>
-      {narrow && (
-        <div style={{ padding: "0 12px 110px" }}>
-          <GameHistoryPanel gameView={gameView} narrow={narrow} />
+
+      {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
+      {isMyDecision && pending?.kind === "drawCard" && (
+        <div className="anim-rise" style={floatBar}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
+          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
+            เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
+            {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
+              <span style={{ color: "var(--red)", marginLeft: 8 }}>
+                ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
+              </span>
+            )}
+          </span>
+          <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
+        </div>
+      )}
+
+      {/* confirm bar (tap-select flow) */}
+      {showConfirmBar && (
+        <div className="anim-rise" style={floatBar}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>選</span>
+          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600, maxWidth: 460 }}>{confirmText || "เลือกการ์ด/เป้าหมาย"}</span>
+          <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ยืนยัน</button>
+          <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ padding: "9px 16px", fontSize: 14 }}>ยกเลิก</button>
+        </div>
+      )}
+
+      {/* discard bar */}
+      {isMyDecision && isDiscardTo && (
+        <div className="anim-rise" style={floatBar}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>棄</span>
+          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>การ์ดเกินมือ — ทิ้ง {selectedCardIds.length}/{mustDiscard} ใบ</span>
+          <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ทิ้งการ์ดที่เลือก</button>
+        </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 25,
+            color: "var(--target-red)",
+            fontSize: 13,
+            background: "var(--card-bg-2)",
+            border: "1px solid var(--panel-border-2)",
+            borderRadius: 8,
+            padding: "8px 16px",
+          }}
+        >
+          {error}
         </div>
       )}
 

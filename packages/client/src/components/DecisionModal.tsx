@@ -124,7 +124,7 @@ export function DecisionModal({
         )}
 
         {shape.kind === "anonymousPicker" && (
-          <AnonymousPickerShape
+          <OrderCardsShape
             data={pending.data}
             ordered={shape.ordered}
             busy={busy}
@@ -382,7 +382,15 @@ function PickPlayersShape({
   );
 }
 
-function AnonymousPickerShape({
+// ขงเบ้ง's guandou: the peeked cards' full faces arrive in data.options (an
+// engine invariant shared with wugu — see zhugeliang.ts), redacted to {} for
+// every non-owner viewer server-side, so it's safe to render real card faces
+// here. Two interchangeable ways to set the new order (user's choice, not a
+// forced default): drag a card to swap its position, or switch to tap mode
+// and tap cards in the order they should end up in (numbered badges) — the
+// same tap-to-append UX this screen always had, just with real card faces
+// now instead of anonymous "ใบที่ N" slots.
+function OrderCardsShape({
   data,
   ordered,
   busy,
@@ -393,41 +401,73 @@ function AnonymousPickerShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
-  const options = Array.isArray(data.options) ? (data.options as string[]) : [];
-  const [order, setOrder] = useState<string[]>([]);
+  const options = (Array.isArray(data.options) ? data.options : []) as Card[];
+  const byId = new Map(options.map((c) => [c.id, c]));
+  const originalOrder = options.map((c) => c.id);
+  const [order, setOrder] = useState<string[]>(originalOrder);
+  const [tapMode, setTapMode] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
 
-  const slotStyle: React.CSSProperties = {
-    width: 60,
-    height: 84,
-    borderRadius: 6,
-    background: "#ece0c2",
-    border: "1px solid var(--card-border-2)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    fontSize: 13,
-    color: "var(--ink-muted)",
-    position: "relative",
+  if (!ordered) {
+    return (
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        {options.map((c) => (
+          <HandCard key={c.id} card={c} selected={false} onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })} />
+        ))}
+      </div>
+    );
+  }
+
+  const toggleMode = () => {
+    setTapMode((v) => !v);
+    setOrder(tapMode ? originalOrder : []); // → drag: reset to current deck order; → tap: start fresh
   };
 
-  const toggle = (id: string) => {
+  const tapCard = (id: string) => {
     if (busy) return;
-    if (!ordered) {
-      void onSubmit({ cardIds: [id] });
-      return;
-    }
     setOrder((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
+  const moveOver = (overId: string) => {
+    if (!dragId || dragId === overId) return;
+    setOrder((prev) => {
+      const from = prev.indexOf(dragId);
+      const to = prev.indexOf(overId);
+      if (from === -1 || to === -1) return prev;
+      const next = prev.slice();
+      next.splice(from, 1);
+      next.splice(to, 0, dragId);
+      return next;
+    });
+  };
+
+  // Drag mode always shows the live-reordered `order`; tap mode keeps cards
+  // in their fixed original layout (only the badge number changes) so tapped
+  // cards don't jump around mid-selection.
+  const cardsToShow = (tapMode ? originalOrder : order).map((id) => byId.get(id)).filter((c): c is Card => !!c);
+
   return (
     <div>
+      <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 8, textAlign: "center" }}>
+        {tapMode ? "แตะการ์ดตามลำดับที่ต้องการ" : "ลากการ์ดเพื่อสลับตำแหน่ง"}
+      </div>
       <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
-        {options.map((id, i) => {
-          const pos = order.indexOf(id);
+        {cardsToShow.map((c) => {
+          const pos = order.indexOf(c.id);
           return (
-            <div key={id} onClick={() => toggle(id)} style={slotStyle}>
-              ใบที่ {i + 1}
+            <div
+              key={c.id}
+              style={{ position: "relative", opacity: dragId === c.id ? 0.4 : 1, cursor: tapMode ? "pointer" : "grab" }}
+              draggable={!tapMode && !busy}
+              onDragStart={() => setDragId(c.id)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                moveOver(c.id);
+              }}
+              onDrop={(e) => e.preventDefault()}
+              onDragEnd={() => setDragId(null)}
+            >
+              <HandCard card={c} selected={tapMode && pos >= 0} onClick={tapMode ? () => tapCard(c.id) : undefined} />
               {pos >= 0 && (
                 <span
                   style={{
@@ -444,6 +484,7 @@ function AnonymousPickerShape({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    pointerEvents: "none",
                   }}
                 >
                   {pos + 1}
@@ -453,16 +494,17 @@ function AnonymousPickerShape({
           );
         })}
       </div>
-      {ordered && (
-        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <button disabled={busy} style={primaryBtn} onClick={() => void onSubmit({ cardIds: order })}>
-            ยืนยันลำดับ
-          </button>
-          <button disabled={busy} style={secondaryBtn} onClick={() => void onSubmit({ pass: true })}>
-            เรียงเดิม
-          </button>
-        </div>
-      )}
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <button disabled={busy} style={secondaryBtn} onClick={toggleMode}>
+          {tapMode ? "🖱 สลับเป็นลากแทน" : "👆 สลับเป็นแตะเรียงแทน"}
+        </button>
+        <button disabled={busy} style={primaryBtn} onClick={() => void onSubmit({ cardIds: order })}>
+          ยืนยันลำดับ
+        </button>
+        <button disabled={busy} style={secondaryBtn} onClick={() => void onSubmit({ pass: true })}>
+          เรียงเดิม
+        </button>
+      </div>
     </div>
   );
 }

@@ -23,10 +23,15 @@ registerGeneral({
             if (c) revealed.push(c);
           }
           if (revealed.length === 0) return;
+          // Send the full revealed card faces (not just ids): guandou lets its
+          // owner see what they peeked, and the client needs the faces to show
+          // names/suits when ordering (mirrors wugu.ts's identical pattern).
+          // guandouOrder is redacted to {} for every other viewer (view.ts's
+          // PRIVATE_DECISION_KINDS), so this never leaks to non-owners.
           const answer = yield {
             kind: "guandouOrder",
             playerId: ownerId,
-            data: { options: revealed.map((c) => c.id) },
+            data: { options: revealed.slice() },
           };
           // cardIds = final top-of-deck order (first = drawn first later);
           // anything not listed goes to the bottom in original order. ENG-007:

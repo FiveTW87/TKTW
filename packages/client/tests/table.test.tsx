@@ -570,6 +570,39 @@ describe("Table: P6 features (wugu faces / judgment reveal / discard browser)", 
     expect(screen.getByText("ท้อคืนชีพ")).toBeInTheDocument();
   });
 
+  it("guandouOrder renders the peeked cards' real names (not anonymous slots), and tap-mode ordering submits the tapped sequence", async () => {
+    const me = player("p0", { generalId: "zhugeliang", faction: "shu", role: "lord", roleRevealed: true });
+    const rest = [player("p1"), player("p2")];
+    const user = await enterGame("GUANDOU1", me, rest);
+
+    fireView(me, rest, {
+      id: "dec_g",
+      kind: "guandouOrder",
+      playerId: "p0",
+      data: {
+        options: [
+          { id: "c1", typeKey: "sha", suit: "spade", rank: 7 },
+          { id: "c2", typeKey: "tao", suit: "heart", rank: 3 },
+        ],
+      },
+    });
+
+    // real card names — the old UI only ever showed "ใบที่ 1"/"ใบที่ 2"
+    expect(await screen.findByText("จู่โจม")).toBeInTheDocument();
+    expect(screen.getByText("ท้อคืนชีพ")).toBeInTheDocument();
+    expect(screen.queryByText(/ใบที่ \d/)).not.toBeInTheDocument();
+
+    // switch to tap-mode and pick an explicit order (reverse of the peeked order)
+    await user.click(screen.getByRole("button", { name: /แตะเรียงแทน/ }));
+    await user.click(screen.getByText("ท้อคืนชีพ"));
+    await user.click(screen.getByText("จู่โจม"));
+    await user.click(screen.getByRole("button", { name: "ยืนยันลำดับ" }));
+
+    await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
+    const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { cardIds: string[] };
+    expect(payload.cardIds).toEqual(["c2", "c1"]);
+  });
+
   it("judgmentReveal is answered by tapping the draw pile (no modal)", async () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
     const rest = [player("p1"), player("p2")];

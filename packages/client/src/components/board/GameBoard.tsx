@@ -59,7 +59,7 @@ export function GameBoard({
   const ringHeight = density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "70px 12px 24px", position: "relative" }}>
+    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "70px 12px 24px", position: "relative" }}>
       <TurnPanel
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
