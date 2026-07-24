@@ -1,27 +1,40 @@
+/* War Table theme (SPEC §13.1 — dark wood/aged bronze/black iron/torch light).
+   Sourced from the "War Table Screens" Claude Design mockup — see
+   TODO_LATEST.md's Phase 9 entry for the palette breakdown. */
 :root {
-  --bg-1: #e2d3af;
-  --bg-2: #d8c7a0;
-  --bg-3: #cbb88f;
-  --ink: #2e2519;
-  --ink-muted: #6b5b3d;
-  --ink-faint: #7a6a48;
-  --red: #a8322a;
-  --red-dark: #7d231d;
-  --red-deep: #8f2a22;
+  --bg-1: #241812;
+  --bg-2: #1c130c;
+  --bg-3: #120d08;
+  --ink: #f0e4cc;
+  --ink-muted: #c9b184;
+  --ink-faint: #9c8763;
+  --ink-dim: #6b5c40;
+  --red: #a8503a;
+  --red-dark: #5a1d16;
+  --red-deep: #7a2a20;
   --target-red: #b0402c;
+  --hp-red: #d75042;
   --gold: #d9a531;
   --gold-light: #e6c063;
+  --gold-deep: #caa24e;
+  --gold-bronze: #8a5f22;
   --green: #3c7d52;
-  --card-bg: #f8f1da;
-  --card-bg-2: #f4ead0;
+  --green-light: #8fd6a8;
+  --hp-green: #4f9e2e;
+  --hp-green-light: #8fd66a;
+  --purple: #8161a8;
+  --purple-light: #c9a8e8;
+  --card-bg: #f2e6c9;
+  --card-bg-2: #e6d3aa;
   --card-border: #c3ad78;
-  --card-border-2: #cbb98d;
-  --panel-bg: #f6eed4;
-  --panel-bg-2: #f2e6c9;
-  --panel-border: #d3c199;
-  --panel-border-2: #b6a074;
+  --card-border-2: #b98a3c;
+  --panel-bg: #241a11;
+  --panel-bg-2: #160f09;
+  --panel-border: #4a3620;
+  --panel-border-2: #6b4d28;
+  --panel-border-3: #7a5528;
   --font-body: 'Sarabun', sans-serif;
-  --font-display: 'Chonburi', serif;
+  --font-display: 'Noto Serif SC', serif;
   --font-glyph: 'Ma Shan Zheng', cursive;
   --font-glyph-2: 'Noto Serif SC', serif;
 }
@@ -40,11 +53,25 @@ body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--ink);
-  background: var(--bg-2);
-  background-image: radial-gradient(60% 50% at 50% 0%, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-3) 100%);
+  background: var(--bg-3);
+  background-image: radial-gradient(80% 60% at 50% 0%, var(--bg-1), var(--bg-3) 70%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden; /* the board reflows on mobile — never scroll sideways */
+}
+
+/* subtle radiating "banner ray" pattern behind screens, matching the
+   mockup's repeating-conic-gradient board texture */
+.war-table-bg {
+  position: relative;
+}
+.war-table-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image: repeating-conic-gradient(from 0deg at 50% 40%, rgba(120, 86, 40, 0.06) 0deg 10deg, transparent 10deg 20deg);
+  pointer-events: none;
 }
 
 /* On phones, a full-viewport-height flex container can't vertically center the
@@ -60,11 +87,11 @@ button {
 }
 
 a {
-  color: var(--red);
+  color: var(--gold);
   text-decoration: none;
 }
 a:hover {
-  color: var(--red-dark);
+  color: var(--gold-light);
 }
 
 /* ── Keyframes (ported from the design's dc* animations) ───────────── */
@@ -121,28 +148,36 @@ a:hover {
 
 /* ── Panels ───────────────────────────────────────────────────────── */
 .panel {
-  background: radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6 55%, #e6d7b4 100%);
-  border: 1px solid var(--panel-border-2);
+  background: radial-gradient(90% 70% at 50% 20%, #3a2a1a, #150f0a 70%);
+  border: 1px solid var(--panel-border);
   border-radius: 8px;
   box-shadow:
-    0 22px 60px rgba(60, 40, 15, 0.28),
-    inset 0 0 0 7px rgba(255, 255, 255, 0.28),
-    inset 0 0 0 8px rgba(166, 129, 47, 0.35);
+    0 22px 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(217, 165, 49, 0.1);
 }
 .panel-plain {
-  background: radial-gradient(120% 100% at 50% 0%, #f7f0dc, #efe3c6 55%, #e6d7b4 100%);
+  background: linear-gradient(#241a11, #160f09);
   border: 1px solid var(--panel-border-2);
   border-radius: 8px;
   box-shadow:
-    0 22px 60px rgba(60, 40, 15, 0.28),
-    inset 0 0 0 6px rgba(255, 255, 255, 0.26),
-    inset 0 0 0 7px rgba(166, 129, 47, 0.32);
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(217, 165, 49, 0.08);
 }
 .mat {
   border-radius: 8px;
-  background: radial-gradient(75% 95% at 50% 40%, #ecdcb6, #d9c496 100%);
+  background: radial-gradient(75% 95% at 50% 40%, #2a1d12, #1a120b 100%);
   border: 2px solid var(--panel-border-2);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), inset 0 3px 22px rgba(90, 60, 20, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(217, 165, 49, 0.12), inset 0 3px 22px rgba(0, 0, 0, 0.4);
+}
+
+/* subtle radiating "banner ray" texture behind circular boards/lobbies,
+   matching the mockup's repeating-conic-gradient board pattern */
+.war-table-rays {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image: repeating-conic-gradient(from 0deg at 50% 45%, rgba(120, 86, 40, 0.06) 0deg 10deg, transparent 10deg 20deg);
+  pointer-events: none;
 }
 
 /* ── Seals (role indicators 主/忠/反/内) ──────────────────────────── */
@@ -156,60 +191,62 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
 }
 .seal-lord {
   background: var(--gold);
-  color: #5a3d0a;
+  color: #3a2708;
 }
 .seal-loyalist {
-  background: #d8e6d0;
-  color: #2f5d3a;
+  background: var(--green);
+  color: #eafbe9;
 }
 .seal-rebel {
-  background: #e6cfc9;
-  color: #8f2a22;
+  background: var(--target-red);
+  color: #fbe8e2;
 }
 .seal-traitor {
-  background: #d8d2e6;
-  color: #4a3a70;
+  background: var(--ink-dim);
+  color: #f0e4cc;
 }
 .seal-unknown {
-  background: #e3d7b8;
-  color: #7a6a48;
+  background: rgba(20, 14, 9, 0.85);
+  color: var(--gold-light);
 }
 
 /* ── HP dots ──────────────────────────────────────────────────────── */
 .hp-dot {
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--ink-faint);
+  box-shadow: inset 0 0 0 1px rgba(150, 110, 50, 0.5);
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────── */
 .btn-primary {
-  background: linear-gradient(#c0463a, #9a3128);
-  color: #f6ecd2;
-  border: 1px solid var(--gold-light);
+  background: radial-gradient(circle at 42% 30%, var(--gold-deep), var(--gold-bronze));
+  color: #2e1f08;
+  border: 2px solid var(--gold-light);
   border-radius: 7px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(90, 30, 20, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(255, 240, 200, 0.25);
   transition: filter 0.12s, transform 0.12s;
 }
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.06);
+  filter: brightness(1.08);
 }
 .btn-primary:active:not(:disabled) {
   transform: translateY(1px);
 }
 .btn-primary:disabled {
-  background: #c9b789;
+  background: #6b5c40;
+  border-color: #4a3620;
+  color: rgba(240, 228, 204, 0.5);
   cursor: not-allowed;
   box-shadow: none;
 }
 .btn-secondary {
-  background: var(--card-bg-2);
+  background: linear-gradient(#241a11, #160f09);
   color: var(--ink-muted);
   border: 1px solid var(--panel-border-2);
   border-radius: 7px;
@@ -218,20 +255,46 @@ a:hover {
   transition: filter 0.12s;
 }
 .btn-secondary:hover:not(:disabled) {
-  filter: brightness(0.97);
+  filter: brightness(1.2);
 }
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* danger/leave actions — dark with a red-tinted border, per the mockup's
+   "ออกจากห้อง" treatment (distinct from the neutral btn-secondary) */
+.btn-danger {
+  background: linear-gradient(#1e140c, #160f09);
+  color: #e0917a;
+  border: 1px solid var(--red-deep);
+  border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ── Glows (turn / targetable) ────────────────────────────────────── */
+@keyframes turnGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(217, 165, 49, 0.6), 0 0 18px 2px rgba(217, 165, 49, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(217, 165, 49, 0.95), 0 0 30px 6px rgba(217, 165, 49, 0.6);
+  }
+}
 .glow-turn {
   position: absolute;
   inset: 0;
-  border: 2px solid var(--gold);
   border-radius: 6px;
-  box-shadow: 0 0 14px rgba(217, 165, 49, 0.6), inset 0 0 10px rgba(217, 165, 49, 0.22);
+  animation: turnGlow 2.4s ease-in-out infinite;
   pointer-events: none;
 }
 .glow-target {
@@ -244,9 +307,13 @@ a:hover {
 }
 
 /* ── Card faces + hand ────────────────────────────────────────────── */
+/* face-down cards / portrait placeholders — dark wood, not the light
+   parchment card face (HandCard's own in-hand cards stay light/parchment
+   via --card-bg, matching the mockup's intentional light-cards-on-dark-board
+   contrast). */
 .card-back {
-  background: repeating-linear-gradient(48deg, rgba(60, 40, 15, 0.07) 0 6px, transparent 6px 12px), #ece0c2;
-  border: 1px solid var(--card-border-2);
+  background: linear-gradient(150deg, #4a3628, #241811);
+  border: 1px solid var(--panel-border-2);
 }
 .anim-draw {
   animation: dcDrawIn 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) both;
