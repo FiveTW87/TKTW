@@ -300,8 +300,29 @@ Legend:
 
 ## Phase 9 — Theme / Assets
 
-- [ ] Design tokens
-- [ ] War-table theme
+> Theme direction (SPEC §13.1) implemented from a real design source: the user's Claude Design
+> project ("War Table Screens.dc.html", imported read-only via the DesignSync MCP tool —
+> `get_project`/`list_files`/`get_file`, never written to). Rolled out in 6 incremental commits,
+> each gated on the full test suite: (1) global `index.css` tokens — near-black background,
+> dark-wood panel gradients, gold/bronze primary actions, new purple tokens for delayed tricks,
+> `--font-display` swapped from Chonburi to Noto Serif SC; (2) in-game Table (PlayerTile/HandCard/
+> SelfDock/CentralZone/TurnPanel — green HP dots + purple delayed-trick chips replacing red, an
+> animated turnGlow pulse) plus the shared Modal/DecisionModal/InspectModal/RulesModal/SkillToast
+> every dialog is built on; (3) Lobby — rebuilt around the mockup's two-screen flow (landing →
+> entry dialog with create/join side by side, kept the "เล่นกับบอท" quickstart the mockup omits)
+> and a genuine structural change: the waiting-room list becomes a circular seat ring via a new
+> `lobbyRingPosition()` in `lib/seatLayout.ts`; (4) GeneralSelect/Result/RoleRevealModal (general
+> cards go dark-wood, selection/winner indicators switch red→gold); (5) DeathDialog; (6) App.tsx's
+> connection-state overlays. Card faces intentionally stay light/parchment against the dark board
+> throughout (a new `--card-ink`/`--card-ink-muted` token pair covers text on those light cards,
+> since `--ink` itself is now light for the dark background). engine 246 · server 38 · client 78,
+> typecheck clean on all 4 packages. **Not done:** the SPEC §13.2–13.4 asset-ready infrastructure
+> (resolver components, `public/assets/` folder structure, fallback logic) — this session's scope
+> was the theme/design pass specifically, not the general asset pipeline — and a real
+> browser-visual QA pass (`claude-in-chrome` still won't connect in this environment).
+
+- [x] Design tokens (`packages/client/src/index.css`)
+- [x] War-table theme (rolled out across every screen, see above)
 - [ ] Asset resolver
 - [ ] Card full/thumbnail/back
 - [ ] General full/portrait/head
