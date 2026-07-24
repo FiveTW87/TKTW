@@ -2,6 +2,26 @@ import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
 import { RulesButton } from "../components/RulesModal";
 import { lobbyRingPosition } from "../lib/seatLayout";
+import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
+
+function LeaveConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <ModalOverlay onClose={onCancel}>
+      <ModalPanel width={340}>
+        <ModalGlyph>退</ModalGlyph>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", marginBottom: 18 }}>ออกจากห้องนี้?</div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button onClick={onConfirm} className="btn-danger" style={{ padding: "10px 22px", fontSize: 14 }}>
+            ยืนยัน
+          </button>
+          <button onClick={onCancel} className="btn-secondary" style={{ padding: "10px 22px", fontSize: 14 }}>
+            ยกเลิก
+          </button>
+        </div>
+      </ModalPanel>
+    </ModalOverlay>
+  );
+}
 
 const panelStyle: React.CSSProperties = {
   width: 560,
@@ -107,64 +127,69 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
     boxShadow: "inset 0 0 10px rgba(217,165,49,.12)",
   };
 
+  const panelBoxStyle: React.CSSProperties = { width: 360, background: "linear-gradient(#241a11,#160f09)", border: "1px solid var(--panel-border-3)", borderRadius: 14, padding: "24px 26px", boxShadow: "0 20px 50px rgba(0,0,0,.7)" };
+
   return (
     <div
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(12,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", gap: 26, padding: 20, flexWrap: "wrap" }}
+      style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(12,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 360, background: "linear-gradient(#241a11,#160f09)", border: `1px solid ${initialTab === "create" ? "var(--panel-border-3)" : "var(--panel-border-2)"}`, borderRadius: 14, padding: "24px 26px", boxShadow: "0 20px 50px rgba(0,0,0,.7)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>創</span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>สร้างห้องใหม่</span>
+      {initialTab === "create" ? (
+        <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>創</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>สร้างห้องใหม่</span>
+          </div>
+          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ตั้งชื่อผู้เล่นเพื่อเริ่มเป็นเจ้าของห้อง</div>
+          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={24}
+            placeholder="ใส่ชื่อของคุณ"
+            style={{ ...inputStyle, marginBottom: 22 }}
+          />
+          <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
+            สร้างห้อง
+          </button>
+          {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
         </div>
-        <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ตั้งชื่อผู้เล่นเพื่อเริ่มเป็นเจ้าของห้อง</div>
-        <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={24}
-          placeholder="ใส่ชื่อของคุณ"
-          style={{ ...inputStyle, marginBottom: 22 }}
-        />
-        <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
-          สร้างห้อง
-        </button>
-      </div>
+      ) : (
+        <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>入</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>เข้าร่วมห้อง</span>
+          </div>
+          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ใส่ชื่อและรหัสห้องที่เพื่อนแชร์มา</div>
+          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="ใส่ชื่อของคุณ" style={{ ...inputStyle, marginBottom: 16 }} />
+          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>รหัสห้อง</label>
+          <input
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+            maxLength={6}
+            placeholder="รหัสห้อง 6 หลัก"
+            style={{ ...inputStyle, marginBottom: 22, letterSpacing: 3, textTransform: "uppercase" }}
+          />
+          <button onClick={handleJoin} disabled={busy || !name.trim() || !roomCode.trim()} className="btn-secondary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
+            เข้าร่วมห้อง
+          </button>
 
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 360, background: "linear-gradient(#241a11,#160f09)", border: `1px solid ${initialTab === "join" ? "var(--panel-border-3)" : "var(--panel-border-2)"}`, borderRadius: 14, padding: "24px 26px", boxShadow: "0 20px 50px rgba(0,0,0,.7)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>入</span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>เข้าร่วมห้อง</span>
-        </div>
-        <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ใส่ชื่อและรหัสห้องที่เพื่อนแชร์มา</div>
-        <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="ใส่ชื่อของคุณ" style={{ ...inputStyle, marginBottom: 16 }} />
-        <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>รหัสห้อง</label>
-        <input
-          value={roomCode}
-          onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-          maxLength={6}
-          placeholder="รหัสห้อง 6 หลัก"
-          style={{ ...inputStyle, marginBottom: 22, letterSpacing: 3, textTransform: "uppercase" }}
-        />
-        <button onClick={handleJoin} disabled={busy || !name.trim() || !roomCode.trim()} className="btn-secondary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
-          เข้าร่วมห้อง
-        </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: "18px 0 12px" }}>
+            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
+            หรือ
+            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
+          </div>
+          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: 12, fontSize: 14, borderColor: "var(--gold)" }}>
+            เล่นกับบอท (ทดสอบคนเดียว)
+          </button>
+          <div style={{ fontSize: 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
+            สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
+          </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: "18px 0 12px" }}>
-          <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
-          หรือ
-          <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
+          {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
         </div>
-        <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: 12, fontSize: 14, borderColor: "var(--gold)" }}>
-          เล่นกับบอท (ทดสอบคนเดียว)
-        </button>
-        <div style={{ fontSize: 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
-          สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
-        </div>
-
-        {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
-      </div>
+      )}
     </div>
   );
 }
@@ -182,6 +207,7 @@ function WaitingRoom() {
   const mySeat = seatIndex !== null ? seats[seatIndex] : undefined;
   const canStart = !!mySeat?.isHost && seats.length >= 3;
   const playerCount = Math.max(seats.length, 1);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   const handleStart = async () => {
     setStarting(true);
@@ -190,27 +216,32 @@ function WaitingRoom() {
   };
 
   return (
-    <div style={{ position: "relative", width: 1080, maxWidth: "96vw", height: 620, borderRadius: 14, overflow: "hidden", border: "1px solid var(--panel-border)", background: "radial-gradient(100% 80% at 50% 8%, #352516aa, #120d08 72%), #120d08" }}>
+    <div style={{ position: "relative", width: "100%", height: "100vh", display: "flex", flexDirection: "column", background: "radial-gradient(100% 80% at 50% 8%, #352516aa, #120d08 72%), #120d08" }}>
       <div className="war-table-rays" />
-      <div style={{ position: "absolute", left: "50%", top: "58%", transform: "translate(-50%,-50%)", width: 560, height: 380, borderRadius: "50%", border: "2px solid rgba(150,110,50,.16)", boxShadow: "inset 0 0 70px rgba(0,0,0,.5)" }} />
 
-      <div style={{ position: "absolute", top: 20, left: 24, background: "linear-gradient(#241a11,#180f09)", border: "1px solid var(--panel-border-2)", borderRadius: 11, padding: "10px 15px" }}>
-        <div style={{ fontSize: 10, color: "var(--ink-faint)", letterSpacing: 1 }}>รหัสห้อง</div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--gold)", letterSpacing: 3 }}>{roomCode}</div>
-      </div>
-      <div style={{ position: "absolute", top: 20, right: 24, textAlign: "right" }}>
-        <div style={{ display: "inline-block", background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 18, padding: "7px 16px", fontSize: 14, fontWeight: 700, color: "var(--green-light)" }}>
-          {seats.length} / 10 คน
+      {/* header row — normal flow, so it never competes for space with the footer */}
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 28px 0" }}>
+        <div style={{ background: "linear-gradient(#241a11,#180f09)", border: "1px solid var(--panel-border-2)", borderRadius: 11, padding: "10px 15px" }}>
+          <div style={{ fontSize: 10, color: "var(--ink-faint)", letterSpacing: 1 }}>รหัสห้อง</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--gold)", letterSpacing: 3 }}>{roomCode}</div>
         </div>
-        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>เริ่มได้เมื่อครบ 3 คน</div>
-      </div>
-      <div style={{ position: "absolute", top: 26, left: 0, right: 0, textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--ink)" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--ink)", position: "absolute", left: 0, right: 0, top: 26, textAlign: "center", pointerEvents: "none" }}>
           ห้องรอ · <span style={{ color: "var(--gold)" }}>รวมพลก่อนออกศึก</span>
         </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ display: "inline-block", background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 18, padding: "7px 16px", fontSize: 14, fontWeight: 700, color: "var(--green-light)" }}>
+            {seats.length} / 10 คน
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>เริ่มได้เมื่อครบ 3 คน</div>
+        </div>
       </div>
 
-      <div style={{ position: "absolute", left: "50%", top: "53%", transform: "translate(-50%,-50%)", width: "94%", height: "68%" }}>
+      {/* ring area — fills remaining space; footer below is a flow sibling, so
+          the self-seat tile (bottom of the ellipse) can never overlap it. */}
+      <div style={{ position: "relative", flex: "1 1 auto", minHeight: 0 }}>
+        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(760px, 60vw)", height: "min(520px, 76%)", borderRadius: "50%", border: "2px solid rgba(150,110,50,.16)", boxShadow: "inset 0 0 70px rgba(0,0,0,.5)" }} />
+
+        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(94%, 900px)", height: "88%" }}>
         {seats.map((seat, i) => {
           const relSeat = seatIndex !== null ? ((i - seatIndex) % playerCount + playerCount) % playerCount : i;
           const pos = lobbyRingPosition(relSeat, playerCount);
@@ -265,11 +296,13 @@ function WaitingRoom() {
           <div style={{ fontFamily: "var(--font-glyph)", fontSize: 52, color: "rgba(217,165,49,.28)" }}>桃園</div>
           <div style={{ fontSize: 11, color: "var(--ink-dim)", letterSpacing: 2 }}>สาบานร่วมรบ</div>
         </div>
+        </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 14, flexDirection: "column", alignItems: "center" }}>
+      {/* footer — normal flow, below the ring area; never overlaps the self seat tile */}
+      <div style={{ position: "relative", flexShrink: 0, display: "flex", gap: 10, flexDirection: "column", alignItems: "center", padding: "16px 20px 26px" }}>
         <div style={{ display: "flex", gap: 14 }}>
-          <button onClick={() => { if (window.confirm("ออกจากห้องนี้?")) void leaveRoom(); }} className="btn-danger" style={{ padding: "13px 26px", fontSize: 14, borderRadius: 11 }}>
+          <button onClick={() => setConfirmingLeave(true)} className="btn-danger" style={{ padding: "13px 26px", fontSize: 14, borderRadius: 11 }}>
             ออกจากห้อง
           </button>
           {mySeat?.isHost ? (
@@ -286,6 +319,13 @@ function WaitingRoom() {
         <RulesButton label="วิธีเล่น & กติกา" style={{ padding: "9px 20px", fontSize: 12 }} />
         {error && <div style={{ color: "var(--target-red)", fontSize: 13 }}>{error}</div>}
       </div>
+
+      {confirmingLeave && (
+        <LeaveConfirmDialog
+          onConfirm={() => { setConfirmingLeave(false); void leaveRoom(); }}
+          onCancel={() => setConfirmingLeave(false)}
+        />
+      )}
     </div>
   );
 }
@@ -295,16 +335,18 @@ export function Lobby() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<"create" | "join">("create");
 
+  if (roomCode) {
+    return (
+      <div className="war-table-bg" style={{ minHeight: "100vh" }}>
+        <WaitingRoom />
+      </div>
+    );
+  }
+
   return (
     <div className="war-table-bg" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      {roomCode ? (
-        <WaitingRoom />
-      ) : (
-        <>
-          <Home onCreate={() => { setDialogTab("create"); setDialogOpen(true); }} onJoin={() => { setDialogTab("join"); setDialogOpen(true); }} />
-          {dialogOpen && <EntryDialog initialTab={dialogTab} onClose={() => setDialogOpen(false)} />}
-        </>
-      )}
+      <Home onCreate={() => { setDialogTab("create"); setDialogOpen(true); }} onJoin={() => { setDialogTab("join"); setDialogOpen(true); }} />
+      {dialogOpen && <EntryDialog initialTab={dialogTab} onClose={() => setDialogOpen(false)} />}
     </div>
   );
 }
