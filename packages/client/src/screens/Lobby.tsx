@@ -239,9 +239,13 @@ function WaitingRoom() {
       {/* ring area — fills remaining space; footer below is a flow sibling, so
           the self-seat tile (bottom of the ellipse) can never overlap it. */}
       <div style={{ position: "relative", flex: "1 1 auto", minHeight: 0 }}>
-        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(760px, 60vw)", height: "min(520px, 76%)", borderRadius: "50%", border: "2px solid rgba(150,110,50,.16)", boxShadow: "inset 0 0 70px rgba(0,0,0,.5)" }} />
-
+        {/* seats are positioned by lobbyRingPosition's cx/cy/rx/ry (44%/42%
+            of THIS box) — the decorative ellipse below is sized to exactly
+            2*rx / 2*ry of the same box so its border passes through every
+            seat instead of being a differently-proportioned circle drawn
+            behind them. */}
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(94%, 900px)", height: "88%" }}>
+        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "88%", height: "84%", borderRadius: "50%", border: "2px solid rgba(150,110,50,.16)", boxShadow: "inset 0 0 70px rgba(0,0,0,.5)" }} />
         {seats.map((seat, i) => {
           const relSeat = seatIndex !== null ? ((i - seatIndex) % playerCount + playerCount) % playerCount : i;
           const pos = lobbyRingPosition(relSeat, playerCount);
