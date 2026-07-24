@@ -3,7 +3,7 @@ import type { CardView } from "@tktw/shared";
 import { CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardNames";
 
-const SUIT_COLOR: Record<string, string> = { heart: "#a8322a", diamond: "#a8322a", spade: "#2e2519", club: "#2e2519" };
+const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
 // SPEC §11.5 — draw pile / latest played card / discard pile, centered on the
 // board. Delayed Tricks are intentionally NOT rendered here — they attach to
@@ -53,8 +53,8 @@ export function CentralZone({
             width: 62,
             height: 88,
             borderRadius: 6,
-            background: "radial-gradient(circle at 50% 45%, #b23a2e, #8f2a22)",
-            border: "1px solid var(--gold-light)",
+            background: "linear-gradient(150deg,#2a1d12,#1a110a)",
+            border: "1px solid var(--panel-border-3)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -62,7 +62,7 @@ export function CentralZone({
             cursor: pendingReveal ? "pointer" : "default",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "#f0d68a" }}>國</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--gold-light)" }}>國</span>
           {pendingReveal && <div className="glow-target" />}
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
@@ -98,9 +98,9 @@ export function CentralZone({
               <div style={{ fontSize: 11, color: SUIT_COLOR[lastPlay.suit] }}>{suitGlyph(lastPlay.suit)}</div>
             </div>
             <div style={{ marginTop: 20, textAlign: "center" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "#4a3c28" }}>{cardDisplay(lastPlay.typeKey).glyph}</span>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--card-ink-muted)" }}>{cardDisplay(lastPlay.typeKey).glyph}</span>
             </div>
-            <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--ink)" }}>
+            <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--card-ink)" }}>
               {cardDisplay(lastPlay.typeKey).name}
             </div>
             {/* pointer-events: none on the tooltip itself (CardTooltip) so it

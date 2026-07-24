@@ -35,32 +35,33 @@ export function TurnPanel({
         display: "flex",
         alignItems: "center",
         gap: 10,
-        background: "radial-gradient(120% 120% at 50% 0%, #fbf5e3, #f1e7ca)",
-        border: "1px solid var(--panel-border-2)",
+        background: "linear-gradient(#241811,#180f09)",
+        border: "1px solid var(--panel-border-3)",
         borderRadius: 12,
         padding: "8px 18px",
-        boxShadow: "0 10px 26px rgba(40,25,10,.3), inset 0 0 0 3px rgba(255,255,255,.28), inset 0 0 0 4px rgba(166,129,47,.32)",
+        boxShadow: "0 8px 24px rgba(0,0,0,.5)",
         maxWidth: "92vw",
         flexWrap: "wrap",
         justifyContent: "center",
       }}
     >
+      <div className="glow-turn" style={{ borderRadius: 12 }} />
       {currentTurnGeneralGlyph && (
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18, color: "var(--red)" }}>{currentTurnGeneralGlyph}</span>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph}</span>
       )}
       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
         เทิร์น {turnNumber} · {currentTurnPlayerName ?? "-"}
       </span>
       <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{phaseLabel}</span>
       {responderLabel && <span style={{ fontSize: 12, color: "var(--target-red)" }}>{responderLabel}</span>}
-      {actionPrompt && <span style={{ fontSize: 12, color: "var(--red)", fontWeight: 600 }}>{actionPrompt}</span>}
+      {actionPrompt && <span style={{ fontSize: 12, color: "var(--gold)", fontWeight: 600 }}>{actionPrompt}</span>}
       {remaining !== null && (
         <span
           style={{
             fontSize: 12,
             fontWeight: 700,
             color: remaining <= 5 ? "var(--target-red)" : "var(--ink-muted)",
-            background: "rgba(0,0,0,.06)",
+            background: "rgba(0,0,0,.3)",
             borderRadius: 8,
             padding: "2px 8px",
           }}

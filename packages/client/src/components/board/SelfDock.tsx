@@ -90,7 +90,7 @@ export function SelfDock({
           position: "relative",
           width: 230,
           flexShrink: 0,
-          background: "var(--card-bg-2)",
+          background: "linear-gradient(#241a11,#160f09)",
           border: `2px solid ${selfTargetSelected ? "var(--gold)" : factionColor(me.faction)}`,
           borderRadius: 6,
           overflow: "hidden",
@@ -114,14 +114,14 @@ export function SelfDock({
         </div>
         <div style={{ display: "flex", gap: 10, padding: 10 }}>
           <div className="card-back" style={{ width: 56, height: 74, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "#5c4a2d" }}>{generalDisplay(me.generalId).glyph}</span>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "rgba(240,220,180,.5)" }}>{generalDisplay(me.generalId).glyph}</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{me.name}</div>
             <div style={{ fontSize: 11, color: "var(--ink-faint)" }}>{generalDisplay(me.generalId).name} · {factionLabel(me.faction)}</div>
             <div style={{ display: "flex", gap: 3, marginTop: 7, flexWrap: "wrap" }}>
               {Array.from({ length: me.maxHp }).map((_, i) => (
-                <span key={i} className="hp-dot" style={{ width: 12, height: 12, background: i < me.hp ? "var(--red)" : "transparent" }} />
+                <span key={i} className="hp-dot" style={{ width: 12, height: 12, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
               ))}
             </div>
           </div>
@@ -132,12 +132,12 @@ export function SelfDock({
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, margin: "0 10px 8px" }}>
             <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>ไพ่ตัดสิน:</span>
             {me.judgmentZone.map((j) => (
-              <span key={j.id} style={{ fontSize: 11, background: "#b0442f", color: "#f6ecd2", borderRadius: 5, padding: "3px 8px" }}>{cardDisplay(j.typeKey).name}</span>
+              <span key={j.id} style={{ fontSize: 11, background: "var(--purple)", color: "#f0e4cc", borderRadius: 5, padding: "3px 8px" }}>{cardDisplay(j.typeKey).name}</span>
             ))}
           </div>
         )}
         {/* skills */}
-        <div style={{ flex: 1, margin: "0 10px 10px", background: "#f9f2dd", border: "1px solid #dccba0", borderRadius: 5, padding: "9px 10px" }}>
+        <div style={{ flex: 1, margin: "0 10px 10px", background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: "9px 10px" }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -153,7 +153,7 @@ export function SelfDock({
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <span style={{ fontWeight: 700, fontSize: 12, color: factionColor(me.faction) }}>{s.name}</span>
-                  {s.lordOnly && <span style={{ fontSize: 8, background: "var(--gold)", color: "#5a3d0a", borderRadius: 6, padding: "0 5px" }}>主公</span>}
+                  {s.lordOnly && <span style={{ fontSize: 8, background: "var(--gold)", color: "#3a2708", borderRadius: 6, padding: "0 5px" }}>主公</span>}
                   {used > 0 && <span style={{ fontSize: 9, color: "var(--ink-faint)" }}>ใช้แล้ว {used}</span>}
                 </div>
                 <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.4 }}>{s.description}</div>
@@ -231,7 +231,7 @@ export function SelfDock({
           )}
         </div>
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--card-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--panel-bg)", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
             {phaseLabel}
           </span>
           {showEndPhase && (
@@ -240,10 +240,7 @@ export function SelfDock({
             </button>
           )}
           <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
-          <button
-            onClick={onLeave}
-            style={{ width: "100%", padding: "6px 10px", fontSize: 11, background: "transparent", color: "var(--ink-faint)", border: "1px solid var(--card-border-2)", borderRadius: 5, cursor: "pointer" }}
-          >
+          <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: "6px 10px", fontSize: 11, borderRadius: 5 }}>
             ออกจากเกม
           </button>
         </div>
@@ -281,8 +278,8 @@ function EquipSlotTile({ label, glyph, card }: { label: string; glyph: string; c
           height: 22,
           borderRadius: 4,
           flexShrink: 0,
-          background: filled ? "var(--red)" : "#e3d7b8",
-          color: filled ? "#f6ecd2" : "#a99a70",
+          background: filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
+          color: filled ? "#2e1f08" : "#5c4a2d",
           fontFamily: "var(--font-glyph-2)",
           fontSize: 12,
           display: "flex",

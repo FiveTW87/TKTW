@@ -37,7 +37,7 @@ const SQUARE_TINT: Record<string, string> = { basic: "#b23a2e", trick: "#7a5f27"
 function CardRow({ typeKey, kind }: { typeKey: string; kind: "basic" | "trick" | "equip" }) {
   const d = cardDisplay(typeKey);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#faf3de", border: "1px solid #e2d3aa", borderRadius: 6, padding: "7px 10px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 6, padding: "7px 10px" }}>
       <span
         style={{
           width: 30,
@@ -75,11 +75,11 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
           maxHeight: "92vh",
           display: "flex",
           flexDirection: "column",
-          background: "radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6 55%, #e6d7b4 100%)",
-          border: "1px solid var(--panel-border-2)",
+          background: "linear-gradient(#241a11,#160f09)",
+          border: "1px solid var(--panel-border-3)",
           borderRadius: 12,
           overflow: "hidden",
-          boxShadow: "0 22px 60px rgba(40,25,10,.55), inset 0 0 0 5px rgba(255,255,255,.28), inset 0 0 0 6px rgba(166,129,47,.35)",
+          boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         }}
       >
         {/* header bar */}
@@ -95,7 +95,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
         {/* scroll body */}
         <div style={{ overflowY: "auto", padding: "10px 18px 6px", textAlign: "left" }}>
           {/* เป้าหมาย */}
-          <div style={{ background: "rgba(178,58,46,.08)", border: "1px solid rgba(178,58,46,.3)", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--ink)" }}>
+          <div style={{ background: "rgba(176,64,44,.15)", border: "1px solid rgba(176,64,44,.4)", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--ink)" }}>
             <b>เป้าหมาย:</b> ทุกคนได้บทบาทลับ (เห็นแต่ของตัวเอง ยกเว้นเจ้าเมืองที่เปิดเผย) แล้วผลัดกันเล่นตามเข็มนาฬิกา
             ใช้การ์ดโจมตี/ป้องกัน/ฟื้น จนกว่าฝ่ายใดฝ่ายหนึ่งบรรลุเป้าของบทบาทตัวเอง
           </div>
@@ -104,7 +104,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
           <SectionTitle glyph="爵">บทบาท & เงื่อนไขชนะ</SectionTitle>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {ROLES.map((r) => (
-              <div key={r.cn} style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "#faf3de", border: "1px solid #e2d3aa", borderRadius: 7, padding: "8px 10px" }}>
+              <div key={r.cn} style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 7, padding: "8px 10px" }}>
                 <span className={`seal ${r.cls}`} style={{ width: 22, height: 22, flexShrink: 0, fontSize: 13 }}>{r.cn}</span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)" }}>{r.name}</div>
@@ -118,7 +118,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
           <SectionTitle glyph="回">โครงสร้างเทิร์น</SectionTitle>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {PHASES.map((p, i) => (
-              <div key={p} style={{ display: "flex", alignItems: "center", gap: 5, background: "#faf3de", border: "1px solid #e2d3aa", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
+              <div key={p} style={{ display: "flex", alignItems: "center", gap: 5, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
                 <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--red)", color: "#f6ecd2", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
                 <span style={{ fontSize: 12, color: "var(--ink)" }}>{p}</span>
               </div>
@@ -143,7 +143,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
           {/* สรุป */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, margin: "16px 0 4px" }}>
             {SUMMARY.map((s) => (
-              <div key={s.title} style={{ background: "#faf3de", border: "1px solid #e2d3aa", borderRadius: 7, padding: "9px 10px" }}>
+              <div key={s.title} style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 7, padding: "9px 10px" }}>
                 <div style={{ fontSize: 15, marginBottom: 3 }}>{s.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 12, color: "var(--ink)", marginBottom: 3 }}>{s.title}</div>
                 <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.4 }}>{s.body}</div>
@@ -153,7 +153,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* footer */}
-        <div style={{ padding: "10px 18px", borderTop: "1px solid #e2d3aa", textAlign: "center" }}>
+        <div style={{ padding: "10px 18px", borderTop: "1px solid var(--panel-border-2)", textAlign: "center" }}>
           <button onClick={onClose} className="btn-primary" style={{ padding: "9px 30px", fontSize: 14 }}>เข้าใจแล้ว</button>
         </div>
       </div>

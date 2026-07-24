@@ -648,14 +648,14 @@ export function Table() {
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 60,
-            background: "radial-gradient(120% 120% at 50% 0%, #fbf5e3, #f1e7ca)",
-            border: "1px solid var(--panel-border-2)",
+            background: "linear-gradient(#241a11,#160f09)",
+            border: "1px solid var(--panel-border-3)",
             borderRadius: 10,
             padding: "10px 18px",
             fontSize: 14,
             fontWeight: 600,
             color: "var(--ink)",
-            boxShadow: "0 12px 34px rgba(40,25,10,.35), inset 0 0 0 4px rgba(255,255,255,.3), inset 0 0 0 5px rgba(166,129,47,.35)",
+            boxShadow: "0 12px 34px rgba(0,0,0,.5)",
             pointerEvents: "none",
           }}
         >
@@ -732,11 +732,11 @@ export function Table() {
           width: 40,
           height: 40,
           borderRadius: "50%",
-          background: showDebug ? "var(--red)" : "var(--card-bg-2)",
+          background: showDebug ? "var(--red)" : "linear-gradient(#241a11,#160f09)",
           border: "1px solid var(--panel-border-2)",
           cursor: "pointer",
           fontSize: 18,
-          boxShadow: "0 4px 12px rgba(40,25,10,.3)",
+          boxShadow: "0 4px 12px rgba(0,0,0,.5)",
         }}
       >
         🐛
@@ -793,9 +793,9 @@ const floatBar: React.CSSProperties = {
   maxWidth: "94vw",
   flexWrap: "wrap",
   justifyContent: "center",
-  background: "radial-gradient(120% 120% at 50% 0%, #fbf5e3, #f1e7ca)",
-  border: "1px solid var(--panel-border-2)",
+  background: "linear-gradient(#241a11,#160f09)",
+  border: "1px solid var(--panel-border-3)",
   borderRadius: 12,
   padding: "13px 20px",
-  boxShadow: "0 16px 44px rgba(40,25,10,.4), inset 0 0 0 4px rgba(255,255,255,.32), inset 0 0 0 5px rgba(166,129,47,.38)",
+  boxShadow: "0 16px 44px rgba(0,0,0,.55)",
 };

@@ -28,6 +28,11 @@
   --card-bg-2: #e6d3aa;
   --card-border: #c3ad78;
   --card-border-2: #b98a3c;
+  /* text ON the light card faces (--card-bg) — --ink itself is now light,
+     for the dark board behind the cards, so card text needs its own dark
+     tone (cards intentionally stay light/parchment against the dark table). */
+  --card-ink: #2e2013;
+  --card-ink-muted: #5c4a2d;
   --panel-bg: #241a11;
   --panel-bg-2: #160f09;
   --panel-border: #4a3620;

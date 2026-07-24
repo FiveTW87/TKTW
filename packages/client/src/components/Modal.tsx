@@ -8,7 +8,7 @@ export function ModalOverlay({ children, onClose }: { children: ReactNode; onClo
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(46,37,25,.6)",
+        background: "rgba(12,8,5,.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -42,12 +42,11 @@ export function ModalPanel({
       style={{
         width,
         maxWidth: "90vw",
-        background: "radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6)",
-        border: "1px solid var(--panel-border-2)",
+        background: "linear-gradient(#241a11,#160f09)",
+        border: "1px solid var(--panel-border-3)",
         borderRadius: 12,
         padding: "26px 30px",
-        boxShadow:
-          "0 22px 60px rgba(40,25,10,.55), inset 0 0 0 5px rgba(255,255,255,.28), inset 0 0 0 6px rgba(166,129,47,.35)",
+        boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         textAlign: "center",
       }}
     >

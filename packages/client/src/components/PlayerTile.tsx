@@ -61,11 +61,11 @@ export function PlayerTile({
         style={{
           position: "relative",
           width: 84,
-          background: "var(--card-bg-2)",
-          border: "1px solid var(--card-border-2)",
+          background: "linear-gradient(#241a11,#180f09)",
+          border: "1px solid var(--panel-border-2)",
           borderRadius: 6,
           overflow: "hidden",
-          boxShadow: "0 3px 10px rgba(60,40,15,.14)",
+          boxShadow: "0 4px 12px rgba(0,0,0,.5)",
           opacity: player.alive ? 1 : 0.6,
           cursor: targetable ? "pointer" : "default",
           textAlign: "center",
@@ -75,12 +75,12 @@ export function PlayerTile({
           {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span> : <span style={{ fontFamily: "var(--font-glyph)", fontSize: 11, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>}
         </div>
         <div className="card-back" style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "6px auto 4px" }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "#5c4a2d" }}>{d.glyph}</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
         </div>
         <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 4px" }}>{player.name}</div>
         <div style={{ display: "flex", gap: 1, justifyContent: "center", margin: "3px 0 6px", flexWrap: "wrap" }}>
           {Array.from({ length: player.maxHp }).map((_, i) => (
-            <span key={i} className="hp-dot" style={{ width: 6, height: 6, background: i < player.hp ? "var(--red)" : "transparent" }} />
+            <span key={i} className="hp-dot" style={{ width: 6, height: 6, background: i < player.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
           ))}
         </div>
         {isCurrentTurn && <div className="glow-turn" />}
@@ -96,14 +96,14 @@ export function PlayerTile({
           <button
             onClick={(e) => { e.stopPropagation(); onInspect(); }}
             title="ดูอุปกรณ์/รายละเอียด"
-            style={{ position: "absolute", bottom: 2, right: 2, zIndex: 3, width: 16, height: 16, borderRadius: "50%", background: "rgba(246,236,210,.9)", border: "1px solid var(--panel-border-2)", cursor: "pointer", fontSize: 8, lineHeight: 1, padding: 0 }}
+            style={{ position: "absolute", bottom: 2, right: 2, zIndex: 3, width: 16, height: 16, borderRadius: "50%", background: "rgba(20,14,9,.85)", border: "1px solid var(--panel-border-2)", cursor: "pointer", fontSize: 8, lineHeight: 1, padding: 0 }}
           >
             🔍
           </button>
         )}
         {!player.alive && (
-          <div style={{ position: "absolute", inset: 0, background: "rgba(46,37,25,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 12, color: "rgba(246,236,210,.9)", fontWeight: 900 }}>陣亡</span>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(12,8,5,.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 12, color: "#e0917a", fontWeight: 900 }}>陣亡</span>
           </div>
         )}
       </div>
@@ -117,11 +117,11 @@ export function PlayerTile({
         position: "relative",
         flex: 1,
         minWidth: isCompact ? 118 : 150,
-        background: "var(--card-bg-2)",
-        border: "1px solid var(--card-border-2)",
+        background: "linear-gradient(#241a11,#180f09)",
+        border: "1px solid var(--panel-border-2)",
         borderRadius: 6,
         overflow: "hidden",
-        boxShadow: "0 3px 10px rgba(60,40,15,.14)",
+        boxShadow: "0 4px 12px rgba(0,0,0,.5)",
         opacity: player.alive ? 1 : 0.6,
         cursor: targetable ? "pointer" : "default",
       }}
@@ -143,7 +143,7 @@ export function PlayerTile({
             flexShrink: 0,
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "#5c4a2d" }}>{d.glyph}</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -161,13 +161,13 @@ export function PlayerTile({
               <span
                 key={i}
                 className="hp-dot"
-                style={{ width: 8, height: 8, background: i < player.hp ? "var(--red)" : "transparent" }}
+                style={{ width: 8, height: 8, background: i < player.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }}
               />
             ))}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--ink-muted)" }}>
-              <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(#c0463a,#9a3128)", display: "inline-block" }} />
+              <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(var(--gold-deep),var(--gold-bronze))", display: "inline-block" }} />
               {handCount}
             </span>
             {equipEntries.map(([slot, card]) => (
@@ -177,7 +177,7 @@ export function PlayerTile({
           {player.judgmentZone.length > 0 && (
             <div style={{ display: "flex", gap: 3, marginTop: 5, flexWrap: "wrap" }}>
               {player.judgmentZone.map((j) => (
-                <span key={j.id} style={{ fontSize: 9, background: "#b0442f", color: "#f6ecd2", borderRadius: 2, padding: "1px 4px" }}>
+                <span key={j.id} style={{ fontSize: 9, background: "var(--purple)", color: "#f0e4cc", borderRadius: 2, padding: "1px 4px" }}>
                   {cardDisplay(j.typeKey).glyph}
                 </span>
               ))}
@@ -202,7 +202,7 @@ export function PlayerTile({
             lineHeight: 1,
             padding: "2px 6px",
             borderRadius: 8,
-            background: inRange ? "rgba(60,125,82,.92)" : "rgba(120,90,40,.5)",
+            background: inRange ? "rgba(60,125,82,.92)" : "rgba(60,44,24,.75)",
             color: "#f6ecd2",
           }}
         >
@@ -247,7 +247,7 @@ export function PlayerTile({
             width: 20,
             height: 20,
             borderRadius: "50%",
-            background: "rgba(246,236,210,.9)",
+            background: "rgba(20,14,9,.85)",
             border: "1px solid var(--panel-border-2)",
             cursor: "pointer",
             fontSize: 10,
@@ -264,15 +264,15 @@ export function PlayerTile({
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(46,37,25,.55)",
+            background: "rgba(12,8,5,.65)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 22, color: "rgba(246,236,210,.9)", fontWeight: 900 }}>陣亡</span>
-          {roleDisplay(player.role) && <span style={{ fontSize: 11, color: "rgba(246,236,210,.9)", fontWeight: 700 }}>{roleDisplay(player.role)!.name}</span>}
+          <span style={{ fontFamily: "var(--font-glyph-2)", fontSize: 22, color: "#e0917a", fontWeight: 900 }}>陣亡</span>
+          {roleDisplay(player.role) && <span style={{ fontSize: 11, color: "#f0e4cc", fontWeight: 700 }}>{roleDisplay(player.role)!.name}</span>}
         </div>
       )}
     </div>
@@ -297,8 +297,8 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
         height: 16,
         padding: "0 3px",
         borderRadius: 3,
-        background: "#efe4c8",
-        border: "1px solid var(--panel-border-2)",
+        background: "#2a2016",
+        border: "1px solid var(--panel-border-3)",
         fontSize: 10,
         lineHeight: 1,
         cursor: "help",

@@ -3,10 +3,10 @@ import type { Card } from "@tktw/shared";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../data/cardNames";
 
 const SUIT_COLOR: Record<string, string> = {
-  heart: "#a8322a",
-  diamond: "#a8322a",
-  spade: "#2e2519",
-  club: "#2e2519",
+  heart: "#8a2f22",
+  diamond: "#8a2f22",
+  spade: "#2e2013",
+  club: "#2e2013",
 };
 
 export function HandCard({
@@ -53,9 +53,9 @@ export function HandCard({
         <div style={{ fontSize: 11, color }}>{suitGlyph(card.suit)}</div>
       </div>
       <div style={{ marginTop: 20, textAlign: "center" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 28, color: "#4a3c28" }}>{d.glyph}</span>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
       </div>
-      <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 10, color: "var(--ink)" }}>
+      <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 10, color: "var(--card-ink)" }}>
         {d.name}
       </div>
       {hovered && info && <CardTooltip name={d.name} info={info} />}

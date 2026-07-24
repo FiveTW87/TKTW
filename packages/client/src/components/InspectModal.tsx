@@ -22,11 +22,11 @@ export function InspectModal({ player, onClose }: { player: PlayerView; onClose:
         style={{
           width: 360,
           maxWidth: "90vw",
-          background: "radial-gradient(120% 90% at 50% 0%, #f7f0dc, #efe3c6)",
+          background: "linear-gradient(#241a11,#160f09)",
           border: `2px solid ${color}`,
           borderRadius: 12,
           overflow: "hidden",
-          boxShadow: "0 22px 60px rgba(40,25,10,.55)",
+          boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         }}
       >
         <div style={{ height: 38, background: color, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
@@ -170,7 +170,7 @@ export function InspectModal({ player, onClose }: { player: PlayerView; onClose:
             style={{
               width: "100%",
               marginTop: 16,
-              background: "var(--card-bg-2)",
+              background: "linear-gradient(#241a11,#160f09)",
               color: "var(--ink-muted)",
               border: "1px solid var(--panel-border-2)",
               borderRadius: 6,

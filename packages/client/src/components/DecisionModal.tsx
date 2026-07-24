@@ -6,19 +6,19 @@ import { describeDecision } from "../data/decisionCopy";
 import { clientCountsAs } from "../data/conversions";
 
 const primaryBtn: React.CSSProperties = {
-  background: "linear-gradient(#c0463a,#9a3128)",
-  color: "#f6ecd2",
-  border: "1px solid var(--gold-light)",
+  background: "radial-gradient(circle at 42% 30%, var(--gold-deep), var(--gold-bronze))",
+  color: "#2e1f08",
+  border: "2px solid var(--gold-light)",
   borderRadius: 6,
   padding: "11px 22px",
   fontSize: 15,
-  fontWeight: 700,
+  fontWeight: 800,
   cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(90,30,20,.2)",
+  boxShadow: "0 4px 12px rgba(0,0,0,.4)",
 };
 
 const secondaryBtn: React.CSSProperties = {
-  background: "var(--card-bg-2)",
+  background: "linear-gradient(#241a11,#160f09)",
   color: "var(--ink-muted)",
   border: "1px solid var(--panel-border-2)",
   borderRadius: 6,
