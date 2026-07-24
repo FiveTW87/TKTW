@@ -7,7 +7,7 @@ import { GameHistoryPanel } from "../components/board/GameHistoryPanel";
 import { DecisionModal } from "../components/DecisionModal";
 import { InspectModal } from "../components/InspectModal";
 import { DeathDialog } from "../components/DeathDialog";
-import { ModalOverlay, ModalPanel } from "../components/Modal";
+import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
 import { SkillToast, type ToastData } from "../components/SkillToast";
 import { describeDecision } from "../data/decisionCopy";
 import { cardDisplay } from "../data/cardNames";
@@ -29,6 +29,28 @@ const PHASE_LABEL: Record<string, string> = {
   discard: "เฟสทิ้งไพ่",
   end: "เฟสจบเทิร์น",
 };
+
+function LeaveGameConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <ModalOverlay onClose={onCancel}>
+      <ModalPanel width={380}>
+        <ModalGlyph>退</ModalGlyph>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>ออกจากเกมตอนนี้?</div>
+        <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 18 }}>
+          ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้
+        </div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button onClick={onConfirm} className="btn-danger" style={{ padding: "10px 22px", fontSize: 14 }}>
+            ยืนยัน
+          </button>
+          <button onClick={onCancel} className="btn-secondary" style={{ padding: "10px 22px", fontSize: 14 }}>
+            ยกเลิก
+          </button>
+        </div>
+      </ModalPanel>
+    </ModalOverlay>
+  );
+}
 
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
@@ -63,6 +85,7 @@ export function Table() {
   const [showDiscard, setShowDiscard] = useState(false);
   const [playChoices, setPlayChoices] = useState<{ card: Card; options: MainActionPlay[] } | null>(null);
   const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
   const prevHandIdsRef = useRef<Set<string>>(new Set());
   const autoHandledRef = useRef<string | null>(null);
@@ -570,11 +593,7 @@ export function Table() {
             phaseLabel={phaseLabel}
             showEndPhase={isMyDecision && isMainAction}
             onEndPhase={submitEndPhase}
-            onLeave={() => {
-              if (window.confirm("ออกตอนนี้ = ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้ ต้องการออกหรือไม่?")) {
-                void leaveRoom();
-              }
-            }}
+            onLeave={() => setConfirmingLeave(true)}
             equipSlots={equipSlotsWithCards}
           />
         }
@@ -669,6 +688,12 @@ export function Table() {
           role={me.role}
           onSpectate={() => setDeathDialogDismissedFor(gameView.matchId)}
           onLeave={() => void leaveRoom()}
+        />
+      )}
+      {confirmingLeave && (
+        <LeaveGameConfirmDialog
+          onConfirm={() => { setConfirmingLeave(false); void leaveRoom(); }}
+          onCancel={() => setConfirmingLeave(false)}
         />
       )}
       {playChoices && (
