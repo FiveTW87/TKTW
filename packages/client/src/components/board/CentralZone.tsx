@@ -51,11 +51,22 @@ export function CentralZone({
   const [hoveredLast, setHoveredLast] = useState(false);
   const lastInfo = lastPlay ? cardInfo(lastPlay.typeKey) : undefined;
 
+  const CORNER_BRACKET: React.CSSProperties = { position: "absolute", width: 16, height: 16, opacity: 0.5, pointerEvents: "none" };
+  const DIVIDER = (
+    <div style={{ alignSelf: "stretch", width: 1, background: "linear-gradient(180deg,transparent,rgba(217,165,49,.28),transparent)", flexShrink: 0 }} />
+  );
+
   return (
     <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 34, padding: 20, minHeight: 132, position: "relative" }}>
       <div style={{ position: "absolute", top: 8, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-glyph)", fontSize: 40, color: "rgba(120,90,40,.1)", letterSpacing: 8 }}>
         三國鼎立
       </div>
+      {/* corner brackets — a light picture-frame accent matching the mockup's
+          more ornate panel edges, subtler than a full border. */}
+      <div style={{ ...CORNER_BRACKET, top: 6, left: 6, borderTop: "1px solid var(--gold)", borderLeft: "1px solid var(--gold)" }} />
+      <div style={{ ...CORNER_BRACKET, top: 6, right: 6, borderTop: "1px solid var(--gold)", borderRight: "1px solid var(--gold)" }} />
+      <div style={{ ...CORNER_BRACKET, bottom: 6, left: 6, borderBottom: "1px solid var(--gold)", borderLeft: "1px solid var(--gold)" }} />
+      <div style={{ ...CORNER_BRACKET, bottom: 6, right: 6, borderBottom: "1px solid var(--gold)", borderRight: "1px solid var(--gold)" }} />
 
       {/* draw pile — also the "flip your judgment card" affordance */}
       <div style={{ textAlign: "center", zIndex: 1, position: "relative" }}>
@@ -66,7 +77,7 @@ export function CentralZone({
           </div>
         )}
         <div
-          className="pile-pulse"
+          className={pendingReveal ? "pile-pulse" : undefined}
           onClick={pendingReveal && !busy ? onReveal : undefined}
           role={pendingReveal ? "button" : undefined}
           aria-label={pendingReveal ? "เปิดการ์ดตัดสิน" : undefined}
@@ -89,6 +100,8 @@ export function CentralZone({
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
       </div>
+
+      {DIVIDER}
 
       {/* last played card — hover/tap to preview its effect text */}
       <div
@@ -136,6 +149,8 @@ export function CentralZone({
         )}
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
       </div>
+
+      {DIVIDER}
 
       {/* discard pile — click to browse the full pile */}
       <div style={{ textAlign: "center", zIndex: 1 }}>

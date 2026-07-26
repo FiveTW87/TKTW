@@ -21,6 +21,7 @@ export interface CardTapState {
 // this component is presentational plumbing over that state.
 export function SelfDock({
   me,
+  isMyTurn,
   skills,
   myHand,
   drawnIds,
@@ -50,6 +51,7 @@ export function SelfDock({
   equipSlots,
 }: {
   me: PlayerView;
+  isMyTurn: boolean;
   skills: SkillDisplay[];
   myHand: Card[];
   drawnIds: Set<string>;
@@ -106,6 +108,7 @@ export function SelfDock({
               gap: 8,
             }}
           >
+            {isMyTurn && <div className="glow-turn" style={{ borderRadius: 12 }} />}
             {/* portrait, with the seat number badge (gold — self, per SeatTile.dc.html) */}
             <div
               className="card-back"

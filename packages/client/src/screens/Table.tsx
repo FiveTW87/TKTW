@@ -246,9 +246,16 @@ export function Table() {
     } else showDecisionModal = true;
   }
 
-  // A judgment reveal is answered by tapping the draw pile itself (see the mat).
-  const pendingReveal = isMyDecision && pending?.kind === "judgmentReveal";
-  const revealCopy = pendingReveal && pending ? describeDecision(pending, gameView) : null;
+  // A judgment reveal AND a mandatory draw are both answered by tapping the
+  // draw pile itself (see the mat) instead of a separate floating dialog.
+  const pendingJudgmentReveal = isMyDecision && pending?.kind === "judgmentReveal";
+  const pendingDraw = isMyDecision && pending?.kind === "drawCard";
+  const pendingPileAction = pendingJudgmentReveal || pendingDraw;
+  const revealCopy = pendingJudgmentReveal && pending ? describeDecision(pending, gameView) : null;
+  const drawCount = pendingDraw && pending ? Number((pending.data as { count?: number }).count ?? 2) : 0;
+  const drawSkillNames = pendingDraw && pending ? ((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s) : [];
+  const pileActionTitle = pendingJudgmentReveal ? revealCopy?.title : pendingDraw ? `จั่ว ${drawCount} ใบ` : undefined;
+  const drawActionPrompt = pendingDraw ? `เฟสจั่ว — จั่ว ${drawCount} ใบ` + (drawSkillNames.length ? ` ⚡ ${drawSkillNames.join(", ")}` : "") : null;
 
   const selecting = isMyDecision && (isMainAction || isDiscardTo);
   const selectedPlayCard = !skillMode ? myHand.find((c) => c.id === selectedCardIds[0]) : undefined;
@@ -476,7 +483,6 @@ export function Table() {
   };
   const submitEndPhase = () => pending && void runAnswer({ decisionId: pending.id, choice: "endPhase" });
   const submitDiscard = () => pending && void runAnswer({ decisionId: pending.id, cardIds: selectedCardIds });
-  const submitDraw = () => pending && void runAnswer({ decisionId: pending.id, choice: "draw" });
   const answerActivate = (accept: boolean) => {
     if (!pending) return;
     autoHandledRef.current = pending.id;
@@ -525,18 +531,20 @@ export function Table() {
 
   const selectingLabel = skillMode ? "เลือกการ์ดสำหรับสกิล" : zhangbaMode ? "เลือกการ์ด 2 ใบสำหรับทวน" : isDiscardTo ? "เลือกการ์ดที่จะทิ้ง" : "แตะการ์ดเพื่อเล่น";
   const phaseLabel = (gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase ?? "";
+  const isMyTurn = gameView.currentTurnPlayerId === me.id;
   const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
   const zhangbaAvailable = me.equipment.weapon?.typeKey === "zhangba" && isMyDecision && isMainAction;
 
   const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="war-table-bg" style={{ position: "relative" }}>
+      <div className="war-table-rays" />
       {/* Board + history share ONE flex row (column when narrow) so history
           always owns its own reserved column and never floats over the board
           — previously a position:fixed sidebar could overlap GameBoard's own
           independently-centered viewport-height block at normal desktop widths. */}
-      <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh" }}>
+      <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh", position: "relative" }}>
       <GameBoard
         gameView={gameView}
         me={me}
@@ -550,16 +558,21 @@ export function Table() {
         weaponRangeSelf={weaponRange(me)}
         phaseLabel={phaseLabel}
         responderLabel={responderLabel}
-        actionPrompt={null}
-        pendingReveal={!!pendingReveal}
-        revealTitle={revealCopy?.title}
-        onReveal={() => pending && void runAnswer({ decisionId: pending.id, choice: "reveal" })}
+        actionPrompt={drawActionPrompt}
+        pendingReveal={pendingPileAction}
+        revealTitle={pileActionTitle}
+        onReveal={() => {
+          if (!pending) return;
+          if (pending.kind === "drawCard") void runAnswer({ decisionId: pending.id, choice: "draw" });
+          else void runAnswer({ decisionId: pending.id, choice: "reveal" });
+        }}
         busy={busy}
         lastPlay={lastPlay}
         onOpenDiscard={() => setShowDiscard(true)}
         selfDock={
           <SelfDock
             me={me}
+            isMyTurn={isMyTurn}
             skills={skills}
             myHand={myHand}
             drawnIds={drawnIds}
@@ -601,22 +614,6 @@ export function Table() {
 
       <GameHistoryPanel gameView={gameView} narrow={narrow} />
       </div>
-
-      {/* draw bar (ENG-004): press to draw; mandatory skills are shown as a banner */}
-      {isMyDecision && pending?.kind === "drawCard" && (
-        <div className="anim-rise" style={floatBar}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>抽</span>
-          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
-            เฟสจั่ว — จั่ว {Number((pending.data as { count?: number }).count ?? 2)} ใบ
-            {((pending.data as { skills?: string[] }).skills ?? []).length > 0 && (
-              <span style={{ color: "var(--red)", marginLeft: 8 }}>
-                ⚡ {((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s).join(", ")}
-              </span>
-            )}
-          </span>
-          <button onClick={submitDraw} disabled={busy} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>จั่วการ์ด</button>
-        </div>
-      )}
 
       {/* confirm bar (tap-select flow) */}
       {showConfirmBar && (

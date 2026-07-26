@@ -39,7 +39,7 @@ export function TurnPanel({
         border: "1px solid var(--panel-border-3)",
         borderRadius: 12,
         padding: "8px 18px",
-        boxShadow: "0 8px 24px rgba(0,0,0,.5)",
+        boxShadow: "0 8px 24px rgba(0,0,0,.5), inset 0 0 0 1px rgba(217,165,49,.1)",
         maxWidth: "92vw",
         flexWrap: "wrap",
         justifyContent: "center",
