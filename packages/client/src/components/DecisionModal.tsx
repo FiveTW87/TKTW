@@ -4,28 +4,33 @@ import { ModalOverlay, ModalPanel, ModalGlyph } from "./Modal";
 import { HandCard } from "./HandCard";
 import { describeDecision } from "../data/decisionCopy";
 import { clientCountsAs } from "../data/conversions";
+import { useDeviceMode } from "../lib/useDeviceMode";
 
-const primaryBtn: React.CSSProperties = {
-  background: "radial-gradient(circle at 42% 30%, var(--gold-deep), var(--gold-bronze))",
-  color: "#2e1f08",
-  border: "2px solid var(--gold-light)",
-  borderRadius: 6,
-  padding: "11px 22px",
-  fontSize: 15,
-  fontWeight: 800,
-  cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(0,0,0,.4)",
-};
-
-const secondaryBtn: React.CSSProperties = {
-  background: "linear-gradient(#241a11,#160f09)",
-  color: "var(--ink-muted)",
-  border: "1px solid var(--panel-border-2)",
-  borderRadius: 6,
-  padding: "11px 20px",
-  fontSize: 14,
-  cursor: "pointer",
-};
+function useBtnStyles(): { primaryBtn: React.CSSProperties; secondaryBtn: React.CSSProperties } {
+  const { compact } = useDeviceMode();
+  return {
+    primaryBtn: {
+      background: "radial-gradient(circle at 42% 30%, var(--gold-deep), var(--gold-bronze))",
+      color: "#2e1f08",
+      border: "2px solid var(--gold-light)",
+      borderRadius: 6,
+      padding: compact ? "7px 14px" : "11px 22px",
+      fontSize: compact ? 12.5 : 15,
+      fontWeight: 800,
+      cursor: "pointer",
+      boxShadow: "0 4px 12px rgba(0,0,0,.4)",
+    },
+    secondaryBtn: {
+      background: "linear-gradient(#241a11,#160f09)",
+      color: "var(--ink-muted)",
+      border: "1px solid var(--panel-border-2)",
+      borderRadius: 6,
+      padding: compact ? "7px 12px" : "11px 20px",
+      fontSize: compact ? 11.5 : 14,
+      cursor: "pointer",
+    },
+  };
+}
 
 export function DecisionModal({
   pending,
@@ -42,6 +47,8 @@ export function DecisionModal({
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { compact } = useDeviceMode();
+  const { primaryBtn, secondaryBtn } = useBtnStyles();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -56,16 +63,17 @@ export function DecisionModal({
   };
 
   const shape = copy.shape;
+  const wideShape = shape.kind === "pickFromPlayer" || shape.kind === "anonymousPicker" || shape.kind === "pickFromRevealed" || shape.kind === "pickPlayers";
 
   return (
     <ModalOverlay>
-      <ModalPanel width={shape.kind === "pickFromPlayer" || shape.kind === "anonymousPicker" || shape.kind === "pickFromRevealed" || shape.kind === "pickPlayers" ? 520 : 440}>
+      <ModalPanel width={compact ? (wideShape ? 340 : 300) : wideShape ? 520 : 440}>
         <ModalGlyph>{copy.icon}</ModalGlyph>
-        <div style={{ fontSize: 15, color: "var(--ink)", lineHeight: 1.5, marginBottom: copy.hint ? 4 : 18 }}>
+        <div style={{ fontSize: compact ? 12.5 : 15, color: "var(--ink)", lineHeight: 1.4, marginBottom: copy.hint ? 3 : (compact ? 10 : 18) }}>
           {copy.title}
         </div>
         {copy.hint && (
-          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 18 }}>{copy.hint}</div>
+          <div style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-faint)", marginBottom: compact ? 10 : 18 }}>{copy.hint}</div>
         )}
 
         {shape.kind === "card" && (
@@ -83,7 +91,7 @@ export function DecisionModal({
         )}
 
         {shape.kind === "choice" && (
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: compact ? 8 : 12, justifyContent: "center", flexWrap: "wrap" }}>
             {shape.options.map((opt) => (
               <button
                 key={opt.value}
@@ -103,7 +111,7 @@ export function DecisionModal({
         )}
 
         {shape.kind === "target" && (
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
             {gameView.players
               .filter((p) => p.alive)
               .map((p) => (
@@ -171,6 +179,8 @@ function CardShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
+  const { compact } = useDeviceMode();
+  const { primaryBtn, secondaryBtn } = useBtnStyles();
   // A card-conversion general (e.g. Guan Yu red→สังหาร, Zhen Ji black→หลบ) may
   // answer with a card whose literal type differs — offer those too. The engine
   // derives the type itself for reactive responses, so we submit just the id.
@@ -215,8 +225,8 @@ function CardShape({
     const others = gameView.players.filter((p) => p.alive && p.id !== gameView.viewerPlayerId);
     return (
       <div>
-        <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 12 }}>เลือกเป้าหมายใหม่</div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{ fontSize: compact ? 11 : 13, color: "var(--ink-muted)", marginBottom: compact ? 8 : 12 }}>เลือกเป้าหมายใหม่</div>
+        <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
           {others.map((p) => (
             <button
               key={p.id}
@@ -235,18 +245,18 @@ function CardShape({
   return (
     <div>
       {pool.length === 0 && shape.neededType ? (
-        <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 14, fontStyle: "italic" }}>
+        <div style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-faint)", marginBottom: compact ? 8 : 14, fontStyle: "italic" }}>
           ไม่มีการ์ดที่ใช้ได้ในมือ
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: compact ? 5 : 8, justifyContent: "center", flexWrap: "wrap", marginBottom: compact ? 10 : 16 }}>
           {((shape.requiredCount || shape.multi) && !shape.neededType ? myHand : pool).map((c) => (
-            <HandCard key={c.id} card={c} selected={selectedCardIds.includes(c.id)} onClick={() => toggle(c.id)} />
+            <HandCard key={c.id} card={c} selected={selectedCardIds.includes(c.id)} onClick={() => toggle(c.id)} compact={compact} />
           ))}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: compact ? 8 : 12, justifyContent: "center" }}>
         {(wantsExact || shape.multi) && (
           <button disabled={busy || !canConfirmCards} style={primaryBtn} onClick={confirmCards}>
             {shape.confirmLabel ?? "ยืนยัน"}
@@ -273,6 +283,8 @@ function PickFromPlayerShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
+  const { compact } = useDeviceMode();
+  const { primaryBtn } = useBtnStyles();
   const targetId = typeof data.targetId === "string" ? data.targetId : undefined;
   const target = gameView.players.find((p) => p.id === targetId);
   const handCount = typeof data.handCount === "number" ? data.handCount : (target ? 0 : 0);
@@ -283,9 +295,9 @@ function PickFromPlayerShape({
   return (
     <div>
       {visible.length > 0 && (
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: compact ? 5 : 8, justifyContent: "center", flexWrap: "wrap", marginBottom: compact ? 10 : 16 }}>
           {visible.map((c) => (
-            <HandCard key={c.id} card={c} selected={false} onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })} />
+            <HandCard key={c.id} card={c} selected={false} onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })} compact={compact} />
           ))}
         </div>
       )}
@@ -308,6 +320,8 @@ function PickFromRevealedShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
+  const { compact } = useDeviceMode();
+  const { primaryBtn } = useBtnStyles();
   const options = (Array.isArray(data.options) ? data.options : []) as Card[];
   if (options.length === 0) {
     return (
@@ -317,13 +331,14 @@ function PickFromRevealedShape({
     );
   }
   return (
-    <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
       {options.map((c) => (
         <HandCard
           key={c.id}
           card={c}
           selected={false}
           onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })}
+          compact={compact}
         />
       ))}
     </div>
@@ -347,6 +362,8 @@ function PickPlayersShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
+  const { compact } = useDeviceMode();
+  const { primaryBtn, secondaryBtn } = useBtnStyles();
   const eligible = (Array.isArray(data.eligible) ? data.eligible : []) as Array<{ id: string; count: number }>;
   const [picked, setPicked] = useState<string[]>([]);
   const name = (id: string) => gameView.players.find((p) => p.id === id)?.name ?? id;
@@ -359,7 +376,7 @@ function PickPlayersShape({
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: compact ? 5 : 8, justifyContent: "center", flexWrap: "wrap", marginBottom: compact ? 10 : 16 }}>
         {eligible.map((e) => {
           const on = picked.includes(e.id);
           return (
@@ -401,6 +418,8 @@ function OrderCardsShape({
   busy: boolean;
   onSubmit: (fields: Omit<PlayerAnswer, "playerId" | "decisionId">) => Promise<void>;
 }) {
+  const { compact } = useDeviceMode();
+  const { primaryBtn, secondaryBtn } = useBtnStyles();
   const options = (Array.isArray(data.options) ? data.options : []) as Card[];
   const byId = new Map(options.map((c) => [c.id, c]));
   const originalOrder = options.map((c) => c.id);
@@ -410,9 +429,9 @@ function OrderCardsShape({
 
   if (!ordered) {
     return (
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
         {options.map((c) => (
-          <HandCard key={c.id} card={c} selected={false} onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })} />
+          <HandCard key={c.id} card={c} selected={false} onClick={busy ? undefined : () => void onSubmit({ cardIds: [c.id] })} compact={compact} />
         ))}
       </div>
     );
@@ -448,10 +467,10 @@ function OrderCardsShape({
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 8, textAlign: "center" }}>
+      <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-faint)", marginBottom: compact ? 5 : 8, textAlign: "center" }}>
         {tapMode ? "แตะการ์ดตามลำดับที่ต้องการ" : "ลากการ์ดเพื่อสลับตำแหน่ง"}
       </div>
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: compact ? 5 : 8, justifyContent: "center", flexWrap: "wrap", marginBottom: compact ? 10 : 16 }}>
         {cardsToShow.map((c) => {
           const pos = order.indexOf(c.id);
           return (
@@ -467,7 +486,7 @@ function OrderCardsShape({
               onDrop={(e) => e.preventDefault()}
               onDragEnd={() => setDragId(null)}
             >
-              <HandCard card={c} selected={tapMode && pos >= 0} onClick={tapMode ? () => tapCard(c.id) : undefined} />
+              <HandCard card={c} selected={tapMode && pos >= 0} onClick={tapMode ? () => tapCard(c.id) : undefined} compact={compact} />
               {pos >= 0 && (
                 <span
                   style={{
@@ -494,7 +513,7 @@ function OrderCardsShape({
           );
         })}
       </div>
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: compact ? 8 : 12, justifyContent: "center", flexWrap: "wrap" }}>
         <button disabled={busy} style={secondaryBtn} onClick={toggleMode}>
           {tapMode ? "🖱 สลับเป็นลากแทน" : "👆 สลับเป็นแตะเรียงแทน"}
         </button>

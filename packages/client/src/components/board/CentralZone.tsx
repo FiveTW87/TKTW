@@ -18,27 +18,27 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        width: compact ? 52 : 72,
-        height: compact ? 72 : 100,
+        width: compact ? 42 : 72,
+        height: compact ? 58 : 100,
         margin: "0 auto",
         borderRadius: 6,
         background: "var(--card-bg)",
         border: "1px solid var(--card-border-2)",
         boxShadow: "0 6px 16px rgba(60,40,15,.22)",
-        padding: compact ? 4 : 6,
+        padding: compact ? 3 : 6,
         position: "relative",
         transform: `rotate(${rotate}deg)`,
         cursor: info ? "help" : "default",
       }}
     >
-      <div style={{ position: "absolute", top: 4, left: 6, lineHeight: 1, textAlign: "center" }}>
-        <div style={{ fontWeight: 700, fontSize: 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
-        <div style={{ fontSize: 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
+      <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
+        <div style={{ fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
       </div>
-      <div style={{ marginTop: compact ? 12 : 20, textAlign: "center" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 20 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
+      <div style={{ marginTop: compact ? 9 : 20, textAlign: "center" }}>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
       </div>
-      <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--card-ink)" }}>
+      <div style={{ position: "absolute", bottom: compact ? 3 : 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: compact ? 7 : 9, color: "var(--card-ink)" }}>
         {cardDisplay(card.typeKey).name}
       </div>
       {/* pointer-events: none on the tooltip itself (CardTooltip) so it never
@@ -101,7 +101,7 @@ export function CentralZone({
   );
 
   return (
-    <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: compact ? 12 : 34, padding: compact ? 8 : 20, minHeight: compact ? 76 : 132, position: "relative" }}>
+    <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: compact ? 9 : 34, padding: compact ? 6 : 20, minHeight: compact ? 62 : 132, position: "relative" }}>
       <div style={{ position: "absolute", top: 8, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-glyph)", fontSize: 40, color: "rgba(120,90,40,.1)", letterSpacing: 8 }}>
         三國鼎立
       </div>
@@ -127,8 +127,8 @@ export function CentralZone({
           aria-label={pendingReveal ? "เปิดการ์ดตัดสิน" : undefined}
           style={{
             position: "relative",
-            width: compact ? 46 : 62,
-            height: compact ? 64 : 88,
+            width: compact ? 38 : 62,
+            height: compact ? 52 : 88,
             borderRadius: 6,
             background: "linear-gradient(150deg,#2a1d12,#1a110a)",
             border: "1px solid var(--panel-border-3)",
@@ -139,25 +139,25 @@ export function CentralZone({
             cursor: pendingReveal ? "pointer" : "default",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 20 : 30, color: "var(--gold-light)" }}>國</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--gold-light)" }}>國</span>
           {pendingReveal && <div className="glow-target" />}
         </div>
-        <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
+        <div style={{ marginTop: compact ? 5 : 8, fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
       </div>
 
       {DIVIDER}
 
       {/* last played card — hover/tap to preview its effect text */}
-      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 64 : 96 }}>
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 52 : 96 }}>
         <ZoneLabel>เพิ่งเล่น</ZoneLabel>
         {lastPlay ? <CardFace card={lastPlay} rotate={-4} compact={compact} /> : <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>}
-        <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
+        <div style={{ marginTop: compact ? 5 : 8, fontSize: compact ? 9.5 : 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
       </div>
 
       {DIVIDER}
 
       {/* discard pile — its own top card face; click to browse the full pile */}
-      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 64 : 96 }}>
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 52 : 96 }}>
         <ZoneLabel>กองทิ้ง</ZoneLabel>
         <button
           onClick={() => discardCount > 0 && onOpenDiscard()}
@@ -167,11 +167,11 @@ export function CentralZone({
           {discardTop ? (
             <CardFace card={discardTop} rotate={4} compact={compact} />
           ) : (
-            <div style={{ width: compact ? 46 : 62, height: compact ? 64 : 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 22, color: "rgba(120,90,40,.4)" }}>棄</span>
+            <div style={{ width: compact ? 42 : 62, height: compact ? 58 : 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 22, color: "rgba(120,90,40,.4)" }}>棄</span>
             </div>
           )}
-          <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองทิ้ง · <b>{discardCount}</b> {discardCount > 0 && <span style={{ color: "var(--red)" }}>· ดู</span>}</div>
+          <div style={{ marginTop: compact ? 5 : 8, fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)" }}>กองทิ้ง · <b>{discardCount}</b> {discardCount > 0 && <span style={{ color: "var(--red)" }}>· ดู</span>}</div>
         </button>
       </div>
     </div>

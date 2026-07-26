@@ -37,13 +37,13 @@ export function HandCard({
       className={`hand-card${animateIn ? " anim-draw" : ""}`}
       style={{
         position: "relative",
-        width: compact ? 54 : 76,
-        height: compact ? 76 : 108,
+        width: compact ? 44 : 76,
+        height: compact ? 62 : 108,
         borderRadius: 6,
         background: "var(--card-bg)",
         border: `2px solid ${selected ? "var(--gold)" : "var(--card-border)"}`,
         boxShadow: selected ? "0 0 12px rgba(217,165,49,.6)" : "0 4px 10px rgba(60,40,15,.18)",
-        padding: compact ? 4 : 6,
+        padding: compact ? 3 : 6,
         cursor: onClick ? "pointer" : "default",
         transform: selected ? "translateY(-12px)" : "none",
         transition: "transform .12s, box-shadow .12s, border-color .12s",
@@ -51,15 +51,15 @@ export function HandCard({
         flexShrink: 0,
       }}
     >
-      <div style={{ position: "absolute", top: 4, left: 6, lineHeight: 1, textAlign: "center" }}>
-        <div style={{ fontWeight: 700, fontSize: compact ? 9 : 11, color }}>{rankLabel(card.rank)}</div>
-        <div style={{ fontSize: compact ? 9 : 11, color }}>{suitGlyph(card.suit)}</div>
+      <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: compact ? 7.5 : 11, color }}>{rankLabel(card.rank)}</div>
+        <div style={{ fontSize: compact ? 7.5 : 11, color }}>{suitGlyph(card.suit)}</div>
       </div>
-      <div style={{ marginTop: compact ? 14 : 20, textAlign: "center" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 19 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
+      <div style={{ marginTop: compact ? 10 : 20, textAlign: "center" }}>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
       </div>
-      <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: compact ? 8 : 10, color: "var(--card-ink)" }}>
-        {d.name}
+      <div style={{ position: "absolute", bottom: compact ? 3 : 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: compact ? 6.5 : 10, color: "var(--card-ink)" }}>
+        {compact ? "" : d.name}
       </div>
       {hovered && info && <CardTooltip name={d.name} info={info} />}
     </div>

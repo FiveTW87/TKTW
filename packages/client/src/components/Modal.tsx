@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useDeviceMode } from "../lib/useDeviceMode";
 
 export function ModalOverlay({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
   return (
@@ -30,6 +31,7 @@ export function ModalPanel({
   width?: number;
   onClick?: (e: React.MouseEvent) => void;
 }) {
+  const { compact } = useDeviceMode();
   return (
     <div
       role="dialog"
@@ -46,12 +48,12 @@ export function ModalPanel({
         // past the viewport — without this, a centered fixed-position
         // overlay can render its header/close button off the top of the
         // screen when its content is taller than the window.
-        maxHeight: "85vh",
+        maxHeight: compact ? "94vh" : "85vh",
         overflowY: "auto",
         background: "linear-gradient(#241a11,#160f09)",
         border: "1px solid var(--panel-border-3)",
         borderRadius: 12,
-        padding: "26px 30px",
+        padding: compact ? "12px 14px" : "26px 30px",
         boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         textAlign: "center",
       }}
@@ -62,8 +64,9 @@ export function ModalPanel({
 }
 
 export function ModalGlyph({ children }: { children: ReactNode }) {
+  const { compact } = useDeviceMode();
   return (
-    <div style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--red)", marginBottom: 6 }}>
+    <div style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 20 : 30, color: "var(--red)", marginBottom: compact ? 3 : 6 }}>
       {children}
     </div>
   );
