@@ -545,6 +545,8 @@ export function Table() {
           — previously a position:fixed sidebar could overlap GameBoard's own
           independently-centered viewport-height block at normal desktop widths. */}
       <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh", position: "relative" }}>
+      <GameHistoryPanel gameView={gameView} narrow={narrow} />
+
       <GameBoard
         gameView={gameView}
         me={me}
@@ -604,36 +606,70 @@ export function Table() {
               dispatch({ type: "SET_ZHANGBA_MODE", on: true });
             }}
             phaseLabel={phaseLabel}
-            turnNumber={gameView.turnNumber}
-            showEndPhase={isMyDecision && isMainAction}
-            onEndPhase={submitEndPhase}
             onLeave={() => setConfirmingLeave(true)}
             equipSlots={equipSlotsWithCards}
           />
         }
       />
-
-      <GameHistoryPanel gameView={gameView} narrow={narrow} />
       </div>
 
-      {/* confirm bar (tap-select flow) */}
-      {showConfirmBar && (
-        <div className="anim-rise" style={floatBar}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>選</span>
-          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600, maxWidth: 460 }}>{confirmText || "เลือกการ์ด/เป้าหมาย"}</span>
-          <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ยืนยัน</button>
-          <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ padding: "9px 16px", fontSize: 14 }}>ยกเลิก</button>
-        </div>
-      )}
+      {/* Consolidated bottom-right action cluster — one place for every
+          confirm-style action instead of separate floating bars + a
+          separate always-on end-turn button. Priority: confirm (+ its own
+          cancel) > discard > end-turn > nothing. จบเทิร์น is deliberately
+          hidden (not merged) while a confirm/discard is pending — you must
+          resolve or cancel that first. */}
+      {(() => {
+        const showEndPhase = isMyDecision && isMainAction;
+        const discardPending = isMyDecision && isDiscardTo;
+        let caption: string;
+        if (showConfirmBar) caption = confirmText || "เลือกการ์ด/เป้าหมาย";
+        else if (discardPending) caption = `การ์ดเกินมือ — ทิ้ง ${selectedCardIds.length}/${mustDiscard} ใบ`;
+        else if (showEndPhase) caption = `เทิร์นที่ ${gameView.turnNumber}`;
+        else return null;
 
-      {/* discard bar */}
-      {isMyDecision && isDiscardTo && (
-        <div className="anim-rise" style={floatBar}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "var(--red)" }}>棄</span>
-          <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>การ์ดเกินมือ — ทิ้ง {selectedCardIds.length}/{mustDiscard} ใบ</span>
-          <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>ทิ้งการ์ดที่เลือก</button>
-        </div>
-      )}
+        return (
+          <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 60, textAlign: "center" }}>
+            <div
+              className="anim-rise"
+              style={{
+                marginBottom: 10,
+                maxWidth: 260,
+                fontSize: 12,
+                fontWeight: 600,
+                color: showConfirmBar || discardPending ? "var(--ink)" : "var(--ink-muted)",
+                background: "rgba(20,14,9,.9)",
+                border: "1px solid var(--panel-border-2)",
+                borderRadius: 10,
+                padding: "6px 12px",
+                lineHeight: 1.4,
+              }}
+            >
+              {caption}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center" }}>
+              {showConfirmBar && (
+                <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ width: 60, height: 60, borderRadius: "50%", fontSize: 11, fontWeight: 700 }}>
+                  ยกเลิก
+                </button>
+              )}
+              {showConfirmBar ? (
+                <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                  ยืนยัน
+                </button>
+              ) : discardPending ? (
+                <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 14, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                  ทิ้ง {selectedCardIds.length}/{mustDiscard}
+                </button>
+              ) : (
+                <button onClick={submitEndPhase} disabled={busy} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                  จบเทิร์น
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {error && (
         <div
@@ -802,23 +838,3 @@ export function Table() {
   );
 }
 
-// Pinned to the viewport bottom (not floating over the board mid-panel), with
-// a clear gap from the edge so it reads as its own action strip.
-const floatBar: React.CSSProperties = {
-  position: "fixed",
-  left: "50%",
-  bottom: 28,
-  transform: "translateX(-50%)",
-  zIndex: 25,
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  maxWidth: "94vw",
-  flexWrap: "wrap",
-  justifyContent: "center",
-  background: "linear-gradient(#241a11,#160f09)",
-  border: "1px solid var(--panel-border-3)",
-  borderRadius: 12,
-  padding: "13px 20px",
-  boxShadow: "0 16px 44px rgba(0,0,0,.55)",
-};

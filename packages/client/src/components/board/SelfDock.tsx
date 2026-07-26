@@ -45,9 +45,6 @@ export function SelfDock({
   zhangbaMode,
   onToggleZhangba,
   phaseLabel,
-  turnNumber,
-  showEndPhase,
-  onEndPhase,
   onLeave,
   equipSlots,
 }: {
@@ -76,9 +73,6 @@ export function SelfDock({
   zhangbaMode: boolean;
   onToggleZhangba: () => void;
   phaseLabel: string;
-  turnNumber: number;
-  showEndPhase: boolean;
-  onEndPhase: () => void;
   onLeave: () => void;
   equipSlots: { slot: string; label: string; glyph: string; card: Card | undefined }[];
 }) {
@@ -276,24 +270,6 @@ export function SelfDock({
           </button>
         </div>
       </div>
-
-      {/* fixed circular end-turn button, bottom-right of the viewport — pulled
-          out of the linear column per the reference mockup's big round CTA */}
-      {showEndPhase && (
-        <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 60, textAlign: "center" }}>
-          <button
-            onClick={onEndPhase}
-            disabled={busy}
-            className="btn-primary"
-            style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}
-          >
-            จบเทิร์น
-          </button>
-          <div style={{ marginTop: 6, fontSize: 11, color: "var(--ink-muted)", background: "rgba(20,14,9,.85)", borderRadius: 8, padding: "2px 10px" }}>
-            เทิร์นที่ {turnNumber}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

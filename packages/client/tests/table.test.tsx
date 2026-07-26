@@ -759,7 +759,7 @@ describe("Table: card conversion + distance", () => {
     expect(payload.targetIds).toEqual(["p1", "p2"]);
   });
 
-  it("renders the game history log on the right", async () => {
+  it("renders the game history log", async () => {
     const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
     await enterGame("LOG1", me, rest);
