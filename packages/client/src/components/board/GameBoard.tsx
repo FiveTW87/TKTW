@@ -5,6 +5,7 @@ import { CentralZone } from "./CentralZone";
 import { TurnPanel } from "./TurnPanel";
 import { relativeSeat, densityMode } from "../../lib/seatLayout";
 import { generalDisplay } from "../../data/generalNames";
+import { useDeviceMode } from "../../lib/useDeviceMode";
 
 // SPEC §11.3 — the circular war-table: opponents on an arc above a central
 // zone, local player pinned as a bottom-center dock (rendered by the caller
@@ -57,10 +58,13 @@ export function GameBoard({
   const playerCount = gameView.players.length;
   const density = densityMode(playerCount);
   const currentTurnPlayer = gameView.players.find((p) => p.id === currentTurnPlayerId);
-  const ringMinHeight = density === "head" ? 380 : density === "compact" ? 420 : 460;
+  const { compact } = useDeviceMode();
+  const ringMinHeight = compact
+    ? density === "head" ? 170 : density === "compact" ? 190 : 210
+    : density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
-    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "70px 12px 24px", position: "relative" }}>
+    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "44px 8px 8px" : "70px 12px 24px", position: "relative" }}>
       <TurnPanel
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
@@ -99,7 +103,7 @@ export function GameBoard({
           );
         })}
 
-        <div style={{ position: "absolute", left: "50%", top: "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: 420 }}>
+        <div style={{ position: "absolute", left: "50%", top: "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 300 : 420 }}>
           <CentralZone
             drawPileCount={gameView.drawPileCount}
             pendingReveal={pendingReveal}

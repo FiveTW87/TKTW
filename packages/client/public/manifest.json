@@ -1,0 +1,12 @@
+{
+  "name": "Three Kingdoms: Traitor Within",
+  "short_name": "TKTW",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0c0805",
+  "theme_color": "#0c0805",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

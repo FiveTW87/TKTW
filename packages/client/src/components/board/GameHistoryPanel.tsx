@@ -4,7 +4,9 @@ import { resolveLogEntry } from "../../data/logResolver";
 import { cardInfoByName } from "../../data/cardNames";
 import { skillByName } from "../../data/generalSkills";
 import { CardTooltip } from "../HandCard";
+import { ModalOverlay } from "../Modal";
 import { useGameStore } from "../../store/gameStore";
+import { useDeviceMode } from "../../lib/useDeviceMode";
 
 // A quoted term ("จู่โจม", "ทวนอสรพิษจั้งปา", a skill name, ...) inside a log
 // line — underlined, with the same hover-info card/skill players already
@@ -70,11 +72,9 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
   );
 }
 
-// SPEC §11.9 — game history + real-time chat, as two tabs sharing one panel
-// (not stacked) so either can use the full available height. Not part of the
-// seating ring (it's a fixed side panel, same as before the circular-board
-// rewrite).
-export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; narrow: boolean }) {
+// The tabbed log/chat content, shared by the desktop persistent column and
+// the mobile-compact bottom sheet — only the outer chrome differs.
+function HistoryChatContent({ gameView }: { gameView: GameView }) {
   const logs: GameLogView[] = gameView.gameLogs;
   const chatMessages = useGameStore((s) => s.chatMessages);
   const sendChat = useGameStore((s) => s.sendChat);
@@ -96,23 +96,7 @@ export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; nar
   };
 
   return (
-    <aside
-      className="panel-plain"
-      style={{
-        width: narrow ? "100%" : 300,
-        flexShrink: 0,
-        // Capped to the viewport (not the row's own height, which can grow
-        // taller than 100vh when the board's content is tall) so the panel
-        // scrolls its own list instead of pushing the page past the screen;
-        // sticky keeps it in view while the board scrolls under it.
-        maxHeight: narrow ? "60vh" : "100vh",
-        position: narrow ? undefined : "sticky",
-        top: narrow ? undefined : 0,
-        display: "flex",
-        flexDirection: "column",
-        padding: "10px 16px 14px",
-      }}
-    >
+    <>
       <div style={{ display: "flex", marginBottom: 10, flexShrink: 0 }}>
         <TabButton active={tab === "log"} label="ประวัติการเล่น" onClick={() => setTab("log")} />
         <TabButton active={tab === "chat"} label="แชท" onClick={() => setTab("chat")} />
@@ -186,6 +170,94 @@ export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; nar
           </div>
         </>
       )}
+    </>
+  );
+}
+
+// SPEC §12.2 — on a short mobile-landscape viewport there's no room for a
+// persistent column, so history/chat becomes an on-demand bottom sheet
+// instead: a small toggle button, opening the exact same tabbed content in a
+// full-width panel anchored to the bottom edge.
+function HistorySheet({ gameView }: { gameView: GameView }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        title="ประวัติการเล่น / แชท"
+        style={{
+          position: "fixed",
+          left: "calc(10px + env(safe-area-inset-left, 0px))",
+          bottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+          zIndex: 60,
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          background: "linear-gradient(#241a11,#160f09)",
+          border: "1px solid var(--panel-border-3)",
+          color: "var(--gold)",
+          fontSize: 18,
+          cursor: "pointer",
+        }}
+      >
+        💬
+      </button>
+      {open && (
+        <ModalOverlay onClose={() => setOpen(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="panel-plain"
+            style={{
+              position: "fixed",
+              inset: "auto 0 0 0",
+              width: "100%",
+              maxHeight: "70vh",
+              display: "flex",
+              flexDirection: "column",
+              padding: "10px 16px calc(14px + env(safe-area-inset-bottom, 0px))",
+              borderRadius: "12px 12px 0 0",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+              <button onClick={() => setOpen(false)} className="btn-secondary" style={{ padding: "4px 12px", fontSize: 11 }}>
+                ปิด
+              </button>
+            </div>
+            <HistoryChatContent gameView={gameView} />
+          </div>
+        </ModalOverlay>
+      )}
+    </>
+  );
+}
+
+// SPEC §11.9 — game history + real-time chat, as two tabs sharing one panel
+// (not stacked) so either can use the full available height. Not part of the
+// seating ring (it's a fixed side panel, same as before the circular-board
+// rewrite).
+export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; narrow: boolean }) {
+  const { compact } = useDeviceMode();
+  if (compact) return <HistorySheet gameView={gameView} />;
+
+  return (
+    <aside
+      className="panel-plain"
+      style={{
+        width: narrow ? "100%" : 300,
+        flexShrink: 0,
+        // Capped to the viewport (not the row's own height, which can grow
+        // taller than 100vh when the board's content is tall) so the panel
+        // scrolls its own list instead of pushing the page past the screen;
+        // sticky keeps it in view while the board scrolls under it.
+        maxHeight: narrow ? "60vh" : "100vh",
+        position: narrow ? undefined : "sticky",
+        top: narrow ? undefined : 0,
+        display: "flex",
+        flexDirection: "column",
+        padding: narrow ? "10px 16px 14px" : "10px 16px 14px calc(16px + env(safe-area-inset-left, 0px))",
+      }}
+    >
+      <HistoryChatContent gameView={gameView} />
     </aside>
   );
 }

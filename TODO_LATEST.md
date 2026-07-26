@@ -287,16 +287,32 @@ Legend:
 
 ## Phase 8 — Mobile Landscape
 
-- [ ] Portrait rotate overlay
-- [ ] Optional fullscreen/orientation lock
-- [ ] PWA landscape preference
-- [ ] 320–500px height
-- [ ] Safe Area
-- [ ] Compact portrait ring
-- [ ] Horizontal hand
-- [ ] Full-screen details
-- [ ] Timer always visible
-- [ ] 10-player mobile test
+> Code-complete for the scope locked via `/grill-me`: new `useDeviceMode()` hook
+> (`lib/useDeviceMode.ts`) is the single source of truth — `orientation` (portrait/landscape) drives
+> a rotate overlay gating Character Select + the Table screen (not Lobby/Result), `compact`
+> (viewport height ≤560px, covering SPEC's own 932×430/844×390/740×360 gate sizes) drives a second,
+> independent size scale-down across `GameBoard`/`PlayerTile`/`SelfDock`/`TurnPanel`/`CentralZone`/
+> `HandCard`, layered on top of the existing player-count `densityMode` (not replacing it). History/
+> chat becomes an on-demand bottom sheet instead of a persistent column when compact; Player Detail
+> (`InspectModal`) goes edge-to-edge. Fullscreen+Orientation-Lock is attempted best-effort after a
+> user gesture (`lib/requestLandscape.ts`) — every call wrapped so it's a silent no-op on
+> unsupported browsers (iOS Safari) per SPEC's own fallback requirement. Minimal PWA manifest +
+> `viewport-fit=cover` + `env(safe-area-inset-*)` added on every screen-edge-pinned element. Real
+> mobile-device QA is **not done** (browser automation unavailable this session, same blocker as
+> prior phases) — substituted with RTL tests driving the exact SPEC gate viewport sizes
+> (`useDeviceMode.test.ts` + `table.test.tsx`'s new "mobile-landscape gate sizes" block). client 92
+> (was 79), typecheck clean on all 4 packages.
+
+- [x] Portrait rotate overlay (`components/RotateOverlay.tsx`, gated in `App.tsx`)
+- [x] Optional fullscreen/orientation lock (`lib/requestLandscape.ts`, best-effort, silent fallback)
+- [x] PWA landscape preference (`public/manifest.json`, `orientation: "landscape"`)
+- [x] 320–500px height (compact sizing covers SPEC's 430/390/360px-tall gate sizes)
+- [x] Safe Area (`viewport-fit=cover` + `env(safe-area-inset-*)` on `TurnPanel`/action cluster/history panel)
+- [x] Compact portrait ring (`useDeviceMode().compact` scales `GameBoard`/`PlayerTile`/`OpponentPanel`)
+- [x] Horizontal hand (done in the previous polish session; `SelfDock`'s hand row scrolls, doesn't wrap)
+- [x] Full-screen details (`InspectModal.tsx` goes edge-to-edge when compact)
+- [x] Timer always visible (`TurnPanel` was already `position:fixed` above dialogs; now also compact-sized)
+- [ ] 10-player mobile test (RTL viewport-driven smoke tests done; **real-device QA still pending** — browser automation unavailable this session)
 
 ## Phase 9 — Theme / Assets
 

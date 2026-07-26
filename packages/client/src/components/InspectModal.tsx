@@ -3,6 +3,7 @@ import { ModalOverlay } from "./Modal";
 import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
 import { cardDisplay } from "../data/cardNames";
 import { generalSkills } from "../data/generalSkills";
+import { useDeviceMode } from "../lib/useDeviceMode";
 
 export function InspectModal({ player, onClose }: { player: PlayerView; onClose: () => void }) {
   const d = generalDisplay(player.generalId);
@@ -13,6 +14,9 @@ export function InspectModal({ player, onClose }: { player: PlayerView; onClose:
   // actually revealed (an un-revealed opponent is projected with generalId
   // "" during selection, per view.ts's generalRevealed gating).
   const skills = player.generalId !== "" ? generalSkills(player.generalId) : [];
+  // SPEC §12.2 — "Player Detail เต็มจอ": on a short mobile-landscape
+  // viewport this goes edge-to-edge instead of a small centered card.
+  const { compact } = useDeviceMode();
 
   return (
     <ModalOverlay onClose={onClose}>
@@ -20,13 +24,15 @@ export function InspectModal({ player, onClose }: { player: PlayerView; onClose:
         className="anim-pop"
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 360,
-          maxWidth: "90vw",
+          width: compact ? "100vw" : 360,
+          height: compact ? "100vh" : undefined,
+          maxWidth: compact ? undefined : "90vw",
+          maxHeight: compact ? undefined : "85vh",
           background: "linear-gradient(#241a11,#160f09)",
-          border: `2px solid ${color}`,
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 22px 60px rgba(0,0,0,.7)",
+          border: compact ? "none" : `2px solid ${color}`,
+          borderRadius: compact ? 0 : 12,
+          overflowY: "auto",
+          boxShadow: compact ? "none" : "0 22px 60px rgba(0,0,0,.7)",
         }}
       >
         <div style={{ height: 38, background: color, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>

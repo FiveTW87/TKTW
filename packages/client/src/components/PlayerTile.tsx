@@ -56,6 +56,7 @@ export function PlayerTile({
   const isCompact = compact || density === "compact";
 
   if (isHead) {
+    const headPortrait = compact ? 30 : 40;
     return (
       <div
         onClick={targetable ? onClick : undefined}
@@ -63,7 +64,7 @@ export function PlayerTile({
         aria-label={targetable ? player.name : undefined}
         style={{
           position: "relative",
-          width: 84,
+          width: "100%",
           background: "linear-gradient(#241a11,#180f09)",
           border: "1px solid var(--panel-border-2)",
           borderRadius: 6,
@@ -74,14 +75,14 @@ export function PlayerTile({
           textAlign: "center",
         }}
       >
-        <div style={{ height: 18, background: color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ height: compact ? 14 : 18, background: color, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span> : <span style={{ fontFamily: "var(--font-glyph)", fontSize: 11, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>}
         </div>
-        <div className="card-back" style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "6px auto 4px" }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 16, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
+        <div className="card-back" style={{ width: headPortrait, height: headPortrait, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: compact ? "4px auto 2px" : "6px auto 4px" }}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 12 : 16, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
         </div>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 4px" }}>{player.name}</div>
-        <div style={{ display: "flex", gap: 1, justifyContent: "center", margin: "3px 0 6px", flexWrap: "wrap" }}>
+        <div style={{ fontSize: compact ? 9 : 10, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 4px" }}>{player.name}</div>
+        <div style={{ display: "flex", gap: 1, justifyContent: "center", margin: compact ? "2px 0 4px" : "3px 0 6px", flexWrap: "wrap" }}>
           {Array.from({ length: player.maxHp }).map((_, i) => (
             <span key={i} className="hp-dot" style={{ width: 6, height: 6, background: i < player.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
           ))}

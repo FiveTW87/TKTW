@@ -1,6 +1,7 @@
 import type { ConnectionStatus, PlayerView } from "@tktw/shared";
 import { PlayerTile } from "../PlayerTile";
 import { arcPosition, type DensityMode } from "../../lib/seatLayout";
+import { useDeviceMode } from "../../lib/useDeviceMode";
 
 // SPEC §11.3 — absolute-positions a single opponent on the arc above the
 // central zone. Pure positioning wrapper; all content rendering stays in
@@ -34,6 +35,8 @@ export function OpponentPanel({
   onInspect?: (() => void) | undefined;
 }) {
   const { leftPct, topPct } = arcPosition(relSeat, playerCount);
+  const { compact } = useDeviceMode();
+  const fullWidth = density === "head" ? 84 : density === "compact" ? 130 : 170;
   return (
     <div
       style={{
@@ -41,7 +44,7 @@ export function OpponentPanel({
         left: `${leftPct}%`,
         top: `${topPct}%`,
         transform: "translate(-50%, -50%)",
-        width: density === "head" ? 84 : density === "compact" ? 130 : 170,
+        width: compact ? Math.round(fullWidth * 0.7) : fullWidth,
       }}
     >
       <PlayerTile
@@ -52,6 +55,7 @@ export function OpponentPanel({
         distance={distance}
         inRange={inRange}
         density={density}
+        compact={compact}
         connectionStatus={connectionStatus}
         onClick={onClick}
         onInspect={onInspect}

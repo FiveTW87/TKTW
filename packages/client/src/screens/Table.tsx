@@ -629,7 +629,15 @@ export function Table() {
         else return null;
 
         return (
-          <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 60, textAlign: "center" }}>
+          <div
+            style={{
+              position: "fixed",
+              right: "calc(24px + env(safe-area-inset-right, 0px))",
+              bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+              zIndex: 60,
+              textAlign: "center",
+            }}
+          >
             <div
               className="anim-rise"
               style={{

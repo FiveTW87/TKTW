@@ -1193,6 +1193,52 @@ describe("Table: circular board seating (SPEC §11.3)", () => {
   });
 });
 
+// Phase 8 — SPEC §12.3's mobile gate matrix: real-device QA is unavailable
+// this session, so these substitute viewport-driven RTL checks (render
+// without throwing at each gate size; rotate overlay gates the Table screen
+// but not the Lobby when held in portrait).
+describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
+  const GATE_SIZES: [number, number][] = [
+    [932, 430],
+    [844, 390],
+    [740, 360],
+  ];
+
+  it.each(GATE_SIZES)("renders a 10-player table at %ix%i without throwing", async (w, h) => {
+    window.innerWidth = w;
+    window.innerHeight = h;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = Array.from({ length: 9 }, (_, i) => player(`p${i + 1}`, { name: `Opp${i + 1}` }));
+    await enterGame(`GATE${w}x${h}`, me, rest);
+    expect(screen.getByText("การ์ดในมือ · 0 ใบ")).toBeInTheDocument();
+  });
+
+  it("shows the rotate overlay when the table screen is held in portrait", async () => {
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    await enterGame("PORTRAIT1", me, rest);
+
+    window.innerWidth = 390;
+    window.innerHeight = 844;
+    window.dispatchEvent(new Event("resize"));
+
+    expect(await screen.findByText("กรุณาหมุนอุปกรณ์เป็นแนวนอน")).toBeInTheDocument();
+  });
+
+  it("does NOT show the rotate overlay on the Lobby when held in portrait", async () => {
+    render(<App />);
+    fakeSocket.fire("connect");
+    await screen.findByRole("button", { name: "สร้างห้องใหม่" });
+
+    window.innerWidth = 390;
+    window.innerHeight = 844;
+    window.dispatchEvent(new Event("resize"));
+
+    expect(screen.queryByText("กรุณาหมุนอุปกรณ์เป็นแนวนอน")).not.toBeInTheDocument();
+  });
+});
+
 // Bug list: "Add Death Dialog with spectate/leave actions" — shown once the
 // viewer's own PlayerView flips alive:false.
 describe("Table: Death Dialog", () => {

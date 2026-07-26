@@ -9,6 +9,7 @@ import { activeSkillSpec } from "../../data/skillInteraction";
 import { cardMeta } from "../../data/cardMeta";
 import type { SkillDisplay } from "../../data/generalSkills";
 import { DelayedTrickList } from "./DelayedTrickCard";
+import { useDeviceMode } from "../../lib/useDeviceMode";
 
 export interface CardTapState {
   tappable: boolean;
@@ -77,21 +78,22 @@ export function SelfDock({
   equipSlots: { slot: string; label: string; glyph: string; card: Card | undefined }[];
 }) {
   const role = roleDisplay(me.role);
+  const { compact } = useDeviceMode();
 
   return (
-    <div style={{ display: "flex", flexDirection: "row", gap: 14, alignItems: "stretch", width: "100%", maxWidth: 1040 }}>
+    <div style={{ display: "flex", flexDirection: "row", gap: compact ? 8 : 14, alignItems: "stretch", width: "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
           self-target when helping. Uses the same SeatTile.dc.html composition
           as opponents (portrait+badge / info / faction ribbon), sized larger
           for self, with delayed tricks as separate purple cards beside it —
           not the old faction-bar-header shape. */}
-      <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <div
             onClick={selfTargetable ? onToggleSelfTarget : undefined}
             style={{
               position: "relative",
-              width: 250,
+              width: compact ? 150 : 250,
               flexShrink: 0,
               background: "linear-gradient(#241a11,#160f09)",
               border: "1px solid var(--panel-border-3)",
@@ -99,43 +101,43 @@ export function SelfDock({
               overflow: "hidden",
               boxShadow: "0 10px 30px rgba(0,0,0,.6)",
               cursor: selfTargetable ? "pointer" : "default",
-              padding: 8,
+              padding: compact ? 5 : 8,
               display: "flex",
-              gap: 8,
+              gap: compact ? 5 : 8,
             }}
           >
             {isMyTurn && <div className="glow-turn" style={{ borderRadius: 12 }} />}
             {/* portrait, with the seat number badge (gold — self, per SeatTile.dc.html) */}
             <div
               className="card-back"
-              style={{ width: 78, height: 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+              style={{ width: compact ? 46 : 78, height: compact ? 56 : 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
             >
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
-              <span style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: "50%", background: "var(--gold)", color: "#3a2708", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 19 : 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
+              <span style={{ position: "absolute", top: 3, left: 3, width: compact ? 14 : 20, height: compact ? 14 : 20, borderRadius: "50%", background: "var(--gold)", color: "#3a2708", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: compact ? 9 : 11, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
                 {me.seat + 1}
               </span>
             </div>
             {/* info column */}
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: 16 }}>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: compact ? 10 : 16 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: "var(--font-glyph)", fontSize: 20, color: "var(--ink)", lineHeight: 1 }}>{generalDisplay(me.generalId).glyph}</span>
-                <span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{me.name}</span>
+                <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: "var(--ink)", lineHeight: 1 }}>{generalDisplay(me.generalId).glyph}</span>
+                <span style={{ fontSize: compact ? 11 : 13, color: "var(--ink-faint)" }}>{me.name}</span>
               </div>
               {role && (
-                <div style={{ marginTop: 4, display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 5, background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 5, padding: "1px 8px", fontSize: 10, color: "var(--green-light)" }}>
+                <div style={{ marginTop: 4, display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 5, background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 5, padding: "1px 8px", fontSize: compact ? 9 : 10, color: "var(--green-light)" }}>
                   <span className={`seal ${role.cls}`} style={{ width: 13, height: 13, fontSize: 8 }}>{role.cn}</span>
                   {role.name} · คุณ
                 </div>
               )}
-              <div style={{ display: "flex", gap: 3, marginTop: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 3, marginTop: compact ? 3 : 6, flexWrap: "wrap" }}>
                 {Array.from({ length: me.maxHp }).map((_, i) => (
-                  <span key={i} className="hp-dot" style={{ width: 11, height: 11, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
+                  <span key={i} className="hp-dot" style={{ width: compact ? 8 : 11, height: compact ? 8 : 11, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
                 ))}
               </div>
             </div>
             {/* faction ribbon — right edge */}
-            <div style={{ position: "absolute", top: 0, right: 0, width: 22, height: "100%", background: factionColor(me.faction), opacity: 0.9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 14, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>{factionLabel(me.faction).slice(0, 1)}</span>
+            <div style={{ position: "absolute", top: 0, right: 0, width: compact ? 16 : 22, height: "100%", background: factionColor(me.faction), opacity: 0.9, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 11 : 14, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>{factionLabel(me.faction).slice(0, 1)}</span>
             </div>
             {selfTargetable && <div className={selfTargetSelected ? "glow-target-selected" : "glow-target"} style={{ borderRadius: 12 }} />}
             {selfTargetable && selfTargetSelected && (
@@ -144,7 +146,7 @@ export function SelfDock({
                 style={{
                   position: "absolute",
                   top: 4,
-                  right: 26,
+                  right: compact ? 20 : 26,
                   zIndex: 2,
                   width: 16,
                   height: 16,
@@ -168,7 +170,7 @@ export function SelfDock({
           <DelayedTrickList cards={me.judgmentZone} />
         </div>
         {/* skills */}
-        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: "9px 10px" }}>
+        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "5px 7px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 90 : undefined }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -216,12 +218,12 @@ export function SelfDock({
       </div>
 
       {/* MIDDLE: hand */}
-      <div style={{ flex: 1, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: "9px 12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
+      <div style={{ flex: 1, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "5px 7px" : "9px 12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 4 : 8 }}>
+          <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", paddingBottom: 4 }}>
+        <div style={{ display: "flex", gap: compact ? 5 : 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", paddingBottom: 4 }}>
           {myHand.map((c) => {
             const { tappable, dimmed } = getCardState(c);
             return (
@@ -232,6 +234,7 @@ export function SelfDock({
                 dimmed={dimmed}
                 animateIn={drawnIds.has(c.id)}
                 onClick={tappable ? () => onTapCard(c) : undefined}
+                compact={compact}
               />
             );
           })}
@@ -240,12 +243,12 @@ export function SelfDock({
       </div>
 
       {/* RIGHT: equipment zone + phase + end-turn */}
-      <div style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ width: compact ? 140 : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 5 : 10 }}>
         <div>
           <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5, textAlign: "center" }}>ของสวมใส่</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: compact ? 4 : 6 }}>
             {equipSlots.map(({ slot, label, glyph, card }) => (
-              <EquipSlotCell key={slot} label={label} glyph={glyph} card={card} />
+              <EquipSlotCell key={slot} label={label} glyph={glyph} card={card} compact={compact} />
             ))}
           </div>
           {zhangbaAvailable && (
@@ -276,7 +279,7 @@ export function SelfDock({
 
 // Mockup's RT equip grid: slot label on top, a colored icon square, item name
 // below — replacing the old horizontal icon+label+desc row.
-function EquipSlotCell({ label, glyph, card }: { label: string; glyph: string; card: Card | undefined }) {
+function EquipSlotCell({ label, glyph, card, compact }: { label: string; glyph: string; card: Card | undefined; compact?: boolean }) {
   const [hovered, setHovered] = useState(false);
   const filled = !!card;
   const range = card ? cardMeta(card.typeKey).attackRange : undefined;
@@ -289,7 +292,7 @@ function EquipSlotCell({ label, glyph, card }: { label: string; glyph: string; c
       <div style={{ fontSize: 9, color: "var(--ink-faint)", marginBottom: 3 }}>{label}</div>
       <div
         style={{
-          height: 44,
+          height: compact ? 30 : 44,
           borderRadius: 6,
           background: filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
           border: filled ? "none" : "1px dashed var(--panel-border-2)",
@@ -298,12 +301,14 @@ function EquipSlotCell({ label, glyph, card }: { label: string; glyph: string; c
           justifyContent: "center",
         }}
       >
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
       </div>
-      <div style={{ fontSize: 9, color: "var(--ink-muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {filled ? cardDisplay(card.typeKey).name : "ว่าง"}
-      </div>
-      {filled && range !== undefined && (
+      {!compact && (
+        <div style={{ fontSize: 9, color: "var(--ink-muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {filled ? cardDisplay(card.typeKey).name : "ว่าง"}
+        </div>
+      )}
+      {!compact && filled && range !== undefined && (
         <div style={{ fontSize: 8, color: "var(--ink-faint)" }}>ระยะ {range}</div>
       )}
       {hovered && filled && card && cardInfo(card.typeKey) && (

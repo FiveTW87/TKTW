@@ -5,6 +5,8 @@ import { GeneralSelect } from "./screens/GeneralSelect";
 import { Table } from "./screens/Table";
 import { Result } from "./screens/Result";
 import { RoleRevealModal } from "./components/RoleRevealModal";
+import { RotateOverlay } from "./components/RotateOverlay";
+import { useDeviceMode } from "./lib/useDeviceMode";
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -72,6 +74,7 @@ export default function App() {
   const sessionExpired = useGameStore((s) => s.sessionExpired);
   const dismissSessionExpired = useGameStore((s) => s.dismissSessionExpired);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
+  const { orientation } = useDeviceMode();
 
   // Initial connect (no room yet) — a full-screen wait. A mid-room drop keeps
   // the board and shows the overlay instead (below).
@@ -87,6 +90,9 @@ export default function App() {
   // already-live pickGeneral decision doesn't jump straight to GeneralSelect
   // before the reveal window elapses.
   const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
+  const isRevealing = !!(roomState?.phase === "revealing" && me);
+  const isGeneralSelect = !isRevealing && gameView?.pendingDecision?.kind === "pickGeneral";
+  const isTable = !!roomCode && !!gameView && !matchResult && !isRevealing && !isGeneralSelect;
   const content =
     !roomCode || !gameView ? (
       <Lobby />
@@ -95,17 +101,23 @@ export default function App() {
       // everything else — including a rejoin that lands on "ended" with a
       // stale pendingDecision still sitting in the last GameView.
       <Result />
-    ) : roomState?.phase === "revealing" && me ? (
+    ) : isRevealing ? (
       <RoleRevealModal me={me} onClose={() => {}} />
-    ) : gameView.pendingDecision?.kind === "pickGeneral" ? (
+    ) : isGeneralSelect ? (
       <GeneralSelect />
     ) : (
       <Table />
     );
 
+  // SPEC §12.1 — Lobby/Result stay usable in portrait; Character Select and
+  // an active match are landscape-first. The real screen stays mounted
+  // underneath (state isn't lost) while this blocks interaction on top.
+  const requiresLandscape = isRevealing || isGeneralSelect || isTable;
+
   return (
     <>
       {content}
+      {requiresLandscape && orientation === "portrait" && <RotateOverlay />}
       {!connected && roomCode && <ReconnectingOverlay />}
     </>
   );

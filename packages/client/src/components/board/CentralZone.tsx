@@ -2,12 +2,13 @@ import { useState } from "react";
 import type { CardView } from "@tktw/shared";
 import { CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardNames";
+import { useDeviceMode } from "../../lib/useDeviceMode";
 
 const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
 // A face-up card visual shared by the "last played" and "discard pile top"
 // zones — both show a real card face now instead of a generic placeholder.
-function CardFace({ card, rotate }: { card: CardView; rotate: number }) {
+function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; compact: boolean }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
   return (
@@ -17,14 +18,14 @@ function CardFace({ card, rotate }: { card: CardView; rotate: number }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        width: 72,
-        height: 100,
+        width: compact ? 52 : 72,
+        height: compact ? 72 : 100,
         margin: "0 auto",
         borderRadius: 6,
         background: "var(--card-bg)",
         border: "1px solid var(--card-border-2)",
         boxShadow: "0 6px 16px rgba(60,40,15,.22)",
-        padding: 6,
+        padding: compact ? 4 : 6,
         position: "relative",
         transform: `rotate(${rotate}deg)`,
         cursor: info ? "help" : "default",
@@ -34,8 +35,8 @@ function CardFace({ card, rotate }: { card: CardView; rotate: number }) {
         <div style={{ fontWeight: 700, fontSize: 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
       </div>
-      <div style={{ marginTop: 20, textAlign: "center" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
+      <div style={{ marginTop: compact ? 12 : 20, textAlign: "center" }}>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 20 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
       </div>
       <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--card-ink)" }}>
         {cardDisplay(card.typeKey).name}
@@ -93,13 +94,14 @@ export function CentralZone({
   discardTop: CardView | undefined;
   onOpenDiscard: () => void;
 }) {
+  const { compact } = useDeviceMode();
   const CORNER_BRACKET: React.CSSProperties = { position: "absolute", width: 16, height: 16, opacity: 0.5, pointerEvents: "none" };
   const DIVIDER = (
     <div style={{ alignSelf: "stretch", width: 1, background: "linear-gradient(180deg,transparent,rgba(217,165,49,.28),transparent)", flexShrink: 0 }} />
   );
 
   return (
-    <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 34, padding: 20, minHeight: 132, position: "relative" }}>
+    <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: compact ? 12 : 34, padding: compact ? 8 : 20, minHeight: compact ? 76 : 132, position: "relative" }}>
       <div style={{ position: "absolute", top: 8, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-glyph)", fontSize: 40, color: "rgba(120,90,40,.1)", letterSpacing: 8 }}>
         三國鼎立
       </div>
@@ -125,8 +127,8 @@ export function CentralZone({
           aria-label={pendingReveal ? "เปิดการ์ดตัดสิน" : undefined}
           style={{
             position: "relative",
-            width: 62,
-            height: 88,
+            width: compact ? 46 : 62,
+            height: compact ? 64 : 88,
             borderRadius: 6,
             background: "linear-gradient(150deg,#2a1d12,#1a110a)",
             border: "1px solid var(--panel-border-3)",
@@ -137,7 +139,7 @@ export function CentralZone({
             cursor: pendingReveal ? "pointer" : "default",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--gold-light)" }}>國</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 20 : 30, color: "var(--gold-light)" }}>國</span>
           {pendingReveal && <div className="glow-target" />}
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
@@ -146,16 +148,16 @@ export function CentralZone({
       {DIVIDER}
 
       {/* last played card — hover/tap to preview its effect text */}
-      <div style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}>
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 64 : 96 }}>
         <ZoneLabel>เพิ่งเล่น</ZoneLabel>
-        {lastPlay ? <CardFace card={lastPlay} rotate={-4} /> : <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>}
+        {lastPlay ? <CardFace card={lastPlay} rotate={-4} compact={compact} /> : <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>}
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
       </div>
 
       {DIVIDER}
 
       {/* discard pile — its own top card face; click to browse the full pile */}
-      <div style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}>
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 64 : 96 }}>
         <ZoneLabel>กองทิ้ง</ZoneLabel>
         <button
           onClick={() => discardCount > 0 && onOpenDiscard()}
@@ -163,10 +165,10 @@ export function CentralZone({
           style={{ all: "unset", cursor: discardCount > 0 ? "pointer" : "default", display: "block" }}
         >
           {discardTop ? (
-            <CardFace card={discardTop} rotate={4} />
+            <CardFace card={discardTop} rotate={4} compact={compact} />
           ) : (
-            <div style={{ width: 62, height: 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "rgba(120,90,40,.4)" }}>棄</span>
+            <div style={{ width: compact ? 46 : 62, height: compact ? 64 : 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 22, color: "rgba(120,90,40,.4)" }}>棄</span>
             </div>
           )}
           <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองทิ้ง · <b>{discardCount}</b> {discardCount > 0 && <span style={{ color: "var(--red)" }}>· ดู</span>}</div>
