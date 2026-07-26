@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CardView } from "@tktw/shared";
 import { CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardNames";
@@ -11,12 +11,24 @@ const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22
 function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; compact: boolean }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => setHovered(true), 400);
+  };
+  const endHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    setHovered(false);
+  };
   return (
     <div
       className="anim-pop"
       key={card.id}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onTouchStart={startHold}
+      onTouchEnd={endHold}
+      onTouchCancel={endHold}
       style={{
         width: compact ? 42 : 72,
         height: compact ? 58 : 100,

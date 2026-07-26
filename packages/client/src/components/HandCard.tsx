@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Card } from "@tktw/shared";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../data/cardNames";
 
@@ -29,11 +29,25 @@ export function HandCard({
   const info = cardInfo(card.typeKey);
   const color = SUIT_COLOR[card.suit] ?? "#2e2519";
   const [hovered, setHovered] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tooltips only trigger on hover, which doesn't exist on touch — a
+  // tap-and-hold (long press) shows the same tooltip on mobile instead.
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => setHovered(true), 400);
+  };
+  const endHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    setHovered(false);
+  };
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onTouchStart={startHold}
+      onTouchEnd={endHold}
+      onTouchCancel={endHold}
       className={`hand-card${animateIn ? " anim-draw" : ""}`}
       style={{
         position: "relative",
@@ -58,8 +72,22 @@ export function HandCard({
       <div style={{ marginTop: compact ? 10 : 20, textAlign: "center" }}>
         <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
       </div>
-      <div style={{ position: "absolute", bottom: compact ? 3 : 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: compact ? 6.5 : 10, color: "var(--card-ink)" }}>
-        {compact ? "" : d.name}
+      <div
+        style={{
+          position: "absolute",
+          bottom: compact ? 3 : 5,
+          left: compact ? 2 : 0,
+          right: compact ? 2 : 0,
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: compact ? 6 : 10,
+          color: "var(--card-ink)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {d.name}
       </div>
       {hovered && info && <CardTooltip name={d.name} info={info} />}
     </div>

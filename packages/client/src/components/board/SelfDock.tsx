@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Card, PlayerView } from "@tktw/shared";
 import { HandCard, CardTooltip } from "../HandCard";
 import { RulesButton } from "../RulesModal";
@@ -81,7 +81,7 @@ export function SelfDock({
   const { compact } = useDeviceMode();
 
   return (
-    <div style={{ display: "flex", flexDirection: "row", gap: compact ? 8 : 14, alignItems: "stretch", width: "100%", maxWidth: 1040 }}>
+    <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 8 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
           self-target when helping. Uses the same SeatTile.dc.html composition
           as opponents (portrait+badge / info / faction ribbon), sized larger
@@ -286,10 +286,22 @@ function EquipSlotCell({ label, glyph, card, compact }: { label: string; glyph: 
   const [hovered, setHovered] = useState(false);
   const filled = !!card;
   const range = card ? cardMeta(card.typeKey).attackRange : undefined;
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => setHovered(true), 400);
+  };
+  const endHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    setHovered(false);
+  };
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onTouchStart={startHold}
+      onTouchEnd={endHold}
+      onTouchCancel={endHold}
       style={{ position: "relative", textAlign: "center", cursor: filled ? "help" : "default" }}
     >
       <div style={{ fontSize: 9, color: "var(--ink-faint)", marginBottom: 3 }}>{label}</div>
