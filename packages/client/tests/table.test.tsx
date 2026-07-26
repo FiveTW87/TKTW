@@ -1237,6 +1237,24 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
 
     expect(screen.queryByText("กรุณาหมุนอุปกรณ์เป็นแนวนอน")).not.toBeInTheDocument();
   });
+
+  it("the history/chat toggle and the debug toggle don't land on the same fixed corner in compact mode", async () => {
+    window.innerWidth = 932;
+    window.innerHeight = 430;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    await enterGame("COMPACTBTNS", me, rest);
+
+    const historyToggle = screen.getByTitle("ประวัติการเล่น / แชท");
+    const debugToggle = screen.getByTitle("แสดง/ซ่อน debug log");
+    // one is pinned to the top, the other to the bottom — they must not both
+    // claim the same corner (the bug this test guards against).
+    expect(historyToggle.style.top).not.toBe("");
+    expect(historyToggle.style.bottom).toBe("");
+    expect(debugToggle.style.bottom).not.toBe("");
+    expect(debugToggle.style.top).toBe("");
+  });
 });
 
 // Bug list: "Add Death Dialog with spectate/leave actions" — shown once the

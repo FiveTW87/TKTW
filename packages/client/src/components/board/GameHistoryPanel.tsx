@@ -186,9 +186,12 @@ function HistorySheet({ gameView }: { gameView: GameView }) {
         onClick={() => setOpen(true)}
         title="ประวัติการเล่น / แชท"
         style={{
+          // top-left — the one fixed corner not already claimed by the 🐛
+          // debug toggle (bottom-left), TurnPanel (top-center), or the
+          // end-turn action cluster (bottom-right).
           position: "fixed",
           left: "calc(10px + env(safe-area-inset-left, 0px))",
-          bottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+          top: "calc(10px + env(safe-area-inset-top, 0px))",
           zIndex: 60,
           width: 40,
           height: 40,

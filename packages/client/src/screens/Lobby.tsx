@@ -3,6 +3,7 @@ import { useGameStore } from "../store/gameStore";
 import { RulesButton } from "../components/RulesModal";
 import { lobbyRingPosition } from "../lib/seatLayout";
 import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
+import { useDeviceMode } from "../lib/useDeviceMode";
 
 function LeaveConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -33,15 +34,15 @@ const panelStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
-function Masthead() {
+function Masthead({ compact }: { compact: boolean }) {
   return (
-    <div style={{ padding: "48px 40px 32px", textAlign: "center", borderBottom: "1px solid var(--panel-border)" }}>
+    <div style={{ padding: compact ? "20px 24px 16px" : "48px 40px 32px", textAlign: "center", borderBottom: "1px solid var(--panel-border)" }}>
       <div
         style={{
-          width: 84,
-          height: 84,
+          width: compact ? 52 : 84,
+          height: compact ? 52 : 84,
           borderRadius: "50%",
-          margin: "0 auto 16px",
+          margin: compact ? "0 auto 8px" : "0 auto 16px",
           background: "radial-gradient(circle at 38% 34%, #caa24e, #7a5222)",
           display: "flex",
           alignItems: "center",
@@ -50,12 +51,12 @@ function Masthead() {
           boxShadow: "0 10px 34px rgba(0,0,0,.6)",
         }}
       >
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 42, color: "#2e1f08" }}>殺</span>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 26 : 42, color: "#2e1f08" }}>殺</span>
       </div>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 38, color: "var(--ink)", fontWeight: 900 }}>Three Kingdoms</div>
+      <div style={{ fontFamily: "var(--font-display)", fontSize: compact ? 24 : 38, color: "var(--ink)", fontWeight: 900 }}>Three Kingdoms</div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6, justifyContent: "center" }}>
         <span style={{ width: 48, height: 1, background: "linear-gradient(90deg,transparent,#8a6a3c)" }} />
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 5, color: "var(--gold)", fontWeight: 900 }}>TRAITOR WITHIN</span>
+        <span style={{ fontFamily: "var(--font-display)", fontSize: compact ? 14 : 20, letterSpacing: 5, color: "var(--gold)", fontWeight: 900 }}>TRAITOR WITHIN</span>
         <span style={{ width: 48, height: 1, background: "linear-gradient(90deg,#8a6a3c,transparent)" }} />
       </div>
     </div>
@@ -64,20 +65,21 @@ function Masthead() {
 
 // R0 — pure landing: logo + two entry buttons, no form yet.
 function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }) {
+  const { compact } = useDeviceMode();
   return (
     <div style={panelStyle}>
-      <Masthead />
-      <div style={{ padding: "32px 40px 44px", display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-        <div style={{ fontSize: 14, color: "var(--ink-faint)", marginBottom: 6 }}>เกมการ์ดสวมบทบาทลับ · 3–10 คน</div>
+      <Masthead compact={compact} />
+      <div style={{ padding: compact ? "16px 24px 20px" : "32px 40px 44px", display: "flex", flexDirection: "column", gap: compact ? 8 : 14, alignItems: "center" }}>
+        <div style={{ fontSize: compact ? 12 : 14, color: "var(--ink-faint)", marginBottom: compact ? 2 : 6 }}>เกมการ์ดสวมบทบาทลับ · 3–10 คน</div>
         <div style={{ display: "flex", gap: 14 }}>
-          <button onClick={onCreate} className="btn-primary" style={{ padding: "16px 40px", fontSize: 18, borderRadius: 12 }}>
+          <button onClick={onCreate} className="btn-primary" style={{ padding: compact ? "10px 24px" : "16px 40px", fontSize: compact ? 14 : 18, borderRadius: 12 }}>
             สร้างห้องใหม่
           </button>
-          <button onClick={onJoin} className="btn-secondary" style={{ padding: "16px 40px", fontSize: 18, borderRadius: 12 }}>
+          <button onClick={onJoin} className="btn-secondary" style={{ padding: compact ? "10px 24px" : "16px 40px", fontSize: compact ? 14 : 18, borderRadius: 12 }}>
             เข้าร่วมห้อง
           </button>
         </div>
-        <RulesButton label="วิธีเล่น & กติกา" style={{ marginTop: 10, padding: "11px", fontSize: 14, width: "100%" }} />
+        <RulesButton label="วิธีเล่น & กติกา" style={{ marginTop: compact ? 4 : 10, padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%" }} />
       </div>
     </div>
   );
@@ -132,7 +134,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   return (
     <div
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(12,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(12,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}
     >
       {initialTab === "create" ? (
         <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
@@ -352,7 +354,7 @@ export function Lobby() {
   }
 
   return (
-    <div className="war-table-bg" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div className="war-table-bg" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
       <Home onCreate={() => { setDialogTab("create"); setDialogOpen(true); }} onJoin={() => { setDialogTab("join"); setDialogOpen(true); }} />
       {dialogOpen && <EntryDialog initialTab={dialogTab} onClose={() => setDialogOpen(false)} />}
     </div>
