@@ -217,8 +217,11 @@ export function SelfDock({
         </div>
       </div>
 
-      {/* MIDDLE: hand */}
-      <div style={{ flex: 1, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "5px 7px" : "9px 12px" }}>
+      {/* MIDDLE: hand — capped narrower (not flex:1) in compact mode so the
+          dock's total width stays clear of the fixed end-turn button that
+          floats over the bottom-right corner of the viewport; extra cards
+          past the visible width scroll horizontally instead. */}
+      <div style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "5px 7px" : "9px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 4 : 8 }}>
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}

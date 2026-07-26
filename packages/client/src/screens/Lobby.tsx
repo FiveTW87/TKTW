@@ -96,6 +96,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const { compact } = useDeviceMode();
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -122,14 +123,23 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
     background: "#140e08",
     border: "1px solid var(--panel-border-3)",
     borderRadius: 8,
-    padding: "12px 14px",
-    fontSize: 15,
+    padding: compact ? "9px 11px" : "12px 14px",
+    fontSize: compact ? 13 : 15,
     color: "var(--ink)",
     fontFamily: "var(--font-body)",
     boxShadow: "inset 0 0 10px rgba(217,165,49,.12)",
   };
 
-  const panelBoxStyle: React.CSSProperties = { width: 360, background: "linear-gradient(#241a11,#160f09)", border: "1px solid var(--panel-border-3)", borderRadius: 14, padding: "24px 26px", boxShadow: "0 20px 50px rgba(0,0,0,.7)" };
+  const panelBoxStyle: React.CSSProperties = {
+    width: compact ? 280 : 360,
+    maxHeight: compact ? "94vh" : undefined,
+    overflowY: compact ? "auto" : undefined,
+    background: "linear-gradient(#241a11,#160f09)",
+    border: "1px solid var(--panel-border-3)",
+    borderRadius: 14,
+    padding: compact ? "16px 16px" : "24px 26px",
+    boxShadow: "0 20px 50px rgba(0,0,0,.7)",
+  };
 
   return (
     <div
@@ -138,54 +148,54 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
     >
       {initialTab === "create" ? (
         <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>創</span>
-            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>สร้างห้องใหม่</span>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, marginBottom: 4 }}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 18 : 24, color: "var(--gold)" }}>創</span>
+            <span style={{ fontSize: compact ? 15 : 20, fontWeight: 700, color: "var(--ink)" }}>สร้างห้องใหม่</span>
           </div>
-          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ตั้งชื่อผู้เล่นเพื่อเริ่มเป็นเจ้าของห้อง</div>
+          <div style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-faint)", marginBottom: compact ? 12 : 20 }}>ตั้งชื่อผู้เล่นเพื่อเริ่มเป็นเจ้าของห้อง</div>
           <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={24}
             placeholder="ใส่ชื่อของคุณ"
-            style={{ ...inputStyle, marginBottom: 22 }}
+            style={{ ...inputStyle, marginBottom: compact ? 14 : 22 }}
           />
-          <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
+          <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             สร้างห้อง
           </button>
           {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
         </div>
       ) : (
         <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 24, color: "var(--gold)" }}>入</span>
-            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>เข้าร่วมห้อง</span>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, marginBottom: 4 }}>
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 18 : 24, color: "var(--gold)" }}>入</span>
+            <span style={{ fontSize: compact ? 15 : 20, fontWeight: 700, color: "var(--ink)" }}>เข้าร่วมห้อง</span>
           </div>
-          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 20 }}>ใส่ชื่อและรหัสห้องที่เพื่อนแชร์มา</div>
+          <div style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-faint)", marginBottom: compact ? 12 : 20 }}>ใส่ชื่อและรหัสห้องที่เพื่อนแชร์มา</div>
           <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>ชื่อผู้เล่น</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="ใส่ชื่อของคุณ" style={{ ...inputStyle, marginBottom: 16 }} />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="ใส่ชื่อของคุณ" style={{ ...inputStyle, marginBottom: compact ? 10 : 16 }} />
           <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>รหัสห้อง</label>
           <input
             value={roomCode}
             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
             maxLength={6}
             placeholder="รหัสห้อง 6 หลัก"
-            style={{ ...inputStyle, marginBottom: 22, letterSpacing: 3, textTransform: "uppercase" }}
+            style={{ ...inputStyle, marginBottom: compact ? 14 : 22, letterSpacing: 3, textTransform: "uppercase" }}
           />
-          <button onClick={handleJoin} disabled={busy || !name.trim() || !roomCode.trim()} className="btn-secondary" style={{ width: "100%", padding: 14, fontSize: 16, borderRadius: 10 }}>
+          <button onClick={handleJoin} disabled={busy || !name.trim() || !roomCode.trim()} className="btn-secondary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             เข้าร่วมห้อง
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: "18px 0 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: compact ? "12px 0 8px" : "18px 0 12px" }}>
             <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
             หรือ
             <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
           </div>
-          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: 12, fontSize: 14, borderColor: "var(--gold)" }}>
+          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
             เล่นกับบอท (ทดสอบคนเดียว)
           </button>
-          <div style={{ fontSize: 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
+          <div style={{ fontSize: compact ? 9.5 : 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
             สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
           </div>
 

@@ -1,6 +1,7 @@
 import type { PlayerView } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { generalDisplay } from "../data/generalNames";
+import { useDeviceMode } from "../lib/useDeviceMode";
 
 const ROLE_INFO: Record<string, { cn: string; name: string; goal: string }> = {
   lord: {
@@ -28,6 +29,7 @@ const ROLE_INFO: Record<string, { cn: string; name: string; goal: string }> = {
 export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () => void }) {
   const info = ROLE_INFO[me.role ?? ""] ?? { cn: "?", name: me.role ?? "?", goal: "" };
   const general = generalDisplay(me.generalId);
+  const { compact } = useDeviceMode();
 
   return (
     <ModalOverlay>
@@ -35,23 +37,25 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
         className="anim-pop"
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 440,
+          width: compact ? 300 : 440,
           maxWidth: "90vw",
+          maxHeight: compact ? "94vh" : "85vh",
+          overflowY: "auto",
           background: "linear-gradient(#241a11,#160f09)",
           border: "1px solid var(--panel-border-3)",
           borderRadius: 12,
-          padding: "34px 40px",
+          padding: compact ? "16px 18px" : "34px 40px",
           textAlign: "center",
           boxShadow: "0 22px 60px rgba(0,0,0,.7)",
         }}
       >
-        <div style={{ fontSize: 12, letterSpacing: 3, color: "var(--ink-faint)" }}>บทบาทของคุณ</div>
+        <div style={{ fontSize: compact ? 10.5 : 12, letterSpacing: 3, color: "var(--ink-faint)" }}>บทบาทของคุณ</div>
         <div
           style={{
-            width: 104,
-            height: 104,
+            width: compact ? 66 : 104,
+            height: compact ? 66 : 104,
             borderRadius: "50%",
-            margin: "16px auto 18px",
+            margin: compact ? "10px auto 10px" : "16px auto 18px",
             background: "radial-gradient(circle at 38% 34%, #e0b64a, #b07f1e)",
             display: "flex",
             alignItems: "center",
@@ -60,28 +64,28 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
             boxShadow: "0 10px 34px rgba(180,130,30,.5)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 56, color: "#3a2708" }}>{info.cn}</span>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 34 : 56, color: "#3a2708" }}>{info.cn}</span>
         </div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--gold-light)", fontWeight: 900 }}>{info.name}</div>
-        <div style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 4 }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: compact ? 20 : 30, color: "var(--gold-light)", fontWeight: 900 }}>{info.name}</div>
+        <div style={{ fontSize: compact ? 11.5 : 13, color: "var(--ink-faint)", marginTop: 4 }}>
           รับบทโดย {general.name}
         </div>
         <div
           style={{
-            fontSize: 13.5,
+            fontSize: compact ? 11.5 : 13.5,
             color: "var(--ink-muted)",
-            lineHeight: 1.6,
+            lineHeight: 1.5,
             background: "var(--panel-bg)",
             border: "1px solid var(--panel-border)",
             borderRadius: 8,
-            padding: "14px 16px",
-            margin: "20px 0 24px",
+            padding: compact ? "10px 12px" : "14px 16px",
+            margin: compact ? "12px 0 14px" : "20px 0 24px",
             textAlign: "left",
           }}
         >
           {info.goal}
         </div>
-        <button onClick={onClose} className="btn-primary" style={{ padding: "13px 48px", fontSize: 16, letterSpacing: 1 }}>
+        <button onClick={onClose} className="btn-primary" style={{ padding: compact ? "9px 32px" : "13px 48px", fontSize: compact ? 13.5 : 16, letterSpacing: 1 }}>
           เริ่มศึก ⚔
         </button>
       </div>
