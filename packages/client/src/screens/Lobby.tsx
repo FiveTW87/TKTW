@@ -206,7 +206,11 @@ function WaitingRoom() {
   const seats = roomState?.seats ?? [];
   const mySeat = seatIndex !== null ? seats[seatIndex] : undefined;
   const canStart = !!mySeat?.isHost && seats.length >= 3;
-  const playerCount = Math.max(seats.length, 1);
+  // The ring shows real seats plus exactly one "รอผู้เล่น" invitation slot
+  // (none once the room is full) — not a fixed 10-slot circle — so it grows
+  // organically as people join instead of leaving a wall of empty boxes.
+  const placeholderCount = seats.length < 10 ? 1 : 0;
+  const ringSize = Math.max(seats.length + placeholderCount, 1);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   const handleStart = async () => {
@@ -247,8 +251,8 @@ function WaitingRoom() {
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(94%, 900px)", height: "88%" }}>
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "88%", height: "84%", borderRadius: "50%", border: "2px solid rgba(150,110,50,.16)", boxShadow: "inset 0 0 70px rgba(0,0,0,.5)" }} />
         {seats.map((seat, i) => {
-          const relSeat = seatIndex !== null ? ((i - seatIndex) % playerCount + playerCount) % playerCount : i;
-          const pos = lobbyRingPosition(relSeat, playerCount);
+          const relSeat = seatIndex !== null ? ((i - seatIndex) % ringSize + ringSize) % ringSize : i;
+          const pos = lobbyRingPosition(relSeat, ringSize);
           const isSelf = seatIndex === i;
           return (
             <div key={i} style={{ position: "absolute", left: `${pos.leftPct}%`, top: `${pos.topPct}%`, transform: "translate(-50%,-50%)" }}>
@@ -284,18 +288,18 @@ function WaitingRoom() {
             </div>
           );
         })}
-        {Array.from({ length: Math.max(0, 10 - seats.length) }).map((_, i) => {
-          const relSeat = seatIndex !== null ? ((seats.length + i - seatIndex) % 10 + 10) % 10 : seats.length + i;
-          const pos = lobbyRingPosition(relSeat, 10);
+        {placeholderCount > 0 && (() => {
+          const relSeat = seatIndex !== null ? ((seats.length - seatIndex) % ringSize + ringSize) % ringSize : seats.length;
+          const pos = lobbyRingPosition(relSeat, ringSize);
           return (
-            <div key={`empty-${i}`} style={{ position: "absolute", left: `${pos.leftPct}%`, top: `${pos.topPct}%`, transform: "translate(-50%,-50%)" }}>
-              <div style={{ width: 168, height: 66, borderRadius: 12, border: "1.5px dashed var(--panel-border)", background: "rgba(20,14,9,.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "var(--ink-dim)" }}>
-                <span style={{ fontSize: 18 }}>＋</span>
-                <span style={{ fontSize: 11 }}>รอผู้เล่น</span>
+            <div style={{ position: "absolute", left: `${pos.leftPct}%`, top: `${pos.topPct}%`, transform: "translate(-50%,-50%)" }}>
+              <div style={{ width: 140, height: 54, borderRadius: 12, border: "1px dashed rgba(150,110,50,.35)", background: "rgba(20,14,9,.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "var(--ink-dim)" }}>
+                <span style={{ fontSize: 15 }}>＋</span>
+                <span style={{ fontSize: 10.5 }}>รอผู้เล่น</span>
               </div>
             </div>
           );
-        })}
+        })()}
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", textAlign: "center", pointerEvents: "none" }}>
           <div style={{ fontFamily: "var(--font-glyph)", fontSize: 52, color: "rgba(217,165,49,.28)" }}>桃園</div>
           <div style={{ fontSize: 11, color: "var(--ink-dim)", letterSpacing: 2 }}>สาบานร่วมรบ</div>

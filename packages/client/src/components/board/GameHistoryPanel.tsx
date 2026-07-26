@@ -8,7 +8,20 @@ export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; nar
   return (
     <aside
       className="panel-plain"
-      style={{ width: narrow ? "100%" : 300, flexShrink: 0, maxHeight: narrow ? "40vh" : undefined, display: "flex", flexDirection: "column", padding: "14px 16px" }}
+      style={{
+        width: narrow ? "100%" : 300,
+        flexShrink: 0,
+        // Capped to the viewport (not the row's own height, which can grow
+        // taller than 100vh when the board's content is tall) so the panel
+        // scrolls its own log list instead of pushing the page past the
+        // screen; sticky keeps it in view while the board scrolls under it.
+        maxHeight: narrow ? "40vh" : "100vh",
+        position: narrow ? undefined : "sticky",
+        top: narrow ? undefined : 0,
+        display: "flex",
+        flexDirection: "column",
+        padding: "14px 16px",
+      }}
     >
       <div style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>ประวัติการเล่น</div>
       <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>ล่าสุดอยู่บนสุด · {logs.length} เหตุการณ์</div>
