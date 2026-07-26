@@ -59,6 +59,8 @@ export function PlayerTile({
     return (
       <div
         onClick={targetable ? onClick : undefined}
+        role={targetable ? "button" : undefined}
+        aria-label={targetable ? player.name : undefined}
         style={{
           position: "relative",
           width: 84,
@@ -85,13 +87,11 @@ export function PlayerTile({
           ))}
         </div>
         {isCurrentTurn && <div className="glow-turn" />}
-        {targetable && (
-          <>
-            <div className="glow-target" />
-            <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", background: "var(--target-red)", color: "#f6ecd2", fontSize: 8, padding: "1px 6px", borderRadius: 8, zIndex: 2 }}>
-              {selected ? "เลือกแล้ว" : "เลือก"}
-            </div>
-          </>
+        {targetable && <div className={selected ? "glow-target-selected" : "glow-target"} />}
+        {targetable && selected && (
+          <div aria-label="เลือกแล้ว" style={{ position: "absolute", top: 2, right: 2, zIndex: 2, width: 12, height: 12, borderRadius: "50%", background: "var(--gold)", color: "#2e1f08", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, boxShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
+            ✓
+          </div>
         )}
         {onInspect && (
           <button
@@ -122,6 +122,8 @@ export function PlayerTile({
     <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
       <div
         onClick={targetable ? onClick : undefined}
+        role={targetable ? "button" : undefined}
+        aria-label={targetable ? player.name : undefined}
         style={{
           position: "relative",
           width: boxW,
@@ -257,26 +259,30 @@ export function PlayerTile({
           </span>
         )}
 
-        {targetable && (
-          <>
-            <div className="glow-target" style={{ borderRadius: 12 }} />
-            <div
-              style={{
-                position: "absolute",
-                top: 4,
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "var(--target-red)",
-                color: "#f6ecd2",
-                fontSize: 9,
-                padding: "1px 8px",
-                borderRadius: 10,
-                zIndex: 2,
-              }}
-            >
-              {selected ? "เลือกแล้ว" : "เลือก"}
-            </div>
-          </>
+        {targetable && <div className={selected ? "glow-target-selected" : "glow-target"} style={{ borderRadius: 12 }} />}
+        {targetable && selected && (
+          <div
+            aria-label="เลือกแล้ว"
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 4,
+              zIndex: 2,
+              width: 16,
+              height: 16,
+              borderRadius: "50%",
+              background: "var(--gold)",
+              color: "#2e1f08",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 10,
+              fontWeight: 900,
+              boxShadow: "0 1px 4px rgba(0,0,0,.5)",
+            }}
+          >
+            ✓
+          </div>
         )}
         {onInspect && (
           <button

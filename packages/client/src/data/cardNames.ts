@@ -87,6 +87,22 @@ export function cardInfo(typeKey: string): string {
   return CARD_INFO[typeKey] ?? "";
 }
 
+// Reverse lookup (display name -> typeKey) for surfaces that only have the
+// rendered Thai name to work with (e.g. the game log's free-text lines) and
+// need to find a card's info back from it — built once from CARD_DISPLAY so
+// there's no second, driftable name list to keep in sync.
+const CARD_KEY_BY_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(CARD_DISPLAY).map(([key, d]) => [d.name, key]),
+);
+
+export function cardInfoByName(name: string): { name: string; info: string } | undefined {
+  const key = CARD_KEY_BY_NAME[name];
+  if (!key) return undefined;
+  const info = cardInfo(key);
+  if (!info) return undefined;
+  return { name, info };
+}
+
 const SUIT_GLYPH: Record<string, string> = {
   spade: "♠",
   heart: "♥",

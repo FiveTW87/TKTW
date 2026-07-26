@@ -67,3 +67,17 @@ export type LeaveRoomAck = SimpleAck;
 export type QuickstartWithBotsAck =
   | { ok: true; roomCode: string; sessionToken: string; seatIndex: number }
   | { ok: false; error: string };
+
+// Real-time chat between players in a room — a pure fire-and-forget
+// broadcast (rooms are in-memory only, no DB, per spec), except the room
+// keeps a short rolling log so a reconnecting player can see what they
+// missed (resent alongside the rest of the rejoin restore payload).
+export interface ChatMessageView {
+  id: string;
+  seat: number;
+  playerName: string;
+  text: string;
+  sentAt: number;
+}
+
+export type SendChatAck = SimpleAck;

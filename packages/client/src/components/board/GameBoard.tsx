@@ -4,6 +4,7 @@ import { OpponentPanel } from "./OpponentPanel";
 import { CentralZone } from "./CentralZone";
 import { TurnPanel } from "./TurnPanel";
 import { relativeSeat, densityMode } from "../../lib/seatLayout";
+import { generalDisplay } from "../../data/generalNames";
 
 // SPEC §11.3 — the circular war-table: opponents on an arc above a central
 // zone, local player pinned as a bottom-center dock (rendered by the caller
@@ -64,6 +65,8 @@ export function GameBoard({
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
         currentTurnPlayerName={currentTurnPlayer?.name}
+        currentTurnPlayerSeat={currentTurnPlayer?.seat}
+        currentTurnGeneralGlyph={currentTurnPlayer ? generalDisplay(currentTurnPlayer.generalId).glyph : undefined}
         responderLabel={responderLabel}
         actionPrompt={actionPrompt}
         expiresAt={gameView.pendingDecision?.expiresAt}
@@ -105,6 +108,7 @@ export function GameBoard({
             busy={busy}
             lastPlay={lastPlay}
             discardCount={gameView.discardPile.length}
+            discardTop={gameView.discardPile.at(-1)}
             onOpenDiscard={onOpenDiscard}
           />
         </div>

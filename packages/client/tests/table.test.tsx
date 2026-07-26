@@ -47,6 +47,7 @@ beforeEach(() => {
     matchResult: null,
     error: null,
     answeringId: null,
+    chatMessages: [],
   });
 });
 
@@ -117,16 +118,16 @@ describe("Table: main action card play", () => {
 
     await waitFor(() => expect(screen.getByText("จู่โจม")).toBeInTheDocument());
 
-    // no confirm bar and no targetable badge until a card is chosen
+    // no confirm bar and no targetable highlight until a card is chosen
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
-    expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "p1" })).not.toBeInTheDocument();
 
     await user.click(screen.getByText("จู่โจม"));
 
     // selecting a card raises the confirm bar and lights up targets
     const confirmBtn = await screen.findByRole("button", { name: "ยืนยัน" });
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "p1" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "p1" }));
 
     await user.click(confirmBtn);
 
@@ -167,8 +168,8 @@ describe("Table: main action card play", () => {
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
 
     const confirmBtn = await screen.findByRole("button", { name: "ยืนยัน" });
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Bob" }));
     await user.click(confirmBtn);
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
@@ -435,7 +436,7 @@ describe("Table: character skills + use-skill", () => {
     });
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // no opponents become targetable (ชั่งดุลใต้หล้า takes no target)
-    expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bob" })).not.toBeInTheDocument();
     // confirm disabled until a card is chosen (needs ≥1 card)
     const confirm = await screen.findByRole("button", { name: "ยืนยัน" });
     expect(confirm).toBeDisabled();
@@ -712,8 +713,8 @@ describe("Table: card conversion + distance", () => {
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p0" });
 
     await user.click(screen.getByText("หลบคม")); // not dimmed — playable as จู่โจม
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Bob" }));
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
@@ -747,11 +748,11 @@ describe("Table: card conversion + distance", () => {
 
     await user.click(screen.getByText("ยืมดาบฆ่าคน"));
     // step 1: only the armed player (Bob) is selectable
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(1));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Bob" }));
     // step 2: the reachable victim (Cid) is now selectable
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(1));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Cid" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Cid" }));
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
 
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { targetIds: string[] };
@@ -775,6 +776,38 @@ describe("Table: card conversion + distance", () => {
     expect(screen.getByText(/จั่ว 2 ใบ/)).toBeInTheDocument();
   });
 
+  it("chat: typing a message and sending it emits chat:send and clears the input", async () => {
+    const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterGame("CHAT1", me, rest);
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} });
+
+    await user.click(screen.getByRole("button", { name: "แชท" }));
+    const input = screen.getByPlaceholderText("พิมพ์ข้อความ...");
+    await user.type(input, "gg");
+    await user.click(screen.getByRole("button", { name: "ส่ง" }));
+
+    await waitFor(() => expect(sentEvents.some((e) => e.event === "chat:send")).toBe(true));
+    const call = sentEvents.find((e) => e.event === "chat:send")!;
+    expect(call.payload).toEqual({ roomCode: "CHAT1", text: "gg" });
+    expect(input).toHaveValue("");
+  });
+
+  it("chat: an incoming chat:message from another player renders in the feed", async () => {
+    const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterGame("CHAT2", me, rest);
+    fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} });
+
+    await user.click(screen.getByRole("button", { name: "แชท" }));
+    fakeSocket.fire("chat:message", { id: "c1", seat: 1, playerName: "Bob", text: "หวัดดี", sentAt: Date.now() });
+
+    expect(await screen.findByText("หวัดดี")).toBeInTheDocument();
+    // "Bob" also names the opponent seat tile — just confirm the chat
+    // sender label rendered somewhere, not that it's the page's only match.
+    expect(screen.getAllByText("Bob").length).toBeGreaterThan(0);
+  });
+
   it("lijian: discard first, then only male opponents light up, sent in tap order", async () => {
     const me = player("p0", { generalId: "diaochan", faction: "qun", role: "lord", roleRevealed: true, gender: "female", hand: [{ id: "d1", typeKey: "shan", suit: "heart", rank: 1 }] });
     const rest = [
@@ -787,13 +820,18 @@ describe("Table: card conversion + distance", () => {
 
     await user.click(await screen.findByRole("button", { name: /ใช้สกิล/ }));
     // card-first: no targets until the discard card is chosen
-    expect(screen.queryAllByText(/^เลือก$/).length).toBe(0);
+    expect(screen.queryByRole("button", { name: "Male1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Male2" })).not.toBeInTheDocument();
     await user.click(screen.getByText("หลบคม"));
     // only the 2 males become targetable (female excluded)
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Male1" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Male2" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("button", { name: "Fem" })).not.toBeInTheDocument();
 
-    await user.click(screen.getAllByText("เลือก")[0]!); // Male1
-    await user.click(screen.getAllByText("เลือก")[0]!); // now Male2 (Male1 shows เลือกแล้ว)
+    await user.click(screen.getByRole("button", { name: "Male1" }));
+    await user.click(screen.getByRole("button", { name: "Male2" }));
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
 
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { choice: string; skillId: string; cardIds: string[]; targetIds: string[] };
@@ -816,8 +854,8 @@ describe("Table: card conversion + distance", () => {
     await user.click(await screen.findByRole("button", { name: /ใช้ทวน/ }));
     await user.click(screen.getByText("ท้อคืนชีพ"));
     await user.click(screen.getByText("หลบคม")); // 2 cards
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBeGreaterThan(0));
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Bob" }));
     await user.click(await screen.findByRole("button", { name: "ยืนยัน" }));
 
     const payload = sentEvents.find((e) => e.event === "game:answer")!.payload as { choice: string; cardIds: string[]; targetIds: string[] };
@@ -986,7 +1024,7 @@ describe("Table: smart card play", () => {
 
     // confirm bar appears; nothing auto-played; opponents NOT targetable
     expect(await screen.findByRole("button", { name: "ยืนยัน" })).toBeInTheDocument();
-    expect(screen.queryByText("เลือก")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bob" })).not.toBeInTheDocument();
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
   });
 });
@@ -1057,7 +1095,10 @@ describe("Table: จู่โจม usage limit (the second-จู่โจม f
     await user.click(await screen.findByText("จู่โจม"));
     // no block — the confirm flow starts (targets light up)
     expect(screen.queryByText(/ได้ครั้งเดียวต่อเทิร์น/)).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Carol" })).toBeInTheDocument();
+    });
   });
 });
 
@@ -1077,15 +1118,18 @@ describe("Table: single-target cap (the reported freeze)", () => {
 
     await user.click(await screen.findByText("จู่โจม"));
     // both opponents become targetable
-    await waitFor(() => expect(screen.getAllByText("เลือก").length).toBe(2));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Carol" })).toBeInTheDocument();
+    });
 
     // tap first opponent → exactly one selected
-    await user.click(screen.getAllByText("เลือก")[0]!);
-    expect(screen.getAllByText("เลือกแล้ว")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Bob" }));
+    expect(screen.getAllByLabelText("เลือกแล้ว")).toHaveLength(1);
 
     // tap the other → still exactly one selected (the first was replaced, not stacked)
-    await user.click(screen.getByText("เลือก"));
-    expect(screen.getAllByText("เลือกแล้ว")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Carol" }));
+    expect(screen.getAllByLabelText("เลือกแล้ว")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "ยืนยัน" }));
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
@@ -1112,7 +1156,7 @@ describe("Table: single-target cap (the reported freeze)", () => {
     const confirm = await screen.findByRole("button", { name: "ยืนยัน" });
     expect(confirm).toBeDisabled();
 
-    await user.click(screen.getAllByText("เลือก")[0]!);
+    await user.click(await screen.findByRole("button", { name: "Bob" }));
     expect(confirm).toBeEnabled();
   });
 });

@@ -45,6 +45,7 @@ export function SelfDock({
   zhangbaMode,
   onToggleZhangba,
   phaseLabel,
+  turnNumber,
   showEndPhase,
   onEndPhase,
   onLeave,
@@ -75,6 +76,7 @@ export function SelfDock({
   zhangbaMode: boolean;
   onToggleZhangba: () => void;
   phaseLabel: string;
+  turnNumber: number;
   showEndPhase: boolean;
   onEndPhase: () => void;
   onLeave: () => void;
@@ -98,10 +100,10 @@ export function SelfDock({
               width: 250,
               flexShrink: 0,
               background: "linear-gradient(#241a11,#160f09)",
-              border: `1px solid ${selfTargetSelected ? "var(--gold)" : "var(--panel-border-3)"}`,
+              border: "1px solid var(--panel-border-3)",
               borderRadius: 12,
               overflow: "hidden",
-              boxShadow: selfTargetSelected ? "0 0 14px rgba(217,165,49,.65)" : "0 10px 30px rgba(0,0,0,.6)",
+              boxShadow: "0 10px 30px rgba(0,0,0,.6)",
               cursor: selfTargetable ? "pointer" : "default",
               padding: 8,
               display: "flex",
@@ -141,7 +143,31 @@ export function SelfDock({
             <div style={{ position: "absolute", top: 0, right: 0, width: 22, height: "100%", background: factionColor(me.faction), opacity: 0.9, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontFamily: "var(--font-glyph)", fontSize: 14, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>{factionLabel(me.faction).slice(0, 1)}</span>
             </div>
-            {selfTargetable && <div className="glow-target" style={{ borderRadius: 12 }} />}
+            {selfTargetable && <div className={selfTargetSelected ? "glow-target-selected" : "glow-target"} style={{ borderRadius: 12 }} />}
+            {selfTargetable && selfTargetSelected && (
+              <div
+                aria-label="เลือกแล้ว"
+                style={{
+                  position: "absolute",
+                  top: 4,
+                  right: 26,
+                  zIndex: 2,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "var(--gold)",
+                  color: "#2e1f08",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 900,
+                  boxShadow: "0 1px 4px rgba(0,0,0,.5)",
+                }}
+              >
+                ✓
+              </div>
+            )}
           </div>
           {/* pending judgment cards (delayed tricks awaiting judgment) — attached
               beside this panel, per bug list "Attach Delayed Tricks to target". */}
@@ -201,7 +227,7 @@ export function SelfDock({
           <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", paddingBottom: 4 }}>
           {myHand.map((c) => {
             const { tappable, dimmed } = getCardState(c);
             return (
@@ -244,17 +270,30 @@ export function SelfDock({
           <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--panel-bg)", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
             {phaseLabel}
           </span>
-          {showEndPhase && (
-            <button onClick={onEndPhase} disabled={busy} className="btn-primary" style={{ padding: "9px 18px", fontSize: 13, width: "100%" }}>
-              จบเทิร์น
-            </button>
-          )}
           <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
           <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: "6px 10px", fontSize: 11, borderRadius: 5 }}>
             ออกจากเกม
           </button>
         </div>
       </div>
+
+      {/* fixed circular end-turn button, bottom-right of the viewport — pulled
+          out of the linear column per the reference mockup's big round CTA */}
+      {showEndPhase && (
+        <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 60, textAlign: "center" }}>
+          <button
+            onClick={onEndPhase}
+            disabled={busy}
+            className="btn-primary"
+            style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}
+          >
+            จบเทิร์น
+          </button>
+          <div style={{ marginTop: 6, fontSize: 11, color: "var(--ink-muted)", background: "rgba(20,14,9,.85)", borderRadius: 8, padding: "2px 10px" }}>
+            เทิร์นที่ {turnNumber}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

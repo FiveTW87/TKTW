@@ -81,6 +81,11 @@ export const answerSchema = z.object({
   pass: z.boolean().optional(),
 });
 
+export const sendChatSchema = z.object({
+  roomCode: roomCodeSchema,
+  text: z.string().trim().min(1).max(300),
+});
+
 export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type JoinRoomInput = z.infer<typeof joinRoomSchema>;
 export type RejoinRoomInput = z.infer<typeof rejoinRoomSchema>;
@@ -89,3 +94,4 @@ export type LeaveRoomInput = z.infer<typeof leaveRoomSchema>;
 export type ReturnToLobbyInput = z.infer<typeof returnToLobbySchema>;
 export type AnswerInput = z.infer<typeof answerSchema>;
 export type QuickstartWithBotsInput = z.infer<typeof quickstartWithBotsSchema>;
+export type SendChatInput = z.infer<typeof sendChatSchema>;

@@ -1,11 +1,20 @@
+import { useRef } from "react";
 import { useCountdown } from "../../lib/useCountdown";
+
+const RING_R = 26;
+const RING_C = 2 * Math.PI * RING_R;
 
 // SPEC §11.4 — turn/phase/timer, pinned top-center and above any dialog
 // (z-index 90 > ModalOverlay's 40) so it's readable even mid-decision.
+// Portrait-card style with a circular countdown ring, per the reference
+// mockup — the ring's "full" length is captured from whatever `remaining`
+// was the first time a given `expiresAt` was seen, so the drain is accurate
+// without the server needing to send a separate total-duration field.
 export function TurnPanel({
   turnNumber,
   phaseLabel,
   currentTurnPlayerName,
+  currentTurnPlayerSeat,
   currentTurnGeneralGlyph,
   responderLabel,
   actionPrompt,
@@ -15,6 +24,7 @@ export function TurnPanel({
   turnNumber: number;
   phaseLabel: string;
   currentTurnPlayerName?: string | undefined;
+  currentTurnPlayerSeat?: number | undefined;
   currentTurnGeneralGlyph?: string | undefined;
   /** e.g. "กำลังรอ Nont ใช้ หลบคม" — set when someone else must respond. */
   responderLabel?: string | null | undefined;
@@ -24,6 +34,14 @@ export function TurnPanel({
   serverNow: number;
 }) {
   const remaining = useCountdown(expiresAt, serverNow);
+  const totalRef = useRef<{ key: number; total: number } | null>(null);
+  if (expiresAt !== undefined && remaining !== null && totalRef.current?.key !== expiresAt) {
+    totalRef.current = { key: expiresAt, total: Math.max(remaining, 1) };
+  }
+  const total = expiresAt !== undefined ? (totalRef.current?.total ?? remaining ?? 1) : null;
+  const pct = total && remaining !== null ? Math.max(0, Math.min(1, remaining / total)) : 1;
+  const urgent = remaining !== null && remaining <= 5;
+
   return (
     <div
       style={{
@@ -34,40 +52,61 @@ export function TurnPanel({
         zIndex: 90,
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 12,
         background: "linear-gradient(#241811,#180f09)",
         border: "1px solid var(--panel-border-3)",
-        borderRadius: 12,
-        padding: "8px 18px",
+        borderRadius: 14,
+        padding: "8px 16px 8px 8px",
         boxShadow: "0 8px 24px rgba(0,0,0,.5), inset 0 0 0 1px rgba(217,165,49,.1)",
-        maxWidth: "92vw",
+        maxWidth: "94vw",
         flexWrap: "wrap",
         justifyContent: "center",
       }}
     >
-      <div className="glow-turn" style={{ borderRadius: 12 }} />
-      {currentTurnGeneralGlyph && (
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph}</span>
-      )}
-      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
-        เทิร์น {turnNumber} · {currentTurnPlayerName ?? "-"}
-      </span>
-      <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{phaseLabel}</span>
-      {responderLabel && <span style={{ fontSize: 12, color: "var(--target-red)" }}>{responderLabel}</span>}
-      {actionPrompt && <span style={{ fontSize: 12, color: "var(--gold)", fontWeight: 600 }}>{actionPrompt}</span>}
+      <div className="glow-turn" style={{ borderRadius: 14 }} />
+
+      {/* portrait — same card-back placeholder treatment as every seat tile */}
+      <div className="card-back" style={{ position: "relative", width: 44, height: 52, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--panel-border-2)" }}>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph ?? "?"}</span>
+        {currentTurnPlayerSeat !== undefined && (
+          <span style={{ position: "absolute", top: -4, left: -4, width: 16, height: 16, borderRadius: "50%", background: "var(--gold)", color: "#2e1f08", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
+            {currentTurnPlayerSeat + 1}
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{currentTurnPlayerName ?? "-"}</span>
+          <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>{phaseLabel}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 10, color: "var(--ink-faint)", background: "rgba(0,0,0,.3)", borderRadius: 6, padding: "1px 6px" }}>รอบ {turnNumber}</span>
+          {responderLabel && <span style={{ fontSize: 11, color: "var(--target-red)" }}>{responderLabel}</span>}
+          {actionPrompt && <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>{actionPrompt}</span>}
+        </div>
+      </div>
+
       {remaining !== null && (
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: remaining <= 5 ? "var(--target-red)" : "var(--ink-muted)",
-            background: "rgba(0,0,0,.3)",
-            borderRadius: 8,
-            padding: "2px 8px",
-          }}
-        >
-          เหลือ {remaining} วินาที
-        </span>
+        <svg width={60} height={60} viewBox="0 0 60 60" style={{ flexShrink: 0 }}>
+          <circle cx={30} cy={30} r={RING_R} fill="rgba(0,0,0,.3)" stroke="rgba(255,255,255,.08)" strokeWidth={5} />
+          <circle
+            cx={30}
+            cy={30}
+            r={RING_R}
+            fill="none"
+            stroke={urgent ? "var(--target-red)" : "var(--green)"}
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeDasharray={RING_C}
+            strokeDashoffset={RING_C * (1 - pct)}
+            transform="rotate(-90 30 30)"
+            style={{ transition: "stroke-dashoffset .3s linear" }}
+          />
+          <text x={30} y={34} textAnchor="middle" fontSize={16} fontWeight={900} fill={urgent ? "var(--target-red)" : "var(--ink)"}>
+            {remaining}
+          </text>
+        </svg>
       )}
     </div>
   );

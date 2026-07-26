@@ -42,6 +42,12 @@ export function ModalPanel({
       style={{
         width,
         maxWidth: "90vw",
+        // Capped + scrollable so a tall panel (many rows/cards) never grows
+        // past the viewport — without this, a centered fixed-position
+        // overlay can render its header/close button off the top of the
+        // screen when its content is taller than the window.
+        maxHeight: "85vh",
+        overflowY: "auto",
         background: "linear-gradient(#241a11,#160f09)",
         border: "1px solid var(--panel-border-3)",
         borderRadius: 12,

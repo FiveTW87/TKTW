@@ -5,6 +5,49 @@ import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardName
 
 const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
+// A face-up card visual shared by the "last played" and "discard pile top"
+// zones — both show a real card face now instead of a generic placeholder.
+function CardFace({ card, rotate }: { card: CardView; rotate: number }) {
+  const [hovered, setHovered] = useState(false);
+  const info = cardInfo(card.typeKey);
+  return (
+    <div
+      className="anim-pop"
+      key={card.id}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 72,
+        height: 100,
+        margin: "0 auto",
+        borderRadius: 6,
+        background: "var(--card-bg)",
+        border: "1px solid var(--card-border-2)",
+        boxShadow: "0 6px 16px rgba(60,40,15,.22)",
+        padding: 6,
+        position: "relative",
+        transform: `rotate(${rotate}deg)`,
+        cursor: info ? "help" : "default",
+      }}
+    >
+      <div style={{ position: "absolute", top: 4, left: 6, lineHeight: 1, textAlign: "center" }}>
+        <div style={{ fontWeight: 700, fontSize: 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
+        <div style={{ fontSize: 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
+      </div>
+      <div style={{ marginTop: 20, textAlign: "center" }}>
+        <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
+      </div>
+      <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--card-ink)" }}>
+        {cardDisplay(card.typeKey).name}
+      </div>
+      {/* pointer-events: none on the tooltip itself (CardTooltip) so it never
+          blocks a click on whatever sits beneath/behind it (bug list: "preview
+          overlays do not block pointer events"). */}
+      {hovered && info && <CardTooltip name={cardDisplay(card.typeKey).name} info={info} />}
+    </div>
+  );
+}
+
 // RT's centralZone label pill — a small badge above each zone's card visual.
 function ZoneLabel({ children }: { children: string }) {
   return (
@@ -37,6 +80,7 @@ export function CentralZone({
   busy,
   lastPlay,
   discardCount,
+  discardTop,
   onOpenDiscard,
 }: {
   drawPileCount: number;
@@ -46,11 +90,9 @@ export function CentralZone({
   busy: boolean;
   lastPlay: CardView | undefined;
   discardCount: number;
+  discardTop: CardView | undefined;
   onOpenDiscard: () => void;
 }) {
-  const [hoveredLast, setHoveredLast] = useState(false);
-  const lastInfo = lastPlay ? cardInfo(lastPlay.typeKey) : undefined;
-
   const CORNER_BRACKET: React.CSSProperties = { position: "absolute", width: 16, height: 16, opacity: 0.5, pointerEvents: "none" };
   const DIVIDER = (
     <div style={{ alignSelf: "stretch", width: 1, background: "linear-gradient(180deg,transparent,rgba(217,165,49,.28),transparent)", flexShrink: 0 }} />
@@ -104,65 +146,29 @@ export function CentralZone({
       {DIVIDER}
 
       {/* last played card — hover/tap to preview its effect text */}
-      <div
-        style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}
-        onMouseEnter={() => setHoveredLast(true)}
-        onMouseLeave={() => setHoveredLast(false)}
-        onClick={() => setHoveredLast((v) => !v)}
-      >
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}>
         <ZoneLabel>เพิ่งเล่น</ZoneLabel>
-        {lastPlay ? (
-          <div
-            className="anim-pop"
-            key={lastPlay.id}
-            style={{
-              width: 72,
-              height: 100,
-              margin: "0 auto",
-              borderRadius: 6,
-              background: "var(--card-bg)",
-              border: "1px solid var(--card-border-2)",
-              boxShadow: "0 6px 16px rgba(60,40,15,.22)",
-              padding: 6,
-              position: "relative",
-              transform: "rotate(-4deg)",
-              cursor: lastInfo ? "help" : "default",
-            }}
-          >
-            <div style={{ position: "absolute", top: 4, left: 6, lineHeight: 1, textAlign: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 11, color: SUIT_COLOR[lastPlay.suit] }}>{rankLabel(lastPlay.rank)}</div>
-              <div style={{ fontSize: 11, color: SUIT_COLOR[lastPlay.suit] }}>{suitGlyph(lastPlay.suit)}</div>
-            </div>
-            <div style={{ marginTop: 20, textAlign: "center" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 30, color: "var(--card-ink-muted)" }}>{cardDisplay(lastPlay.typeKey).glyph}</span>
-            </div>
-            <div style={{ position: "absolute", bottom: 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: 9, color: "var(--card-ink)" }}>
-              {cardDisplay(lastPlay.typeKey).name}
-            </div>
-            {/* pointer-events: none on the tooltip itself (CardTooltip) so it
-                never blocks a click on whatever sits beneath/behind it (bug list:
-                "preview overlays do not block pointer events"). */}
-            {hoveredLast && lastInfo && <CardTooltip name={cardDisplay(lastPlay.typeKey).name} info={lastInfo} />}
-          </div>
-        ) : (
-          <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>
-        )}
+        {lastPlay ? <CardFace card={lastPlay} rotate={-4} /> : <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>}
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
       </div>
 
       {DIVIDER}
 
-      {/* discard pile — click to browse the full pile */}
-      <div style={{ textAlign: "center", zIndex: 1 }}>
+      {/* discard pile — its own top card face; click to browse the full pile */}
+      <div style={{ textAlign: "center", zIndex: 1, minWidth: 96 }}>
         <ZoneLabel>กองทิ้ง</ZoneLabel>
         <button
           onClick={() => discardCount > 0 && onOpenDiscard()}
           title="ดูกองทิ้งทั้งหมด"
-          style={{ all: "unset", cursor: discardCount > 0 ? "pointer" : "default" }}
+          style={{ all: "unset", cursor: discardCount > 0 ? "pointer" : "default", display: "block" }}
         >
-          <div style={{ width: 62, height: 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "rgba(120,90,40,.4)" }}>棄</span>
-          </div>
+          {discardTop ? (
+            <CardFace card={discardTop} rotate={4} />
+          ) : (
+            <div style={{ width: 62, height: 88, borderRadius: 6, background: "#e9dcbc", border: "1px dashed var(--card-border-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: 22, color: "rgba(120,90,40,.4)" }}>棄</span>
+            </div>
+          )}
           <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-muted)" }}>กองทิ้ง · <b>{discardCount}</b> {discardCount > 0 && <span style={{ color: "var(--red)" }}>· ดู</span>}</div>
         </button>
       </div>

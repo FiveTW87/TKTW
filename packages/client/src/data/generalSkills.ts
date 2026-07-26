@@ -146,3 +146,14 @@ const SKILL_BY_ID: Record<string, SkillDisplay> = Object.fromEntries(
 export function skillById(skillId: string): SkillDisplay | undefined {
   return SKILL_BY_ID[skillId];
 }
+
+// Reverse lookup (display name -> SkillDisplay), same rationale as
+// cardNames.ts's cardInfoByName — the game log only has the rendered Thai
+// name to work with, not the skillId.
+const SKILL_BY_NAME: Record<string, SkillDisplay> = Object.fromEntries(
+  Object.values(GENERAL_SKILLS).flatMap((skills) => skills.map((s) => [s.name, s])),
+);
+
+export function skillByName(name: string): SkillDisplay | undefined {
+  return SKILL_BY_NAME[name];
+}

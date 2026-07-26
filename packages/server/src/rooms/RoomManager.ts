@@ -10,7 +10,7 @@
 // that harder problem but isn't wired in here; see gameFlow.ts.
 import { randomUUID } from "node:crypto";
 import { createIdentityGame, createRng, type GameSession } from "@tktw/engine";
-import { ROOM_CODE_ALPHABET, type RoomPhase, type ConnectionStatus, type MatchResult } from "@tktw/shared";
+import { ROOM_CODE_ALPHABET, type RoomPhase, type ConnectionStatus, type MatchResult, type ChatMessageView } from "@tktw/shared";
 
 export type { RoomPhase };
 
@@ -74,7 +74,13 @@ export interface GameRoom {
    *  Only successes are cached — a genuine rejection is safe to just
    *  re-validate and re-reject identically. Reset every new match. */
   answeredActionIds?: Map<string, { ok: true }>;
+  /** Real-time chat between players — a bounded rolling log (see
+   *  CHAT_LOG_LIMIT) so a reconnecting player can see recent history; not
+   *  full persistence, rooms stay purely in-memory per spec. */
+  chatLog: ChatMessageView[];
 }
+
+export const CHAT_LOG_LIMIT = 50;
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 10;
@@ -110,6 +116,7 @@ export class RoomManager {
       seats: [{ name: hostName, sessionToken, connected: true, connectionStatus: "connected", isHost: true, isBot: false }],
       createdAt: Date.now(),
       emptySince: null,
+      chatLog: [],
     };
     this.rooms.set(code, room);
     return { room, sessionToken, seatIndex: 0 };

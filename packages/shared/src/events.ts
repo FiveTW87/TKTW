@@ -10,10 +10,12 @@ export const ClientEvents = {
   RoomQuickstartWithBots: "room:quickstartWithBots",
   RoomReturnToLobby: "room:returnToLobby",
   GameAnswer: "game:answer",
+  ChatSend: "chat:send",
 } as const;
 
 export const ServerEvents = {
   RoomState: "room:state",
   GameView: "game:view",
   MatchResult: "game:result",
+  ChatMessage: "chat:message",
 } as const;

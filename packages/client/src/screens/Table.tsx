@@ -604,6 +604,7 @@ export function Table() {
               dispatch({ type: "SET_ZHANGBA_MODE", on: true });
             }}
             phaseLabel={phaseLabel}
+            turnNumber={gameView.turnNumber}
             showEndPhase={isMyDecision && isMainAction}
             onEndPhase={submitEndPhase}
             onLeave={() => setConfirmingLeave(true)}

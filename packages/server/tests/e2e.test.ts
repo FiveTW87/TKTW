@@ -608,6 +608,43 @@ describe("identity, leave & connection status (Phase 2 Part A)", () => {
   });
 });
 
+describe("chat", () => {
+  it("broadcasts a chat message to everyone in the room, including the sender", async () => {
+    const { sockets, roomCode } = await createAndFillRoom(["Alice", "Bob"]);
+
+    const bobHeard = waitForEvent<{ seat: number; playerName: string; text: string }>(sockets[1]!, "chat:message");
+    const aliceHeard = waitForEvent<{ seat: number; playerName: string; text: string }>(sockets[0]!, "chat:message");
+
+    const ack = await emitAck<{ ok: boolean }>(sockets[0]!, "chat:send", { roomCode, text: "gg" });
+    expect(ack.ok).toBe(true);
+
+    const [bobMsg, aliceMsg] = await Promise.all([bobHeard, aliceHeard]);
+    expect(bobMsg).toEqual({ seat: 0, playerName: "Alice", text: "gg", id: expect.any(String), sentAt: expect.any(Number) });
+    expect(aliceMsg).toEqual(bobMsg);
+  });
+
+  it("rejects a message from a socket that isn't a member of the room", async () => {
+    const { roomCode } = await createAndFillRoom(["Alice", "Bob"]);
+    const outsider = await connectClient();
+    const ack = await emitAck<{ ok: boolean; error?: string }>(outsider, "chat:send", { roomCode, text: "hi" });
+    expect(ack.ok).toBe(false);
+  });
+
+  it("replays the room's chat history to a reconnecting socket", async () => {
+    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob"]);
+    await emitAck<{ ok: boolean }>(sockets[0]!, "chat:send", { roomCode, text: "before disconnect" });
+
+    sockets[1]!.disconnect();
+    const bobAgain = await connectClient();
+    const replayed = waitForEvent<{ text: string }>(bobAgain, "chat:message");
+    const rejoin = await emitAck<{ ok: boolean }>(bobAgain, "room:rejoin", { roomCode, sessionToken: tokens[1] });
+    expect(rejoin.ok).toBe(true);
+
+    const msg = await replayed;
+    expect(msg.text).toBe("before disconnect");
+  });
+});
+
 // Phase 2 Part B: grace-expiry death, leave-mid-match forfeit, and abandoned.
 // These need a real (short) grace window, so each swaps in a fresh server
 // configured with gracePeriodMs — the shared beforeEach server keeps the long

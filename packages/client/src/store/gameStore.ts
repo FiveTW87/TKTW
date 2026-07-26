@@ -12,6 +12,7 @@ import {
   type GameView,
   type PlayerAnswer,
   type MatchResult,
+  type ChatMessageView,
 } from "@tktw/shared";
 
 const STORAGE_KEY = "tktw_session";
@@ -84,6 +85,9 @@ interface GameStoreState {
   /** Rolling diagnostic trace (last ~60 events) for the on-screen debug panel
    *  — every view/decision/answer/error, so a freeze can be reported exactly. */
   debug: string[];
+  /** Real-time chat between players in the room — appended live, and
+   *  replayed in full on rejoin (server resends its rolling log). */
+  chatMessages: ChatMessageView[];
 
   createRoom: (playerName: string) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
@@ -92,6 +96,7 @@ interface GameStoreState {
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
   leaveRoom: () => Promise<void>;
   returnToLobby: () => Promise<void>;
+  sendChat: (text: string) => Promise<void>;
   clearError: () => void;
   dismissSessionExpired: () => void;
 }
@@ -170,6 +175,12 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     pushDebug(`result → ${payload.endReason} (matchId ${payload.matchId})`);
     set({ matchResult: payload });
   });
+  // A rejoin (fresh load or live reconnect) replays the room's whole rolling
+  // chat log — dedupe by id so a reconnect doesn't double up messages the
+  // client already has.
+  socket.on(ServerEvents.ChatMessage, (payload: ChatMessageView) =>
+    set((s) => (s.chatMessages.some((m) => m.id === payload.id) ? s : { chatMessages: [...s.chatMessages, payload] })),
+  );
   if (socket.connected) void attemptRejoin();
 
   return {
@@ -186,6 +197,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     sessionExpired: false,
     answeringId: null,
     debug: [],
+    chatMessages: [],
 
     createRoom: async (playerName) => {
       const ack = await emitAck<CreateRoomAck>(ClientEvents.RoomCreate, { playerName });
@@ -284,7 +296,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         matchResult: null,
         error: null,
         sessionExpired: false,
+        chatMessages: [],
       });
+    },
+
+    sendChat: async (text) => {
+      const { roomCode } = get();
+      const trimmed = text.trim();
+      if (!roomCode || !trimmed) return;
+      const ack = await emitAck<SimpleAck>(ClientEvents.ChatSend, { roomCode, text: trimmed });
+      if (!ack.ok) set({ error: ack.error });
     },
 
     returnToLobby: async () => {

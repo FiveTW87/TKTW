@@ -101,7 +101,20 @@ function TrickStack({ cards }: { cards: CardView[] }) {
       {open && (
         <ModalOverlay onClose={() => setOpen(false)}>
           <ModalPanel width={340}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+                position: "sticky",
+                top: -26,
+                background: "linear-gradient(#241a11,#160f09)",
+                paddingTop: 26,
+                marginTop: -26,
+                zIndex: 1,
+              }}
+            >
               <span style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>การ์ดอุบายที่ติดอยู่ · {cards.length} ใบ</span>
               <button onClick={() => setOpen(false)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }}>
                 ปิด

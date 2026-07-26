@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Server, Socket } from "socket.io";
 import { respond, type PlayerAnswer } from "@tktw/engine";
 import {
@@ -9,11 +10,13 @@ import {
   answerSchema,
   quickstartWithBotsSchema,
   returnToLobbySchema,
+  sendChatSchema,
   ClientEvents,
   ServerEvents,
   type AnswerInput,
+  type ChatMessageView,
 } from "@tktw/shared";
-import { RoomManager, RoomError, seatPlayerId, type GameRoom } from "./rooms/RoomManager";
+import { RoomManager, RoomError, seatPlayerId, type GameRoom, CHAT_LOG_LIMIT } from "./rooms/RoomManager";
 import {
   afterRespond,
   beginRevealPhase,
@@ -182,6 +185,9 @@ export function registerSocketHandlers(
         // result screen — the broadcast at match-end only reached whoever
         // was connected at that moment.
         if (room.phase === "ended" && room.result) socket.emit(ServerEvents.MatchResult, room.result);
+        // Chat history: the room's rolling log only reached whoever was
+        // connected as each message was sent — replay it to this socket alone.
+        for (const message of room.chatLog) socket.emit(ServerEvents.ChatMessage, message);
       } catch (err) {
         fail(ack, err, "rejoin failed");
       }
@@ -216,6 +222,33 @@ export function registerSocketHandlers(
         ok(ack);
         forfeitAndContinue(io, rooms, room, seatIndex, decisionTimeoutMs, botAnswerDelayMs);
       }
+    });
+
+    socket.on(ClientEvents.ChatSend, (raw: unknown, ack: Ack) => {
+      const parsed = sendChatSchema.safeParse(raw);
+      if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+
+      const room = rooms.getRoom(parsed.data.roomCode);
+      if (!room) return fail(ack, new RoomError("room not found"), "room not found");
+      if (data.roomCode !== room.code || data.seatIndex === undefined) {
+        return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
+      }
+
+      const seat = room.seats[data.seatIndex];
+      if (!seat) return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
+
+      const message: ChatMessageView = {
+        id: randomUUID(),
+        seat: data.seatIndex,
+        playerName: seat.name,
+        text: parsed.data.text,
+        sentAt: Date.now(),
+      };
+      room.chatLog.push(message);
+      if (room.chatLog.length > CHAT_LOG_LIMIT) room.chatLog.splice(0, room.chatLog.length - CHAT_LOG_LIMIT);
+
+      ok(ack);
+      io.to(room.code).emit(ServerEvents.ChatMessage, message);
     });
 
     socket.on(ClientEvents.RoomStart, (raw: unknown, ack: Ack) => {
