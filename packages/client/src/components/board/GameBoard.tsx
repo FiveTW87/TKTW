@@ -60,11 +60,11 @@ export function GameBoard({
   const currentTurnPlayer = gameView.players.find((p) => p.id === currentTurnPlayerId);
   const { compact } = useDeviceMode();
   const ringMinHeight = compact
-    ? density === "head" ? 170 : density === "compact" ? 190 : 210
+    ? density === "head" ? 130 : density === "compact" ? 145 : 160
     : density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
-    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "44px 8px 8px" : "70px 12px 24px", position: "relative" }}>
+    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "70px 12px 24px", position: "relative" }}>
       <TurnPanel
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
@@ -81,7 +81,7 @@ export function GameBoard({
           container so arc percentages resolve against the same box. Flex-grows
           to fill whatever vertical/horizontal space the viewport has, instead
           of a small fixed box that leaves the rest of the screen blank. */}
-      <div className="panel-plain" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: 14 }}>
+      <div className="panel-plain" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: compact ? 6 : 14 }}>
         {others.map((p) => {
           const dist = attackDistanceFor(p);
           return (
@@ -103,7 +103,7 @@ export function GameBoard({
           );
         })}
 
-        <div style={{ position: "absolute", left: "50%", top: "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 300 : 420 }}>
+        <div style={{ position: "absolute", left: "50%", top: compact ? "58%" : "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 300 : 420 }}>
           <CentralZone
             drawPileCount={gameView.drawPileCount}
             pendingReveal={pendingReveal}

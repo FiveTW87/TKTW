@@ -18,6 +18,7 @@ import { skillInteraction, sameFactionTeammateAlive, activeSkillSpec } from "../
 import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/conversions";
 import { attackDistance, weaponRange } from "../data/distance";
 import { useIsNarrow } from "../lib/useIsNarrow";
+import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
 import { HandCard } from "../components/HandCard";
 
@@ -67,6 +68,7 @@ export function Table() {
   const debug = useGameStore((s) => s.debug);
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
+  const { compact } = useDeviceMode();
 
   const pending = gameView?.pendingDecision;
   const decisionKey = pending?.id ?? null;
@@ -544,7 +546,13 @@ export function Table() {
           always owns its own reserved column and never floats over the board
           — previously a position:fixed sidebar could overlap GameBoard's own
           independently-centered viewport-height block at normal desktop widths. */}
-      <div style={{ display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh", position: "relative" }}>
+      <div
+        style={
+          compact
+            ? { display: "flex", flexDirection: narrow ? "column" : "row", height: "100vh", overflow: "hidden", position: "relative" }
+            : { display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh", position: "relative" }
+        }
+      >
       <GameHistoryPanel gameView={gameView} narrow={narrow} />
 
       <GameBoard

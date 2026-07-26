@@ -81,7 +81,7 @@ export function SelfDock({
   const { compact } = useDeviceMode();
 
   return (
-    <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 8 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
+    <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 6 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
           self-target when helping. Uses the same SeatTile.dc.html composition
           as opponents (portrait+badge / info / faction ribbon), sized larger
@@ -93,7 +93,7 @@ export function SelfDock({
             onClick={selfTargetable ? onToggleSelfTarget : undefined}
             style={{
               position: "relative",
-              width: compact ? 150 : 250,
+              width: compact ? 140 : 250,
               flexShrink: 0,
               background: "linear-gradient(#241a11,#160f09)",
               border: "1px solid var(--panel-border-3)",
@@ -101,18 +101,18 @@ export function SelfDock({
               overflow: "hidden",
               boxShadow: "0 10px 30px rgba(0,0,0,.6)",
               cursor: selfTargetable ? "pointer" : "default",
-              padding: compact ? 5 : 8,
+              padding: compact ? 4 : 8,
               display: "flex",
-              gap: compact ? 5 : 8,
+              gap: compact ? 4 : 8,
             }}
           >
             {isMyTurn && <div className="glow-turn" style={{ borderRadius: 12 }} />}
             {/* portrait, with the seat number badge (gold — self, per SeatTile.dc.html) */}
             <div
               className="card-back"
-              style={{ width: compact ? 46 : 78, height: compact ? 56 : 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+              style={{ width: compact ? 40 : 78, height: compact ? 46 : 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
             >
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 19 : 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
+              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
               <span style={{ position: "absolute", top: 3, left: 3, width: compact ? 14 : 20, height: compact ? 14 : 20, borderRadius: "50%", background: "var(--gold)", color: "#3a2708", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: compact ? 9 : 11, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
                 {me.seat + 1}
               </span>
@@ -170,7 +170,7 @@ export function SelfDock({
           <DelayedTrickList cards={me.judgmentZone} />
         </div>
         {/* skills */}
-        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "5px 7px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 90 : undefined }}>
+        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -221,8 +221,8 @@ export function SelfDock({
           dock's total width stays clear of the fixed end-turn button that
           floats over the bottom-right corner of the viewport; extra cards
           past the visible width scroll horizontally instead. */}
-      <div style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "5px 7px" : "9px 12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 4 : 8 }}>
+      <div style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 3 : 8 }}>
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
@@ -246,10 +246,10 @@ export function SelfDock({
       </div>
 
       {/* RIGHT: equipment zone + phase + end-turn */}
-      <div style={{ width: compact ? 140 : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 5 : 10 }}>
+      <div style={{ width: compact ? 140 : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
         <div>
-          <div style={{ fontSize: 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: 5, textAlign: "center" }}>ของสวมใส่</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: compact ? 4 : 6 }}>
+          <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: compact ? 3 : 5, textAlign: "center" }}>ของสวมใส่</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: compact ? 3 : 6 }}>
             {equipSlots.map(({ slot, label, glyph, card }) => (
               <EquipSlotCell key={slot} label={label} glyph={glyph} card={card} compact={compact} />
             ))}
@@ -259,19 +259,19 @@ export function SelfDock({
               onClick={onToggleZhangba}
               disabled={busy}
               className={zhangbaMode ? "btn-primary" : "btn-secondary"}
-              style={{ marginTop: 8, width: "100%", padding: "7px 8px", fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+              style={{ marginTop: compact ? 5 : 8, width: "100%", padding: compact ? "5px 6px" : "7px 8px", fontSize: compact ? 10 : 11.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
             >
               <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13 }}>蛇</span>
               {zhangbaMode ? "ยกเลิกทวน" : `ใช้ทวน (2 ใบ = ${cardDisplay("sha").name})`}
             </button>
           )}
         </div>
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "var(--ink-muted)", background: "var(--panel-bg)", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: "6px 10px", textAlign: "center" }}>
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
+          <span style={{ fontSize: compact ? 10 : 12, color: "var(--ink-muted)", background: "var(--panel-bg)", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: compact ? "4px 8px" : "6px 10px", textAlign: "center" }}>
             {phaseLabel}
           </span>
-          <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: "7px 10px", fontSize: 12 }} />
-          <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: "6px 10px", fontSize: 11, borderRadius: 5 }}>
+          <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: compact ? "5px 8px" : "7px 10px", fontSize: compact ? 10.5 : 12 }} />
+          <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: compact ? "4px 8px" : "6px 10px", fontSize: compact ? 9.5 : 11, borderRadius: 5 }}>
             ออกจากเกม
           </button>
         </div>
@@ -304,10 +304,10 @@ function EquipSlotCell({ label, glyph, card, compact }: { label: string; glyph: 
       onTouchCancel={endHold}
       style={{ position: "relative", textAlign: "center", cursor: filled ? "help" : "default" }}
     >
-      <div style={{ fontSize: 9, color: "var(--ink-faint)", marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: compact ? 8 : 9, color: "var(--ink-faint)", marginBottom: compact ? 2 : 3 }}>{label}</div>
       <div
         style={{
-          height: compact ? 30 : 44,
+          height: compact ? 24 : 44,
           borderRadius: 6,
           background: filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
           border: filled ? "none" : "1px dashed var(--panel-border-2)",
