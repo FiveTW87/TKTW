@@ -51,11 +51,12 @@ function LogLine({ text }: { text: string }) {
   );
 }
 
-function TabButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function TabButton({ active, label, onClick, badge }: { active: boolean; label: string; onClick: () => void; badge?: boolean }) {
   return (
     <button
       onClick={onClick}
       style={{
+        position: "relative",
         flex: 1,
         padding: "7px 0",
         fontSize: 12.5,
@@ -68,6 +69,9 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
       }}
     >
       {label}
+      {badge && (
+        <span style={{ position: "absolute", top: 2, right: "calc(50% - 26px)", width: 7, height: 7, borderRadius: "50%", background: "var(--target-red)", boxShadow: "0 0 4px rgba(0,0,0,.5)" }} />
+      )}
     </button>
   );
 }
@@ -77,16 +81,21 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
 function HistoryChatContent({ gameView }: { gameView: GameView }) {
   const logs: GameLogView[] = gameView.gameLogs;
   const chatMessages = useGameStore((s) => s.chatMessages);
+  const chatSeenCount = useGameStore((s) => s.chatSeenCount);
+  const markChatSeen = useGameStore((s) => s.markChatSeen);
   const sendChat = useGameStore((s) => s.sendChat);
   const mySeatIndex = useGameStore((s) => s.seatIndex);
   const [tab, setTab] = useState<"log" | "chat">("log");
   const [draft, setDraft] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const hasUnreadChat = tab !== "chat" && chatMessages.length > chatSeenCount;
 
   useEffect(() => {
     if (tab !== "chat") return;
+    markChatSeen();
     // jsdom (tests) doesn't implement scrollIntoView — guard for that env.
     chatEndRef.current?.scrollIntoView?.({ block: "end" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatMessages.length, tab]);
 
   const submit = () => {
@@ -99,7 +108,7 @@ function HistoryChatContent({ gameView }: { gameView: GameView }) {
     <>
       <div style={{ display: "flex", marginBottom: 10, flexShrink: 0 }}>
         <TabButton active={tab === "log"} label="ประวัติการเล่น" onClick={() => setTab("log")} />
-        <TabButton active={tab === "chat"} label="แชท" onClick={() => setTab("chat")} />
+        <TabButton active={tab === "chat"} label="แชท" onClick={() => setTab("chat")} badge={hasUnreadChat} />
       </div>
 
       {tab === "log" ? (
@@ -180,6 +189,9 @@ function HistoryChatContent({ gameView }: { gameView: GameView }) {
 // full-width panel anchored to the bottom edge.
 function HistorySheet({ gameView }: { gameView: GameView }) {
   const [open, setOpen] = useState(false);
+  const chatMessages = useGameStore((s) => s.chatMessages);
+  const chatSeenCount = useGameStore((s) => s.chatSeenCount);
+  const hasUnreadChat = !open && chatMessages.length > chatSeenCount;
   return (
     <>
       <button
@@ -204,6 +216,9 @@ function HistorySheet({ gameView }: { gameView: GameView }) {
         }}
       >
         💬
+        {hasUnreadChat && (
+          <span style={{ position: "absolute", top: 2, right: 2, width: 9, height: 9, borderRadius: "50%", background: "var(--target-red)", boxShadow: "0 0 4px rgba(0,0,0,.6)" }} />
+        )}
       </button>
       {open && (
         <ModalOverlay onClose={() => setOpen(false)}>

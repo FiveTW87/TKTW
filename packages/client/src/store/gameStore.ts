@@ -88,6 +88,10 @@ interface GameStoreState {
   /** Real-time chat between players in the room — appended live, and
    *  replayed in full on rejoin (server resends its rolling log). */
   chatMessages: ChatMessageView[];
+  /** How many of `chatMessages` the viewer has actually looked at (the chat
+   *  tab was open when they arrived) — survives the chat panel/sheet
+   *  unmounting, so a badge can show "unread" even after closing it. */
+  chatSeenCount: number;
 
   createRoom: (playerName: string) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
@@ -97,6 +101,7 @@ interface GameStoreState {
   leaveRoom: () => Promise<void>;
   returnToLobby: () => Promise<void>;
   sendChat: (text: string) => Promise<void>;
+  markChatSeen: () => void;
   clearError: () => void;
   dismissSessionExpired: () => void;
 }
@@ -198,6 +203,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     answeringId: null,
     debug: [],
     chatMessages: [],
+    chatSeenCount: 0,
 
     createRoom: async (playerName) => {
       const ack = await emitAck<CreateRoomAck>(ClientEvents.RoomCreate, { playerName });
@@ -297,6 +303,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         error: null,
         sessionExpired: false,
         chatMessages: [],
+        chatSeenCount: 0,
       });
     },
 
@@ -307,6 +314,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const ack = await emitAck<SimpleAck>(ClientEvents.ChatSend, { roomCode, text: trimmed });
       if (!ack.ok) set({ error: ack.error });
     },
+
+    markChatSeen: () => set((s) => ({ chatSeenCount: s.chatMessages.length })),
 
     returnToLobby: async () => {
       // SPEC 8.5: from the result screen, back to this room's own lobby for
