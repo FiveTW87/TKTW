@@ -10,6 +10,7 @@ import { cardMeta } from "../../data/cardMeta";
 import type { SkillDisplay } from "../../data/generalSkills";
 import { DelayedTrickList } from "./DelayedTrickCard";
 import { useDeviceMode } from "../../lib/useDeviceMode";
+import { useSfxStore } from "../../store/sfxStore";
 
 export interface CardTapState {
   tappable: boolean;
@@ -271,11 +272,71 @@ export function SelfDock({
             {phaseLabel}
           </span>
           <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: compact ? "5px 8px" : "7px 10px", fontSize: compact ? 10.5 : 12 }} />
+          <SfxControl compact={compact} />
           <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: compact ? "4px 8px" : "6px 10px", fontSize: compact ? 9.5 : 11, borderRadius: 5 }}>
             ออกจากเกม
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Mute toggle + volume slider for the synthesized sound effects (Web Audio,
+// see lib/sfx.ts) — the app's only local UI preference, so it lives in its
+// own tiny popover instead of a full settings screen.
+function SfxControl({ compact }: { compact: boolean }) {
+  const [open, setOpen] = useState(false);
+  const muted = useSfxStore((s) => s.muted);
+  const volume = useSfxStore((s) => s.volume);
+  const setMuted = useSfxStore((s) => s.setMuted);
+  const setVolume = useSfxStore((s) => s.setVolume);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="btn-secondary"
+        style={{ width: "100%", padding: compact ? "5px 8px" : "7px 10px", fontSize: compact ? 10.5 : 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+      >
+        <span>{muted || volume === 0 ? "🔇" : "🔊"}</span>
+        เสียง
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 6px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 160,
+            zIndex: 80,
+            background: "rgba(28,22,14,.96)",
+            border: "1px solid var(--gold)",
+            borderRadius: 8,
+            padding: "10px 12px",
+            boxShadow: "0 10px 26px rgba(0,0,0,.45)",
+          }}
+        >
+          <button
+            onClick={() => setMuted(!muted)}
+            className={muted ? "btn-secondary" : "btn-primary"}
+            style={{ width: "100%", padding: "5px 8px", fontSize: 11, marginBottom: 8 }}
+          >
+            {muted ? "เปิดเสียง" : "ปิดเสียง"}
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={volume}
+            onChange={(e) => setVolume(Number(e.target.value))}
+            style={{ width: "100%" }}
+            aria-label="ระดับเสียง"
+          />
+        </div>
+      )}
     </div>
   );
 }

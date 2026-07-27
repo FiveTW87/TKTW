@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useGameStore } from "../store/gameStore";
 import { roleDisplay } from "../data/roles";
 import { generalDisplay, generalFaction, factionColor, factionLabel } from "../data/generalNames";
+import { playSfx } from "../lib/sfx";
 import type { MatchResult } from "@tktw/shared";
 
 // SPEC 8.4: functional result screen — every Role/General revealed, winner
@@ -24,12 +26,18 @@ export function Result() {
   const returnToLobby = useGameStore((s) => s.returnToLobby);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
 
-  if (!result) return null;
-
   const myId = gameView?.viewerPlayerId;
-  const myRole = myId ? result.players.find((p) => p.id === myId)?.role : undefined;
-  const noWinner = result.endReason === "no_winner";
-  const won = !noWinner && myRole ? result.winners.includes(myRole) : false;
+  const myRole = myId && result ? result.players.find((p) => p.id === myId)?.role : undefined;
+  const noWinner = result?.endReason === "no_winner";
+  const won = result && !noWinner && myRole ? result.winners.includes(myRole) : false;
+
+  useEffect(() => {
+    if (!result) return;
+    playSfx(won ? "win" : "lose");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.matchId]);
+
+  if (!result) return null;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>

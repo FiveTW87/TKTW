@@ -21,6 +21,7 @@ import { useIsNarrow } from "../lib/useIsNarrow";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
 import { HandCard } from "../components/HandCard";
+import { playSfx } from "../lib/sfx";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -90,6 +91,9 @@ export function Table() {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
   const prevHandIdsRef = useRef<Set<string>>(new Set());
+  const prevDiscardTopIdRef = useRef<string | null | undefined>(undefined);
+  const prevLogCountRef = useRef<number | null>(null);
+  const prevTurnPlayerIdRef = useRef<string | null | undefined>(undefined);
   const autoHandledRef = useRef<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,6 +129,41 @@ export function Table() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handKey]);
+
+  // ── Sound effects: card play, skill use, draw, damage, turn start ─────
+  // Each diffs the current snapshot against the previous one and skips the
+  // very first snapshot (mount / reconnect), same shape as the hand-draw
+  // effect above — otherwise rejoining a match replays every past event.
+  const discardTopId = gameView?.discardPileTop?.id ?? null;
+  useEffect(() => {
+    const prev = prevDiscardTopIdRef.current;
+    prevDiscardTopIdRef.current = discardTopId;
+    if (prev === undefined) return; // skip first snapshot
+    if (discardTopId && discardTopId !== prev) playSfx("cardPlay");
+  }, [discardTopId]);
+
+  const logCount = gameView?.gameLogs.length ?? 0;
+  useEffect(() => {
+    const prev = prevLogCountRef.current;
+    const logs = gameView?.gameLogs ?? [];
+    prevLogCountRef.current = logCount;
+    if (prev === null) return; // skip first snapshot
+    for (const entry of logs.slice(prev)) {
+      if (entry.eventType === "skillUse") playSfx("skillUse");
+      else if (entry.eventType === "draw" && entry.actorId === me?.id) playSfx("draw");
+      else if (entry.eventType === "damage" || entry.eventType === "hpLoss") playSfx("damage");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logCount]);
+
+  useEffect(() => {
+    const prev = prevTurnPlayerIdRef.current;
+    prevTurnPlayerIdRef.current = gameView?.currentTurnPlayerId ?? null;
+    if (prev === undefined) return; // skip first snapshot
+    if (gameView?.currentTurnPlayerId && gameView.currentTurnPlayerId !== prev && gameView.currentTurnPlayerId === me?.id) {
+      playSfx("turnStart");
+    }
+  }, [gameView?.currentTurnPlayerId, me?.id]);
 
   // ── Auto-route skill decisions the engine asks about ──────────────────
   // The engine yields activateSkill for every non-locked trigger skill; here
