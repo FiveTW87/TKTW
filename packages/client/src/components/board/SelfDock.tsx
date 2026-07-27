@@ -226,7 +226,7 @@ export function SelfDock({
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
-        <div style={{ display: "flex", gap: compact ? 5 : 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "hidden", paddingBottom: 4 }}>
+        <div style={{ display: "flex", gap: compact ? 5 : 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "visible", paddingBottom: 4 }}>
           {myHand.map((c) => {
             const { tappable, dimmed } = getCardState(c);
             return (

@@ -118,8 +118,13 @@ export function GameBoard({
         </div>
       </div>
 
-      {/* self dock — bottom-center, always the local player (SPEC §11.3) */}
-      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>{selfDock}</div>
+      {/* self dock — bottom-center, always the local player (SPEC §11.3).
+          Desktop reserves a right-side gutter so the fixed bottom-right
+          action cluster (Table.tsx) never overlaps the equipment column,
+          regardless of window width — mirrors how compact mode already
+          keeps the hand area clear of that same button, just via padding
+          instead of shrinking dock content. */}
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", paddingRight: compact ? 0 : 200 }}>{selfDock}</div>
     </div>
   );
 }
