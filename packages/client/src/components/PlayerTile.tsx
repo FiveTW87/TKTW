@@ -185,9 +185,9 @@ export function PlayerTile({
 
         {/* info column */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: 16 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 15, color: "var(--ink)", lineHeight: 1 }}>{d.glyph}</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{player.name}</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
+            <span style={{ fontSize: 10.5, color: "var(--ink-faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{player.name}</span>
             {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 14, height: 14, fontSize: 8, flexShrink: 0 }}>{role.cn}</span> : <span className="seal seal-unknown" style={{ width: 14, height: 14, fontSize: 8, flexShrink: 0 }}>?</span>}
           </div>
           {connectionStatus === "reconnecting" && (

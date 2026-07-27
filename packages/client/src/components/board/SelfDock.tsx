@@ -120,9 +120,9 @@ export function SelfDock({
             </div>
             {/* info column */}
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: compact ? 10 : 16 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: "var(--ink)", lineHeight: 1 }}>{generalDisplay(me.generalId).glyph}</span>
-                <span style={{ fontSize: compact ? 11 : 13, color: "var(--ink-faint)" }}>{me.name}</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: compact ? 12 : 15, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>{generalDisplay(me.generalId).name}</span>
+                <span style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-faint)" }}>{me.name}</span>
               </div>
               {role && (
                 <div style={{ marginTop: 4, display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 5, background: "linear-gradient(#243a2a,#16241a)", border: "1px solid var(--green)", borderRadius: 5, padding: "1px 8px", fontSize: compact ? 9 : 10, color: "var(--green-light)" }}>
