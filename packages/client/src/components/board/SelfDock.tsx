@@ -91,6 +91,7 @@ export function SelfDock({
       <div style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <div
+            data-player-anchor={me.id}
             onClick={selfTargetable ? onToggleSelfTarget : undefined}
             style={{
               position: "relative",

@@ -59,6 +59,7 @@ export function PlayerTile({
     const headPortrait = compact ? 30 : 40;
     return (
       <div
+        data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
         aria-label={targetable ? player.name : undefined}
@@ -122,6 +123,7 @@ export function PlayerTile({
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
       <div
+        data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
         aria-label={targetable ? player.name : undefined}

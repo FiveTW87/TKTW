@@ -51,6 +51,10 @@ const SFX: Record<string, (volume: number) => void> = {
   ]),
   draw: (v) => playTone(900, 55, "sine", 0.12 * v),
   damage: (v) => playTone(130, 160, "sawtooth", 0.22 * v),
+  dodge: (v) => playSequence([
+    { freq: 1000, durationMs: 60, delayMs: 0, type: "sine", gainPeak: 0.14 * v },
+    { freq: 700, durationMs: 70, delayMs: 40, type: "sine", gainPeak: 0.1 * v },
+  ]),
   turnStart: (v) => playSequence([
     { freq: 523, durationMs: 110, delayMs: 0, type: "sine", gainPeak: 0.18 * v },
     { freq: 784, durationMs: 160, delayMs: 90, type: "sine", gainPeak: 0.18 * v },

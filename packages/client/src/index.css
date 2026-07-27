@@ -346,3 +346,73 @@ a:hover {
 .hand-card[style*="pointer"]:hover {
   filter: brightness(1.03);
 }
+
+/* Combat feedback (TFT-style): a red impact flash + gold slash streak +
+   floating "-N" number for a hit, or a small pop-and-fade "หลบ!" for a
+   dodge — see CombatEffectLayer.tsx. */
+@keyframes dcCombatFlash {
+  0% { opacity: 0; transform: scale(0.4); }
+  25% { opacity: 0.85; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes dcCombatSlash {
+  0% { opacity: 0; transform: rotate(var(--slash-angle, -35deg)) scaleX(0); }
+  30% { opacity: 1; transform: rotate(var(--slash-angle, -35deg)) scaleX(1); }
+  100% { opacity: 0; transform: rotate(var(--slash-angle, -35deg)) scaleX(1); }
+}
+@keyframes dcCombatNumber {
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  15% { opacity: 1; transform: translate(-50%, -6px); }
+  100% { opacity: 0; transform: translate(-50%, -34px); }
+}
+@keyframes dcCombatDodge {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+  20% { opacity: 1; transform: translate(-50%, -4px) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -22px) scale(1); }
+}
+.combat-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 60, 40, 0.85), rgba(214, 60, 40, 0) 70%);
+  animation: dcCombatFlash 0.45s ease-out forwards;
+}
+.combat-slash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 92px;
+  height: 7px;
+  margin: -3.5px 0 0 -46px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, transparent, #fff 20%, var(--gold) 55%, transparent);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+  transform-origin: center;
+  animation: dcCombatSlash 0.38s ease-out forwards;
+}
+.combat-dmg-number {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  white-space: nowrap;
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--target-red);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  animation: dcCombatNumber 0.7s ease-out forwards;
+}
+.combat-dodge-text {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  animation: dcCombatDodge 0.6s ease-out forwards;
+}
