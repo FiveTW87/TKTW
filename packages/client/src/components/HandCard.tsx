@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
+import { createPortal } from "react-dom";
 import type { Card } from "@tktw/shared";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../data/cardNames";
 
@@ -30,6 +32,7 @@ export function HandCard({
   const color = SUIT_COLOR[card.suit] ?? "#2e2519";
   const [hovered, setHovered] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   // Tooltips only trigger on hover, which doesn't exist on touch — a
   // tap-and-hold (long press) shows the same tooltip on mobile instead.
   const startHold = () => {
@@ -42,6 +45,7 @@ export function HandCard({
   };
   return (
     <div
+      ref={cardRef}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -56,11 +60,10 @@ export function HandCard({
         borderRadius: 6,
         background: "var(--card-bg)",
         border: `2px solid ${selected ? "var(--gold)" : "var(--card-border)"}`,
-        boxShadow: selected ? "0 0 12px rgba(217,165,49,.6)" : "0 4px 10px rgba(60,40,15,.18)",
+        boxShadow: selected ? "0 0 14px rgba(217,165,49,.75), 0 4px 10px rgba(60,40,15,.18)" : "0 4px 10px rgba(60,40,15,.18)",
         padding: compact ? 3 : 6,
         cursor: onClick ? "pointer" : "default",
-        transform: selected ? "translateY(-12px)" : "none",
-        transition: "transform .12s, box-shadow .12s, border-color .12s",
+        transition: "box-shadow .12s, border-color .12s",
         opacity: dimmed ? 0.42 : 1,
         flexShrink: 0,
       }}
@@ -89,35 +92,69 @@ export function HandCard({
       >
         {d.name}
       </div>
-      {hovered && info && <CardTooltip name={d.name} info={info} />}
+      {hovered && info && <CardTooltipPortal anchorRef={cardRef} name={d.name} info={info} />}
     </div>
   );
 }
 
-// A floating explainer above the card — appears on hover so the effect is
-// readable without a rulebook.
-export function CardTooltip({ name, info }: { name: string; info: string }) {
+// The tooltip content, shared by both render modes below.
+function TooltipBody({ name, info }: { name: string; info: string }) {
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: "calc(100% + 8px)",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: 200,
-        zIndex: 80,
-        background: "rgba(28,22,14,.96)",
-        color: "#f0e6cc",
-        border: "1px solid var(--gold)",
-        borderRadius: 8,
-        padding: "9px 11px",
-        boxShadow: "0 10px 26px rgba(0,0,0,.45)",
-        pointerEvents: "none",
-        textAlign: "left",
-      }}
-    >
+    <>
       <div style={{ fontWeight: 700, fontSize: 12.5, color: "#f0d68a", marginBottom: 3 }}>{name}</div>
       <div style={{ fontSize: 11.5, lineHeight: 1.5 }}>{info}</div>
+    </>
+  );
+}
+
+const TOOLTIP_BOX_STYLE: CSSProperties = {
+  width: 200,
+  background: "rgba(28,22,14,.96)",
+  color: "#f0e6cc",
+  border: "1px solid var(--gold)",
+  borderRadius: 8,
+  padding: "9px 11px",
+  boxShadow: "0 10px 26px rgba(0,0,0,.45)",
+  pointerEvents: "none",
+  textAlign: "left",
+};
+
+// A floating explainer above its trigger — appears on hover so the effect is
+// readable without a rulebook. Positioned as a normal absolutely-positioned
+// child of a `position:relative` trigger; only safe when that trigger isn't
+// inside a scrolling container (see CardTooltipPortal below for that case).
+export function CardTooltip({ name, info }: { name: string; info: string }) {
+  return (
+    <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", zIndex: 80, ...TOOLTIP_BOX_STYLE }}>
+      <TooltipBody name={name} info={info} />
     </div>
+  );
+}
+
+// Same tooltip, but rendered via a portal to document.body with a viewport-
+// fixed position computed from the trigger's own bounding rect. Needed for
+// triggers that live inside a horizontally-scrolling row (like the hand):
+// browsers force overflow-y to behave like "auto" (clipping) whenever
+// overflow-x is "auto" and overflow-y is left "visible" on the same element
+// — an absolutely-positioned tooltip that pops up out of that row gets
+// silently clipped no matter what overflow-y is literally set to. Escaping
+// to a portal sidesteps that ancestor-overflow chain entirely.
+export function CardTooltipPortal({ anchorRef, name, info }: { anchorRef: RefObject<HTMLElement | null>; name: string; info: string }) {
+  const rect = anchorRef.current?.getBoundingClientRect();
+  if (!rect) return null;
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        left: rect.left + rect.width / 2,
+        top: rect.top - 8,
+        transform: "translate(-50%, -100%)",
+        zIndex: 200,
+        ...TOOLTIP_BOX_STYLE,
+      }}
+    >
+      <TooltipBody name={name} info={info} />
+    </div>,
+    document.body,
   );
 }
