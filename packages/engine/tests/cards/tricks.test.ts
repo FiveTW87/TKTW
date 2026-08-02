@@ -23,6 +23,7 @@ const ID = {
   juedou: "spade_4_1",
   jiedao: "club_12_2",
   crossbow: "spade_1_1",
+  zhangba: "spade_12_1",
 };
 
 /** A lastAliveWins game paused at p0's mainAction. Rebuild is disabled so the
@@ -172,6 +173,39 @@ describe("กลอุบาย (trick cards)", () => {
     respond(session, { decisionId: pd.id, playerId: "p1", pass: true }); // refuse
     expect(getPlayer(state, "p1").equipment.weapon).toBeUndefined();
     expect(getPlayer(state, "p0").equipment.weapon?.id).toBe(ID.crossbow);
+  });
+
+  it("jiedao: caster already holding a weapon is asked before swapping, and can accept", () => {
+    const { session, state } = atP0MainAction(3, 19);
+    getPlayer(state, "p0").equipment.weapon = cardById(ID.zhangba);
+    getPlayer(state, "p1").equipment.weapon = cardById(ID.crossbow);
+    forceIntoHand(state, "p0", ID.jiedao);
+    play(session, ID.jiedao, ["p1", "p2"]);
+    settleWuxie(session);
+    respond(session, { decisionId: session.state.pendingDecision!.id, playerId: "p1", pass: true }); // refuse to shoot
+    const swapPd = session.state.pendingDecision!;
+    expect(swapPd.kind).toBe("jiedaoWeaponSwap");
+    expect(swapPd.playerId).toBe("p0");
+    respond(session, { decisionId: swapPd.id, playerId: "p0", choice: "swap" });
+    expect(getPlayer(state, "p0").equipment.weapon?.id).toBe(ID.crossbow);
+    expect(getPlayer(state, "p1").equipment.weapon).toBeUndefined();
+    expect(state.discardPile.some((c) => c.id === ID.zhangba)).toBe(true); // old weapon discarded
+  });
+
+  it("jiedao: caster already holding a weapon can decline the swap and keep it", () => {
+    const { session, state } = atP0MainAction(3, 19);
+    getPlayer(state, "p0").equipment.weapon = cardById(ID.zhangba);
+    getPlayer(state, "p1").equipment.weapon = cardById(ID.crossbow);
+    forceIntoHand(state, "p0", ID.jiedao);
+    play(session, ID.jiedao, ["p1", "p2"]);
+    settleWuxie(session);
+    respond(session, { decisionId: session.state.pendingDecision!.id, playerId: "p1", pass: true }); // refuse to shoot
+    const swapPd = session.state.pendingDecision!;
+    expect(swapPd.kind).toBe("jiedaoWeaponSwap");
+    respond(session, { decisionId: swapPd.id, playerId: "p0", pass: true }); // decline
+    expect(getPlayer(state, "p0").equipment.weapon?.id).toBe(ID.zhangba); // kept their own
+    expect(getPlayer(state, "p1").equipment.weapon).toBeUndefined();
+    expect(state.discardPile.some((c) => c.id === ID.crossbow)).toBe(true); // offered weapon lost
   });
 });
 

@@ -221,6 +221,19 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
         hint: "ถ้าไม่ทำ จะเสียอาวุธให้ผู้บังคับแทน",
         shape: { kind: "card", neededType: "sha", declineLabel: "ยอมเสียอาวุธ", confirmLabel: `ลง${shaName}` },
       };
+    case "jiedaoWeaponSwap": {
+      const newName = cardDisplay(String(data.newWeapon)).name;
+      const curName = cardDisplay(String(data.currentWeapon)).name;
+      return {
+        icon: "借",
+        title: `ยืมมือฉกได้ "${newName}" มา — จะสวมแทน "${curName}" ที่ใส่อยู่ไหม?`,
+        shape: {
+          kind: "choice",
+          options: [{ value: "swap", label: `สวม${newName}` }],
+          declineLabel: `เก็บ${curName}เดิม`,
+        },
+      };
+    }
     case "huibiRedirect":
       return {
         icon: "避",

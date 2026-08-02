@@ -89,6 +89,7 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
     case "juedouSha": return `${actor} ลง "${card("sha")}" ตอบโต้ใน${card("juedou")}`;
     case "jiedaoForce": return `${actor} ถูกบังคับให้ลง "${card("sha")}" ใส่ ${targets} (${card("jiedao")})`;
     case "jiedaoTakeWeapon": return `${actor} ได้อาวุธ "${card(entry.cardType)}" จาก ${targets} (${card("jiedao")})`;
+    case "jiedaoWeaponDeclined": return `${actor} ปฏิเสธอาวุธ "${card(entry.cardType)}" จาก ${targets} — ทิ้งลงกอง (${card("jiedao")})`;
     case "guoheDiscard": return `${actor} ทิ้งการ์ด "${card(entry.cardType)}" ของ ${targets} (${card("guohe")})`;
     case "shunshouSteal": return `${actor} ขโมยการ์ด "${card(entry.cardType)}" จาก ${targets} (${card("shunshou")})`;
     case "wuguReveal": return `${actor} ใช้ "${card("wugu")}" เปิด ${amt} ใบ`;

@@ -28,6 +28,20 @@ export const jiedaoCard: CardDef = {
       const victim = getPlayer(state, targetId);
       const weapon = victim.equipment.weapon;
       if (weapon) {
+        const currentWeapon = getPlayer(state, playerId).equipment.weapon;
+        if (currentWeapon) {
+          const swap = yield {
+            kind: "jiedaoWeaponSwap",
+            playerId,
+            data: { newWeapon: weapon.typeKey, currentWeapon: currentWeapon.typeKey },
+          };
+          if (swap.pass || swap.choice !== "swap") {
+            delete victim.equipment.weapon;
+            state.discardPile.push(weapon); // declined — offered weapon is lost, caster keeps their own
+            log(state, "jiedaoWeaponDeclined", { actorId: playerId, targetIds: [targetId], cardType: weapon.typeKey });
+            return;
+          }
+        }
         delete victim.equipment.weapon;
         equipCard(state, playerId, weapon);
         log(state, "jiedaoTakeWeapon", { actorId: playerId, targetIds: [targetId], cardType: weapon.typeKey });
