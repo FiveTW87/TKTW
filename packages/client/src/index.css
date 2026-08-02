@@ -569,6 +569,23 @@ a:hover {
 /* Combat feedback (TFT-style): a red impact flash + gold slash streak +
    floating "-N" number for a hit, or a small pop-and-fade "หลบ!" for a
    dodge — see CombatEffectLayer.tsx. */
+@keyframes dcCombatTravel {
+  0% { opacity: 0; transform: scaleX(.05); }
+  18% { opacity: 1; }
+  78% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes dcCombatTokenTravel {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.65) rotate(-8deg); left: 0; }
+  16% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(5deg); left: 100%; }
+}
+@keyframes dcCombatSourcePulse {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.35); }
+  24% { opacity: .9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
 @keyframes dcCombatFlash {
   0% { opacity: 0; transform: scale(0.4); }
   25% { opacity: 0.85; transform: scale(1.15); }
@@ -578,6 +595,16 @@ a:hover {
   0% { opacity: 0; transform: rotate(var(--slash-angle, -35deg)) scaleX(0); }
   30% { opacity: 1; transform: rotate(var(--slash-angle, -35deg)) scaleX(1); }
   100% { opacity: 0; transform: rotate(var(--slash-angle, -35deg)) scaleX(1); }
+}
+@keyframes dcCombatImpactRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
+@keyframes dcCombatSpark {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(5px) scale(.4); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(var(--spark-distance)) scale(1); }
 }
 @keyframes dcCombatNumber {
   0% { opacity: 0; transform: translate(-50%, 0); }
@@ -589,6 +616,92 @@ a:hover {
   20% { opacity: 1; transform: translate(-50%, -4px) scale(1.05); }
   100% { opacity: 0; transform: translate(-50%, -22px) scale(1); }
 }
+@keyframes dcCombatAfterimage {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.7); }
+  18% { opacity: .6; }
+  100% { opacity: 0; transform: translate(24px, -50%) scale(1.05); }
+}
+@keyframes dcCombatDodgeArc {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-18deg) scale(.45); }
+  24% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(16deg) scale(1.15); }
+}
+@keyframes dcCombatHealRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.35); }
+  20% { opacity: .95; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+}
+@keyframes dcCombatHealRise {
+  0% { opacity: 0; transform: translate(-50%, 2px) scale(.7); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -38px) scale(1.08); }
+}
+@keyframes dcCombatSkillSeal {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.35) rotate(-20deg); }
+  24% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(3deg); }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(.95) rotate(0); }
+}
+@keyframes dcCombatSkillName {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  22%, 74% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -12px); }
+}
+@keyframes dcCombatDeathSmoke {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(.5); }
+  28% { opacity: .75; }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(1.5); }
+}
+@keyframes dcCombatDeathSeal {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); filter: blur(5px); }
+  25%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -58%) scale(.92); }
+}
+.combat-effect-travel {
+  height: 1px;
+  transform: rotate(var(--travel-angle));
+  transform-origin: left center;
+}
+.combat-source-pulse {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(230,192,99,.82);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(217,165,49,.65);
+  animation: dcCombatSourcePulse .28s ease-out forwards;
+}
+.combat-travel-beam {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(230,192,99,.45) 15%, #fff3c4 72%, transparent);
+  box-shadow: 0 0 8px rgba(230,192,99,.72), 0 0 18px rgba(176,64,44,.36);
+  transform-origin: left center;
+  animation: dcCombatTravel .32s ease-out forwards;
+}
+.combat-travel-token {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold-light);
+  border-radius: 4px;
+  background: linear-gradient(145deg, #8b3022, #3d150f);
+  box-shadow: 0 4px 12px rgba(0,0,0,.55), 0 0 10px rgba(217,165,49,.52);
+  color: #ffe8a8;
+  font-family: var(--font-glyph);
+  font-size: 16px;
+  animation: dcCombatTokenTravel .32s ease-out forwards;
+}
 .combat-flash {
   position: absolute;
   left: 50%;
@@ -599,6 +712,17 @@ a:hover {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(214, 60, 40, 0.85), rgba(214, 60, 40, 0) 70%);
   animation: dcCombatFlash 0.45s ease-out forwards;
+}
+.combat-impact-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78px;
+  height: 78px;
+  border: 3px solid rgba(255,218,126,.88);
+  border-radius: 50%;
+  box-shadow: 0 0 13px rgba(255,238,190,.7), inset 0 0 15px rgba(176,64,44,.38);
+  animation: dcCombatImpactRing .48s ease-out forwards;
 }
 .combat-slash {
   position: absolute;
@@ -612,6 +736,30 @@ a:hover {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
   transform-origin: center;
   animation: dcCombatSlash 0.38s ease-out forwards;
+}
+.combat-slash-secondary {
+  width: 72px;
+  margin-left: -36px;
+  opacity: .78;
+  animation-delay: .05s;
+}
+.combat-sparks {
+  position: absolute;
+  inset: 0;
+}
+.combat-sparks i {
+  --spark-angle: 0deg;
+  --spark-distance: 36px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff7d5, var(--gold), transparent);
+  box-shadow: 0 0 6px rgba(255,236,166,.8);
+  transform-origin: left center;
+  animation: dcCombatSpark .52s ease-out forwards;
 }
 .combat-dmg-number {
   position: absolute;
@@ -631,9 +779,164 @@ a:hover {
   white-space: nowrap;
   font-weight: 800;
   font-size: 13px;
-  color: var(--gold);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  color: #8ee8d2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7), 0 0 9px rgba(75,205,177,.62);
   animation: dcCombatDodge 0.6s ease-out forwards;
+}
+.combat-dodge-afterimage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 64px;
+  border-radius: 50% 50% 40% 40%;
+  background: linear-gradient(90deg, rgba(95,220,194,.38), rgba(95,220,194,0));
+  filter: blur(2px);
+  animation: dcCombatAfterimage .62s ease-out forwards;
+}
+.combat-dodge-arc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78px;
+  height: 54px;
+  border-top: 3px solid #b6fff0;
+  border-right: 2px solid rgba(95,220,194,.58);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 7px rgba(95,220,194,.72));
+  animation: dcCombatDodgeArc .58s ease-out forwards;
+}
+.combat-heal-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 66px;
+  height: 66px;
+  border: 3px solid rgba(143,214,168,.9);
+  border-radius: 50%;
+  box-shadow: inset 0 0 16px rgba(79,158,46,.4), 0 0 18px rgba(143,214,168,.55);
+  animation: dcCombatHealRing .82s ease-out forwards;
+}
+.combat-heal-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #d7ffbf;
+  font-size: 28px;
+  text-shadow: 0 0 12px rgba(143,214,168,.95);
+  animation: dcCombatFlash .72s ease-out forwards;
+}
+.combat-heal-number {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  color: #a8ef8e;
+  font-weight: 900;
+  font-size: 15px;
+  text-shadow: 0 2px 4px rgba(0,0,0,.72), 0 0 8px rgba(79,158,46,.7);
+  animation: dcCombatHealRise .9s ease-out forwards;
+}
+.combat-skill-seal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--gold-light);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #bf8730, #4c2b0f 72%);
+  color: #fff1b8;
+  font-family: var(--font-glyph);
+  font-size: 27px;
+  box-shadow: 0 0 20px rgba(217,165,49,.65), inset 0 0 14px rgba(255,238,181,.24);
+  animation: dcCombatSkillSeal .9s ease-out forwards;
+}
+.combat-skill-name {
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 3px 9px;
+  border: 1px solid rgba(230,192,99,.55);
+  border-radius: 999px;
+  background: rgba(24,15,8,.88);
+  color: #ffe6a4;
+  font-size: 11px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0,0,0,.72);
+  animation: dcCombatSkillName .92s ease-out forwards;
+}
+.combat-death-smoke {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(20,14,12,.84), rgba(92,24,18,.35) 48%, transparent 72%);
+  filter: blur(4px);
+  animation: dcCombatDeathSmoke 1.2s ease-out forwards;
+}
+.combat-death-seal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #c45b45;
+  border-radius: 50%;
+  background: rgba(48,12,9,.88);
+  color: #f0aa94;
+  font-family: var(--font-glyph-2);
+  font-size: 29px;
+  box-shadow: 0 0 22px rgba(176,64,44,.58), inset 0 0 15px rgba(176,64,44,.3);
+  animation: dcCombatDeathSeal 1.2s ease-out forwards;
+}
+.combat-death-text {
+  position: absolute;
+  left: 50%;
+  top: -22px;
+  color: #e78b73;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  animation: dcCombatSkillName 1.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-source-pulse,
+  .combat-travel-beam,
+  .combat-travel-token,
+  .combat-flash,
+  .combat-impact-ring,
+  .combat-slash,
+  .combat-sparks,
+  .combat-dodge-afterimage,
+  .combat-dodge-arc,
+  .combat-heal-ring,
+  .combat-death-smoke {
+    display: none;
+  }
+  .combat-dmg-number,
+  .combat-dodge-text,
+  .combat-heal-cross,
+  .combat-heal-number,
+  .combat-skill-seal,
+  .combat-skill-name,
+  .combat-death-seal,
+  .combat-death-text {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 /* ── Approved character art + player detail ─────────────────────── */

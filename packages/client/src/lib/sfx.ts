@@ -55,6 +55,15 @@ const SFX: Record<string, (volume: number) => void> = {
     { freq: 1000, durationMs: 60, delayMs: 0, type: "sine", gainPeak: 0.14 * v },
     { freq: 700, durationMs: 70, delayMs: 40, type: "sine", gainPeak: 0.1 * v },
   ]),
+  heal: (v) => playSequence([
+    { freq: 523, durationMs: 100, delayMs: 0, type: "sine", gainPeak: 0.12 * v },
+    { freq: 659, durationMs: 120, delayMs: 70, type: "sine", gainPeak: 0.14 * v },
+    { freq: 988, durationMs: 150, delayMs: 145, type: "triangle", gainPeak: 0.12 * v },
+  ]),
+  death: (v) => playSequence([
+    { freq: 196, durationMs: 170, delayMs: 0, type: "sawtooth", gainPeak: 0.18 * v },
+    { freq: 147, durationMs: 260, delayMs: 120, type: "sawtooth", gainPeak: 0.2 * v },
+  ]),
   turnStart: (v) => playSequence([
     { freq: 523, durationMs: 110, delayMs: 0, type: "sine", gainPeak: 0.18 * v },
     { freq: 784, durationMs: 160, delayMs: 90, type: "sine", gainPeak: 0.18 * v },

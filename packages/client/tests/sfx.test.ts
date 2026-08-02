@@ -6,7 +6,7 @@ import { useSfxStore } from "../src/store/sfxStore";
 // for every named effect and regardless of mute/volume state.
 describe("playSfx (synthesized sound effects)", () => {
   it("no-ops without throwing for every effect when AudioContext is unavailable", () => {
-    const names = ["cardPlay", "skillUse", "draw", "damage", "turnStart", "win", "lose"] as const;
+    const names = ["cardPlay", "skillUse", "draw", "damage", "dodge", "heal", "death", "turnStart", "win", "lose"] as const;
     for (const name of names) {
       expect(() => playSfx(name)).not.toThrow();
     }

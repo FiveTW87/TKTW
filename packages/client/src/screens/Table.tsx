@@ -21,23 +21,10 @@ import { useIsNarrow } from "../lib/useIsNarrow";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
 import { HandCard } from "../components/HandCard";
-import { CombatEffectLayer, type CombatEffect } from "../components/board/CombatEffectLayer";
+import { CombatEffectLayer } from "../components/board/CombatEffectLayer";
 import { playSfx } from "../lib/sfx";
 import { CardInspectModal } from "../components/CardInspectModal";
-
-// Center (viewport px) of a player's seat-tile DOM anchor — see the
-// data-player-anchor attribute on PlayerTile.tsx's / SelfDock.tsx's tile
-// roots. Returns null if that player's tile isn't currently mounted.
-function anchorCenter(playerId: string): { x: number; y: number } | null {
-  const nodes = document.querySelectorAll<HTMLElement>("[data-player-anchor]");
-  for (const el of nodes) {
-    if (el.getAttribute("data-player-anchor") === playerId) {
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }
-  }
-  return null;
-}
+import { useCombatPresentation } from "../hooks/useCombatPresentation";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -83,6 +70,7 @@ export function Table() {
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const debug = useGameStore((s) => s.debug);
+  const combatEffects = useCombatPresentation(gameView?.gameLogs);
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
   const { compact } = useDeviceMode();
@@ -107,7 +95,6 @@ export function Table() {
   const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
-  const [combatEffects, setCombatEffects] = useState<CombatEffect[]>([]);
   const prevHandIdsRef = useRef<Set<string>>(new Set());
   const prevDiscardTopIdRef = useRef<string | null | undefined>(undefined);
   const prevLogCountRef = useRef<number | null>(null);
@@ -173,31 +160,10 @@ export function Table() {
     for (const entry of logs.slice(prev)) {
       if (entry.eventType === "skillUse") playSfx("skillUse");
       else if (entry.eventType === "draw" && entry.actorId === me?.id) playSfx("draw");
-      else if (entry.eventType === "damage") {
-        playSfx("damage");
-        // actorId is the victim here (see logResolver.ts); the attacker is
-        // data.sourceId — a real "A hit B" attack, unlike hpLoss below.
-        const targetId = entry.actorId;
-        const targetPos = targetId ? anchorCenter(targetId) : null;
-        if (targetPos) {
-          const sourceId = entry.data?.sourceId !== undefined ? String(entry.data.sourceId) : undefined;
-          const sourcePos = sourceId ? anchorCenter(sourceId) : null;
-          const angleDeg = sourcePos ? (Math.atan2(targetPos.y - sourcePos.y, targetPos.x - sourcePos.x) * 180) / Math.PI : -35;
-          const effectId = entry.id;
-          setCombatEffects((cur) => [...cur, { id: effectId, kind: "hit", left: targetPos.x, top: targetPos.y, angleDeg, amount: entry.amount }]);
-          setTimeout(() => setCombatEffects((cur) => cur.filter((e) => e.id !== effectId)), 700);
-        }
-      } else if (entry.eventType === "hpLoss") playSfx("damage");
-      else if (entry.eventType === "dodge") {
-        playSfx("dodge");
-        const targetId = entry.actorId;
-        const targetPos = targetId ? anchorCenter(targetId) : null;
-        if (targetPos) {
-          const effectId = entry.id;
-          setCombatEffects((cur) => [...cur, { id: effectId, kind: "dodge", left: targetPos.x, top: targetPos.y, angleDeg: 0 }]);
-          setTimeout(() => setCombatEffects((cur) => cur.filter((e) => e.id !== effectId)), 650);
-        }
-      }
+      else if (entry.eventType === "damage" || entry.eventType === "hpLoss") playSfx("damage");
+      else if (entry.eventType === "dodge") playSfx("dodge");
+      else if (entry.eventType === "heal") playSfx("heal");
+      else if (entry.eventType === "death") playSfx("death");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logCount]);
