@@ -1,8 +1,11 @@
-// Shared helper for guohe/shunshou (SPEC 8.2): the acting player may choose
-// a specific equipment/judgment card (both public) to take/discard, or fall
-// back to a uniformly-random hand card (hand contents are hidden, so a real
-// player physically can't choose one — picking blind is the correct model,
-// not letting the actor specify a hand card id, which would leak info).
+// Shared helper for guohe/shunshou (SPEC 8.2, with a house-rule deviation):
+// the acting player may choose a specific EQUIPPED card (public) to
+// take/discard, or fall back to a uniformly-random hand card (hand contents
+// are hidden, so a real player physically can't choose one — picking blind
+// is the correct model, not letting the actor specify a hand card id, which
+// would leak info). Delayed-trick (judgment zone) cards are deliberately
+// excluded from what can be targeted here — house rule, not canonical
+// guo-he-chai-qiao/shun-shou-qian-yang rules.
 import type { Card, PlayerAnswer } from "../types";
 import type { Decision } from "../core/decisions";
 import type { Ctx } from "../core/ctx";
@@ -19,10 +22,7 @@ export function* pickCardFrom(
 ): PickGenerator {
   const { state, rng } = ctx;
   const target = getPlayer(state, targetId);
-  const visible: Card[] = [
-    ...(Object.values(target.equipment).filter(Boolean) as Card[]),
-    ...target.judgmentZone,
-  ];
+  const visible: Card[] = Object.values(target.equipment).filter(Boolean) as Card[];
 
   const answer = yield {
     kind: "pickCardFromPlayer",
@@ -42,8 +42,6 @@ export function* pickCardFrom(
       yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
       return c;
     }
-    const jIdx = target.judgmentZone.findIndex((c) => c.id === chosenId);
-    if (jIdx >= 0) return target.judgmentZone.splice(jIdx, 1)[0];
   }
 
   if (target.hand.length === 0) return undefined;

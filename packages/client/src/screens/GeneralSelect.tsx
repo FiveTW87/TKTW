@@ -76,6 +76,10 @@ export function GeneralSelect() {
             const color = factionColor(generalFaction(generalId));
             const skills = generalSkills(generalId);
             const isSelected = selected === generalId;
+            // Effective HP the player actually gets, not the printed base
+            // stat — includes the lord's +1 (already called out separately
+            // by the "เจ้าเมือง — พลังชีวิต +1" banner above).
+            const effectiveHp = d.maxHp + (isLord ? 1 : 0);
             return (
               <div
                 key={generalId}
@@ -95,7 +99,12 @@ export function GeneralSelect() {
               >
                 <div style={{ height: compact ? 26 : 36, background: color, display: "flex", alignItems: "center", gap: compact ? 5 : 8, padding: compact ? "0 8px" : "0 11px" }}>
                   <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 13 : 20, color: "rgba(255,255,255,.95)" }}>{d.glyph}</span>
-                  <span style={{ color: "#fff", fontWeight: 700, fontSize: compact ? 11.5 : 15 }}>{d.name}</span>
+                  <span style={{ color: "#fff", fontWeight: 700, fontSize: compact ? 11.5 : 15, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                  <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                    {Array.from({ length: effectiveHp }).map((_, i) => (
+                      <span key={i} className="hp-dot" style={{ width: compact ? 6 : 8, height: compact ? 6 : 8, background: "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" }} />
+                    ))}
+                  </div>
                 </div>
                 <div
                   className="card-back"

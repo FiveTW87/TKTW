@@ -4,6 +4,7 @@ import { ModalOverlay, ModalPanel, ModalGlyph } from "./Modal";
 import { HandCard } from "./HandCard";
 import { describeDecision } from "../data/decisionCopy";
 import { clientCountsAs } from "../data/conversions";
+import { attackDistance, weaponRange } from "../data/distance";
 import { useDeviceMode } from "../lib/useDeviceMode";
 
 function useBtnStyles(): { primaryBtn: React.CSSProperties; secondaryBtn: React.CSSProperties } {
@@ -79,6 +80,7 @@ export function DecisionModal({
         {shape.kind === "card" && (
           <CardShape
             shape={shape}
+            data={pending.data}
             myHand={myHand}
             selectedCardIds={selectedCardIds}
             setSelectedCardIds={setSelectedCardIds}
@@ -160,6 +162,7 @@ export function DecisionModal({
 
 function CardShape({
   shape,
+  data,
   myHand,
   selectedCardIds,
   setSelectedCardIds,
@@ -170,6 +173,7 @@ function CardShape({
   onSubmit,
 }: {
   shape: Extract<ReturnType<typeof describeDecision>["shape"], { kind: "card" }>;
+  data: Record<string, unknown>;
   myHand: Card[];
   selectedCardIds: string[];
   setSelectedCardIds: (ids: string[]) => void;
@@ -222,22 +226,35 @@ function CardShape({
   };
 
   if (awaitingTarget) {
-    const others = gameView.players.filter((p) => p.alive && p.id !== gameView.viewerPlayerId);
+    // needsTarget is only ever set by huibiRedirect (see decisionCopy.ts) —
+    // mirror the engine's own eligibility rules (daiqiao.ts's OnShaTargeted)
+    // so a redirect the engine will silently refuse never appears choosable:
+    // not the original attacker, and actually in weapon range.
+    const sourceId = typeof data.sourceId === "string" ? data.sourceId : undefined;
+    const others = gameView.players.filter((p) => {
+      if (!p.alive || p.id === gameView.viewerPlayerId || p.id === sourceId) return false;
+      if (!me) return false;
+      return attackDistance(me, p, gameView.players) <= weaponRange(me);
+    });
     return (
       <div>
         <div style={{ fontSize: compact ? 11 : 13, color: "var(--ink-muted)", marginBottom: compact ? 8 : 12 }}>เลือกเป้าหมายใหม่</div>
-        <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
-          {others.map((p) => (
-            <button
-              key={p.id}
-              disabled={busy}
-              style={secondaryBtn}
-              onClick={() => void onSubmit({ cardIds: selectedCardIds, targetIds: [p.id] })}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
+        {others.length === 0 ? (
+          <div style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีเป้าหมายที่โอนได้</div>
+        ) : (
+          <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
+            {others.map((p) => (
+              <button
+                key={p.id}
+                disabled={busy}
+                style={secondaryBtn}
+                onClick={() => void onSubmit({ cardIds: selectedCardIds, targetIds: [p.id] })}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -288,9 +305,9 @@ function PickFromPlayerShape({
   const targetId = typeof data.targetId === "string" ? data.targetId : undefined;
   const target = gameView.players.find((p) => p.id === targetId);
   const handCount = typeof data.handCount === "number" ? data.handCount : (target ? 0 : 0);
-  const visible: Card[] = target
-    ? [...(Object.values(target.equipment).filter(Boolean) as Card[]), ...target.judgmentZone]
-    : [];
+  // House rule: guohe/shunshou (the only producers of this decision kind)
+  // can't touch delayed tricks — equipment only, mirroring engine/cards/_shared.ts.
+  const visible: Card[] = target ? (Object.values(target.equipment).filter(Boolean) as Card[]) : [];
 
   return (
     <div>

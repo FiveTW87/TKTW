@@ -40,6 +40,12 @@ registerGeneral({
           };
           if (ownerId !== box.targetId) return;
           if (getPlayer(state, ownerId).hand.length === 0) return;
+          // Don't prompt for a redirect she has no legal target for — mirrors
+          // the eligibility check below (not the original attacker, in range).
+          const hasEligibleTarget = state.players.some(
+            (p) => p.id !== ownerId && p.id !== sourceId && p.alive && canAttack(state, ownerId, p.id),
+          );
+          if (!hasEligibleTarget) return;
 
           const answer = yield { kind: "huibiRedirect", playerId: ownerId, data: { sourceId } };
           if (answer.pass || !answer.cardIds?.length || !answer.targetIds?.length) return;

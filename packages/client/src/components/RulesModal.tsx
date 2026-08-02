@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { ModalOverlay } from "./Modal";
 import { cardDisplay, cardInfo } from "../data/cardNames";
+import { GENERAL_DISPLAY, generalDisplay, generalFaction, factionColor, factionLabel } from "../data/generalNames";
+import { generalSkills } from "../data/generalSkills";
 
 // ── content tables ─────────────────────────────────────────────────────
 const ROLES: Array<{ cn: string; cls: string; name: string; goal: string }> = [
@@ -15,6 +17,14 @@ const PHASES = ["เตรียมพร้อม", "ตัดสิน", "จ�
 const BASIC = ["sha", "shan", "tao"];
 const TRICKS = ["wuzhong", "guohe", "shunshou", "juedou", "jiedao", "nanman", "wanjian", "taoyuan", "wugu", "lebusishu", "shandian", "wuxie"];
 const EQUIP = ["crossbow", "qinglong", "fangtian", "bagua", "renwang", "horse_chitu", "horse_jueying"];
+
+const GENERAL_IDS = Object.keys(GENERAL_DISPLAY).filter((id) => id !== "none");
+const FACTIONS: Array<{ key: string; label: string }> = [
+  { key: "wei", label: factionLabel("wei") },
+  { key: "shu", label: factionLabel("shu") },
+  { key: "wu", label: factionLabel("wu") },
+  { key: "qun", label: factionLabel("qun") },
+];
 
 const SUMMARY: Array<{ icon: string; title: string; body: string }> = [
   { icon: "⚔️", title: "ระยะ & การโจมตี", body: 'ระยะนับจากที่นั่ง (ตัวเลข ⟷ บน tile ศัตรู เขียว=ตีถึง) · อาวุธเพิ่มระยะ · ม้าปรับระยะเข้า/ออก 1' },
@@ -58,6 +68,57 @@ function CardRow({ typeKey, kind }: { typeKey: string; kind: "basic" | "trick" |
       <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)" }}>{d.name}</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.4 }}>{cardInfo(typeKey)}</div>
+      </div>
+    </div>
+  );
+}
+
+function GeneralRow({ generalId }: { generalId: string }) {
+  const d = generalDisplay(generalId);
+  const color = factionColor(generalFaction(generalId));
+  const skills = generalSkills(generalId);
+  return (
+    <div style={{ display: "flex", gap: 10, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 6, padding: "7px 10px" }}>
+      <span
+        style={{
+          width: 30,
+          height: 30,
+          flexShrink: 0,
+          borderRadius: 5,
+          background: color,
+          color: "#f6ecd2",
+          fontFamily: "var(--font-glyph)",
+          fontSize: 17,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {d.glyph}
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+          <span style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)" }}>{d.name}</span>
+          <div style={{ display: "flex", gap: 2 }}>
+            {Array.from({ length: d.maxHp }).map((_, i) => (
+              <span key={i} className="hp-dot" style={{ width: 6, height: 6, background: "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" }} />
+            ))}
+          </div>
+        </div>
+        {skills.length === 0 ? (
+          <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>
+        ) : (
+          skills.map((s) => (
+            <div key={s.id} style={{ marginBottom: 3 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontWeight: 700, fontSize: 12, color }}>{s.name}</span>
+                {s.lordOnly && <span style={{ fontSize: 8, background: "var(--gold)", color: "#3a2708", borderRadius: 6, padding: "0 5px" }}>主公</span>}
+                {s.active && <span style={{ fontSize: 8, background: "var(--red)", color: "#f6ecd2", borderRadius: 6, padding: "0 5px" }}>技</span>}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--ink-muted)", lineHeight: 1.4 }}>{s.description}</div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -139,6 +200,21 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {EQUIP.map((k) => <CardRow key={k} typeKey={k} kind="equip" />)}
           </div>
+
+          {/* นายพล */}
+          <SectionTitle glyph="將">นายพล & ความสามารถ</SectionTitle>
+          {FACTIONS.map(({ key, label }) => {
+            const ids = GENERAL_IDS.filter((id) => generalFaction(id) === key);
+            if (ids.length === 0) return null;
+            return (
+              <div key={key} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11.5, color: factionColor(key), fontWeight: 700, marginBottom: 6 }}>{label}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {ids.map((id) => <GeneralRow key={id} generalId={id} />)}
+                </div>
+              </div>
+            );
+          })}
 
           {/* สรุป */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, margin: "16px 0 4px" }}>

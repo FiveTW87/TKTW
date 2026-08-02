@@ -102,7 +102,7 @@ export default function App() {
       // stale pendingDecision still sitting in the last GameView.
       <Result />
     ) : isRevealing ? (
-      <RoleRevealModal me={me} onClose={() => {}} />
+      <RoleRevealModal me={me} />
     ) : isGeneralSelect ? (
       <GeneralSelect />
     ) : (

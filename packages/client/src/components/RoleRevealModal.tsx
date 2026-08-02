@@ -26,7 +26,7 @@ const ROLE_INFO: Record<string, { cn: string; name: string; goal: string }> = {
   },
 };
 
-export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () => void }) {
+export function RoleRevealModal({ me }: { me: PlayerView }) {
   const info = ROLE_INFO[me.role ?? ""] ?? { cn: "?", name: me.role ?? "?", goal: "" };
   const general = generalDisplay(me.generalId);
   const { compact } = useDeviceMode();
@@ -79,15 +79,12 @@ export function RoleRevealModal({ me, onClose }: { me: PlayerView; onClose: () =
             border: "1px solid var(--panel-border)",
             borderRadius: 8,
             padding: compact ? "10px 12px" : "14px 16px",
-            margin: compact ? "12px 0 14px" : "20px 0 24px",
+            margin: compact ? "12px 0 2px" : "20px 0 4px",
             textAlign: "left",
           }}
         >
           {info.goal}
         </div>
-        <button onClick={onClose} className="btn-primary" style={{ padding: compact ? "9px 32px" : "13px 48px", fontSize: compact ? 13.5 : 16, letterSpacing: 1 }}>
-          เริ่มศึก ⚔
-        </button>
       </div>
     </ModalOverlay>
   );
