@@ -118,6 +118,11 @@ describe("General select screen", () => {
     await waitFor(() => expect(screen.getByText("เลือกนายพลของคุณ")).toBeInTheDocument());
     expect(screen.getByText("โจโฉ")).toBeInTheDocument();
     expect(screen.getByText("เล่าปี่")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "ภาพตัวละคร โจโฉ" })).toHaveAttribute(
+      "src",
+      "/assets/generals/cao_cao_head.webp",
+    );
+    expect(screen.getByRole("img", { name: "ภาพตัวละคร เล่าปี่" })).toBeInTheDocument();
     // skills are narrated on each general card now
     expect(screen.getByText("พลิกภัยเป็นกล")).toBeInTheDocument(); // caocao_jianxiong
     expect(screen.getByText("ปันทรัพย์รวมใจ")).toBeInTheDocument(); // liubei_rende

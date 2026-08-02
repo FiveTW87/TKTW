@@ -4,6 +4,7 @@ import { generalDisplay, generalFaction, factionColor } from "../data/generalNam
 import { generalSkills } from "../data/generalSkills";
 import { useCountdown } from "../lib/useCountdown";
 import { useDeviceMode } from "../lib/useDeviceMode";
+import { GeneralPortrait } from "../components/GeneralPortrait";
 
 export function GeneralSelect() {
   const gameView = useGameStore((s) => s.gameView);
@@ -73,7 +74,8 @@ export function GeneralSelect() {
         <div style={{ display: "flex", gap: compact ? 8 : 14, justifyContent: "center", flexWrap: "wrap", opacity: isMine ? 1 : 0.6 }}>
           {options.map((generalId) => {
             const d = generalDisplay(generalId);
-            const color = factionColor(generalFaction(generalId));
+            const faction = generalFaction(generalId);
+            const color = factionColor(faction);
             const skills = generalSkills(generalId);
             const isSelected = selected === generalId;
             // Effective HP the player actually gets, not the printed base
@@ -106,12 +108,14 @@ export function GeneralSelect() {
                     ))}
                   </div>
                 </div>
-                <div
-                  className="card-back"
-                  style={{ height: compact ? 58 : 92, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid var(--card-border-2)" }}
-                >
-                  <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 32 : 52, color: "rgba(240,220,180,.45)" }}>{d.glyph}</span>
-                </div>
+                <GeneralPortrait
+                  generalId={generalId}
+                  faction={faction}
+                  style={{
+                    height: compact ? 72 : 118,
+                    borderBottom: "1px solid var(--card-border-2)",
+                  }}
+                />
                 <div style={{ padding: compact ? 7 : 11, minHeight: compact ? 66 : 92 }}>
                   {skills.map((s) => (
                     <div key={s.id} style={{ marginBottom: compact ? 5 : 8 }}>
