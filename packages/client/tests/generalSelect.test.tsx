@@ -109,7 +109,7 @@ describe("General select screen", () => {
         id: "dec_1",
         kind: "pickGeneral",
         playerId: "p0",
-        data: { options: ["caocao", "liubei", "sunquan", "guanyu", "zhaoyun"] },
+        data: { options: ["caocao", "liubei", "sunquan", "guanyu", "ganning"] },
       },
       finished: false,
       gameLogs: [],
@@ -123,6 +123,11 @@ describe("General select screen", () => {
       "/assets/generals/cao_cao_head.webp",
     );
     expect(screen.getByRole("img", { name: "ภาพตัวละคร เล่าปี่" })).toBeInTheDocument();
+    const cards = document.querySelectorAll<HTMLElement>(".general-select-card");
+    expect(cards).toHaveLength(5);
+    expect(new Set([...cards].map((card) => card.style.height))).toEqual(new Set(["320px"]));
+    expect(screen.getByRole("img", { name: "ภาพตัวละคร โจโฉ" }).parentElement).toHaveStyle({ height: "156px" });
+    expect(screen.getByRole("img", { name: "ภาพตัวละคร กำเหลง" }).parentElement).toHaveStyle({ height: "190px" });
     // skills are narrated on each general card now
     expect(screen.getByText("พลิกภัยเป็นกล")).toBeInTheDocument(); // caocao_jianxiong
     expect(screen.getByText("ปันทรัพย์รวมใจ")).toBeInTheDocument(); // liubei_rende

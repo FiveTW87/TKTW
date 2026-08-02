@@ -70,7 +70,7 @@ export function GeneralSelect() {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: compact ? 8 : 14, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap", opacity: isMine ? 1 : 0.6 }}>
+        <div style={{ display: "flex", gap: compact ? 8 : 14, justifyContent: "center", alignItems: "stretch", flexWrap: "wrap", opacity: isMine ? 1 : 0.6 }}>
           {options.map((generalId) => {
             const d = generalDisplay(generalId);
             const faction = generalFaction(generalId);
@@ -83,10 +83,15 @@ export function GeneralSelect() {
             const effectiveHp = d.maxHp + (isLord ? 1 : 0);
             return (
               <div
+                className="general-select-card"
+                data-general-id={generalId}
                 key={generalId}
                 onClick={isMine ? () => setSelected(generalId) : undefined}
                 style={{
                   width: compact ? 130 : 196,
+                  height: compact ? 238 : 320,
+                  display: "flex",
+                  flexDirection: "column",
                   borderRadius: 9,
                   background: "linear-gradient(#241a11,#160f09)",
                   border: `2px solid ${isSelected ? "var(--gold)" : "var(--panel-border-2)"}`,
@@ -111,11 +116,12 @@ export function GeneralSelect() {
                   generalId={generalId}
                   faction={faction}
                   style={{
-                    height: compact ? 72 : 118,
+                    height: compact ? (skills.length <= 1 ? 126 : 92) : (skills.length <= 1 ? 190 : 156),
+                    flex: "0 0 auto",
                     borderBottom: "1px solid var(--card-border-2)",
                   }}
                 />
-                <div className="general-select-card-skills" style={{ padding: compact ? 7 : 11 }}>
+                <div className="general-select-card-skills" style={{ padding: compact ? 7 : 11, flex: "1 1 auto", minHeight: 0 }}>
                   {skills.map((s) => (
                     <div className="general-select-card-skill" key={s.id} style={{ marginBottom: compact ? 5 : 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>

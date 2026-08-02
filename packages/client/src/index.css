@@ -1284,7 +1284,11 @@ a:hover {
   box-shadow: inset 0 0 16px rgba(0,0,0,.35);
 }
 
-/* General cards size themselves to their actual portrait + skill content. */
+/* Selection cards share one outer size; one-skill cards invest the spare
+   space in a taller portrait instead of collapsing shorter than the row. */
+.general-select-card {
+  align-self: stretch;
+}
 .general-select-card-skill:last-child {
   margin-bottom: 0 !important;
 }
