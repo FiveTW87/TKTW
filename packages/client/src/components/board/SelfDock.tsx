@@ -11,6 +11,7 @@ import type { SkillDisplay } from "../../data/generalSkills";
 import { DelayedTrickList } from "./DelayedTrickCard";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { useSfxStore } from "../../store/sfxStore";
+import { GeneralPortrait } from "../GeneralPortrait";
 
 export interface CardTapState {
   tappable: boolean;
@@ -32,6 +33,7 @@ export function SelfDock({
   getCardState,
   selectedCardIds,
   onTapCard,
+  onInspectCard,
   selfTargetable,
   selfTargetSelected,
   onToggleSelfTarget,
@@ -48,6 +50,7 @@ export function SelfDock({
   onToggleZhangba,
   phaseLabel,
   onLeave,
+  onInspect,
   equipSlots,
 }: {
   me: PlayerView;
@@ -60,6 +63,7 @@ export function SelfDock({
   getCardState: (card: Card) => CardTapState;
   selectedCardIds: string[];
   onTapCard: (card: Card) => void;
+  onInspectCard: (card: Card, canChoose: boolean) => void;
   selfTargetable: boolean;
   selfTargetSelected: boolean;
   onToggleSelfTarget: () => void;
@@ -76,6 +80,7 @@ export function SelfDock({
   onToggleZhangba: () => void;
   phaseLabel: string;
   onLeave: () => void;
+  onInspect: () => void;
   equipSlots: { slot: string; label: string; glyph: string; card: Card | undefined }[];
 }) {
   const role = roleDisplay(me.role);
@@ -114,10 +119,22 @@ export function SelfDock({
               className="card-back"
               style={{ width: compact ? 40 : 78, height: compact ? 46 : 96, borderRadius: 8, overflow: "hidden", border: "2px solid var(--panel-border-3)", flexShrink: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
             >
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 32, color: "rgba(240,220,180,.5)", lineHeight: 1.1 }}>{generalDisplay(me.generalId).glyph}</span>
+              <GeneralPortrait generalId={me.generalId} faction={me.faction} />
               <span style={{ position: "absolute", top: 3, left: 3, width: compact ? 14 : 20, height: compact ? 14 : 20, borderRadius: "50%", background: "var(--gold)", color: "#3a2708", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: compact ? 9 : 11, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
                 {me.seat + 1}
               </span>
+              <button
+                type="button"
+                className="portrait-inspect-button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onInspect();
+                }}
+                aria-label={`ดูรายละเอียด ${generalDisplay(me.generalId).name}`}
+                title="ดูรายละเอียดขุนพล"
+              >
+                ⤢
+              </button>
             </div>
             {/* info column */}
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: compact ? 10 : 16 }}>
@@ -239,6 +256,7 @@ export function SelfDock({
                 dimmed={dimmed}
                 animateIn={drawnIds.has(c.id)}
                 onClick={tappable ? () => onTapCard(c) : undefined}
+                onInspect={() => onInspectCard(c, tappable)}
                 compact={compact}
               />
             );
@@ -253,7 +271,14 @@ export function SelfDock({
           <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: compact ? 3 : 5, textAlign: "center" }}>ของสวมใส่</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: compact ? 3 : 6 }}>
             {equipSlots.map(({ slot, label, glyph, card }) => (
-              <EquipSlotCell key={slot} label={label} glyph={glyph} card={card} compact={compact} />
+              <EquipSlotCell
+                key={slot}
+                label={label}
+                glyph={glyph}
+                card={card}
+                compact={compact}
+                {...(card ? { onInspect: () => onInspectCard(card, false) } : {})}
+              />
             ))}
           </div>
           {zhangbaAvailable && (
@@ -344,7 +369,7 @@ function SfxControl({ compact }: { compact: boolean }) {
 
 // Mockup's RT equip grid: slot label on top, a colored icon square, item name
 // below — replacing the old horizontal icon+label+desc row.
-function EquipSlotCell({ label, glyph, card, compact }: { label: string; glyph: string; card: Card | undefined; compact?: boolean }) {
+function EquipSlotCell({ label, glyph, card, compact, onInspect }: { label: string; glyph: string; card: Card | undefined; compact?: boolean; onInspect?: () => void }) {
   const [hovered, setHovered] = useState(false);
   const filled = !!card;
   const range = card ? cardMeta(card.typeKey).attackRange : undefined;
@@ -359,12 +384,19 @@ function EquipSlotCell({ label, glyph, card, compact }: { label: string; glyph: 
   };
   return (
     <div
+      onClick={onInspect}
+      onKeyDown={(event) => {
+        if (onInspect && (event.key === "Enter" || event.key === " ")) onInspect();
+      }}
+      role={onInspect ? "button" : undefined}
+      tabIndex={onInspect ? 0 : undefined}
+      aria-label={card ? `ดูรายละเอียด ${cardDisplay(card.typeKey).name}` : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onTouchStart={startHold}
       onTouchEnd={endHold}
       onTouchCancel={endHold}
-      style={{ position: "relative", textAlign: "center", cursor: filled ? "help" : "default" }}
+      style={{ position: "relative", textAlign: "center", cursor: filled ? "zoom-in" : "default" }}
     >
       <div style={{ fontSize: compact ? 8 : 9, color: "var(--ink-faint)", marginBottom: compact ? 2 : 3 }}>{label}</div>
       <div

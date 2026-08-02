@@ -17,6 +17,7 @@ export function HandCard({
   dimmed,
   animateIn,
   onClick,
+  onInspect,
   compact,
 }: {
   card: Card;
@@ -24,6 +25,7 @@ export function HandCard({
   dimmed?: boolean;
   animateIn?: boolean;
   onClick?: (() => void) | undefined;
+  onInspect?: (() => void) | undefined;
   /** Phase 8 mobile-landscape sizing — a smaller card for short viewports. */
   compact?: boolean;
 }) {
@@ -46,7 +48,7 @@ export function HandCard({
   return (
     <div
       ref={cardRef}
-      onClick={onClick}
+      onClick={onClick ?? onInspect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onTouchStart={startHold}
@@ -62,12 +64,26 @@ export function HandCard({
         border: `2px solid ${selected ? "var(--gold)" : "var(--card-border)"}`,
         boxShadow: selected ? "0 0 14px rgba(217,165,49,.75), 0 4px 10px rgba(60,40,15,.18)" : "0 4px 10px rgba(60,40,15,.18)",
         padding: compact ? 3 : 6,
-        cursor: onClick ? "pointer" : "default",
+        cursor: onClick || onInspect ? "pointer" : "default",
         transition: "box-shadow .12s, border-color .12s",
         opacity: dimmed ? 0.42 : 1,
         flexShrink: 0,
       }}
     >
+      {onInspect && (
+        <button
+          type="button"
+          className="card-inspect-trigger"
+          aria-label={`ดูรายละเอียด ${d.name}`}
+          title="ดูรายละเอียดการ์ด"
+          onClick={(event) => {
+            event.stopPropagation();
+            onInspect();
+          }}
+        >
+          ⤢
+        </button>
+      )}
       <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
         <div style={{ fontWeight: 700, fontSize: compact ? 7.5 : 11, color }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 7.5 : 11, color }}>{suitGlyph(card.suit)}</div>

@@ -1,195 +1,153 @@
-import type { PlayerView } from "@tktw/shared";
+import { useEffect, type CSSProperties } from "react";
+import type { Card, PlayerView } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
+import { generalArt } from "../data/generalArt";
 import { cardDisplay } from "../data/cardNames";
 import { generalSkills } from "../data/generalSkills";
-import { useDeviceMode } from "../lib/useDeviceMode";
 
-export function InspectModal({ player, onClose }: { player: PlayerView; onClose: () => void }) {
-  const d = generalDisplay(player.generalId);
+const SLOT_LABEL: Record<string, string> = {
+  weapon: "อาวุธ",
+  armor: "เกราะ",
+  horseMinus: "ม้า −1",
+  horsePlus: "ม้า +1",
+};
+
+export function InspectModal({ player, onClose, onInspectCard }: { player: PlayerView; onClose: () => void; onInspectCard?: (card: Card) => void }) {
+  const display = generalDisplay(player.generalId);
+  const art = generalArt(player.generalId, player.faction);
   const color = factionColor(player.faction);
   const handCount = Array.isArray(player.hand) ? player.hand.length : player.hand.count;
-  const equipEntries = Object.entries(player.equipment).filter(([, c]) => c);
-  // SPEC §7.4: view public skills — only meaningful once the general is
-  // actually revealed (an un-revealed opponent is projected with generalId
-  // "" during selection, per view.ts's generalRevealed gating).
-  const skills = player.generalId !== "" ? generalSkills(player.generalId) : [];
-  // SPEC §12.2 — "Player Detail เต็มจอ": on a short mobile-landscape
-  // viewport this goes edge-to-edge instead of a small centered card.
-  const { compact } = useDeviceMode();
+  const equipment = Object.entries(player.equipment).filter((entry) => entry[1]);
+  const skills = player.generalId ? generalSkills(player.generalId) : [];
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div
-        className="anim-pop"
-        onClick={(e) => e.stopPropagation()}
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={`รายละเอียด ${display.name}`}
+        className="general-detail-modal anim-pop"
+        onClick={(event) => event.stopPropagation()}
         style={{
-          width: compact ? "100vw" : 360,
-          height: compact ? "100vh" : undefined,
-          maxWidth: compact ? undefined : "90vw",
-          maxHeight: compact ? undefined : "85vh",
-          background: "linear-gradient(#241a11,#160f09)",
-          border: compact ? "none" : `2px solid ${color}`,
-          borderRadius: compact ? 0 : 12,
-          overflowY: "auto",
-          boxShadow: compact ? "none" : "0 22px 60px rgba(0,0,0,.7)",
-        }}
+          "--general-faction": color,
+          backgroundImage: `url(${art.background})`,
+        } as CSSProperties}
       >
-        <div style={{ height: 38, background: color, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff", fontWeight: 700, fontSize: 16 }}>
-            <span style={{ fontFamily: "var(--font-glyph)", fontSize: 20 }}>{d.glyph}</span>
-            {player.name}
-          </span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,.9)" }}>
-            {player.roleRevealed && player.role ? player.role : "?"}
-          </span>
-        </div>
-        <div style={{ padding: "18px 20px" }}>
-          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 12 }}>
-            {d.name} · {factionLabel(player.faction)}
+        <div className="general-detail-shade" aria-hidden="true" />
+
+        <header className="general-detail-header">
+          <div>
+            <div className="general-detail-kicker">{factionLabel(player.faction)} · นายพลประจำที่นั่ง {player.seat + 1}</div>
+            <h2>{display.name}</h2>
+            <div className="general-detail-player">ผู้เล่น {player.name}</div>
           </div>
-          <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-            <div style={{ flex: 1, background: "var(--panel-bg)", border: "1px solid var(--panel-border)", borderRadius: 7, padding: "10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{handCount}</div>
-              <div style={{ fontSize: 11, color: "var(--ink-muted)" }}>การ์ดในมือ (คว่ำ)</div>
-            </div>
-            <div style={{ flex: 1, background: "var(--panel-bg)", border: "1px solid var(--panel-border)", borderRadius: 7, padding: "10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>
-                {player.hp}/{player.maxHp}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--ink-muted)" }}>พลังชีวิต</div>
-            </div>
+          <div className="general-detail-header-actions">
+            <span className="general-detail-role">{player.roleRevealed && player.role ? player.role : "บทบาทปกปิด"}</span>
+            <button type="button" className="general-detail-close" onClick={onClose} aria-label="ปิดรายละเอียดขุนพล">×</button>
+          </div>
+        </header>
+
+        <div className="general-detail-layout">
+          <div className="general-detail-hero" aria-hidden={!art.fullBody}>
+            {art.fullBody ? (
+              <img src={art.fullBody} alt={`ภาพเต็มตัว ${display.name}`} draggable={false} />
+            ) : (
+              <span>{display.glyph}</span>
+            )}
           </div>
 
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 7 }}>เขตอุปกรณ์</div>
-          {equipEntries.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {equipEntries.map(([slot, card]) => (
-                <div
-                  key={slot}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    background: "var(--panel-bg)",
-                    border: "1px solid var(--panel-border)",
-                    borderRadius: 6,
-                    padding: "7px 10px",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 4,
-                      background: "var(--red)",
-                      color: "#f6ecd2",
-                      fontFamily: "var(--font-glyph-2)",
-                      fontSize: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {cardDisplay(card!.typeKey).glyph}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
-                    {cardDisplay(card!.typeKey).name}
-                  </span>
+          <div className="general-detail-sheet">
+            <div className="general-detail-stats">
+              <Stat value={`${player.hp}/${player.maxHp}`} label="พลังชีวิต" accent />
+              <Stat value={String(handCount)} label="การ์ดในมือ" />
+              <Stat value={player.alive ? "พร้อมรบ" : "สิ้นชีพ"} label="สถานะ" />
+            </div>
+
+            <DetailSection title="เขตอุปกรณ์">
+              {equipment.length ? (
+                <div className="general-detail-equipment">
+                  {equipment.map(([slot, card]) => (
+                    <button type="button" className="general-detail-item" key={slot} disabled={!onInspectCard} onClick={() => onInspectCard?.(card!)}>
+                      <span className="general-detail-item-glyph">{cardDisplay(card!.typeKey).glyph}</span>
+                      <span>
+                        <small>{SLOT_LABEL[slot] ?? slot}</small>
+                        <b>{cardDisplay(card!.typeKey).name}</b>
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic", background: "var(--panel-bg)", border: "1px dashed var(--panel-border)", borderRadius: 6, padding: 9, textAlign: "center" }}>
-              ไม่มีอุปกรณ์
-            </div>
-          )}
+              ) : (
+                <div className="general-detail-empty">ยังไม่มีอุปกรณ์</div>
+              )}
+            </DetailSection>
 
-          {player.judgmentZone.length > 0 && (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", margin: "12px 0 7px" }}>เขตไพ่ตัดสิน</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {player.judgmentZone.map((c) => (
-                  <span
-                    key={c.id}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 12,
-                      background: "var(--target-red)",
-                      color: "#f6ecd2",
-                      borderRadius: 5,
-                      padding: "4px 9px",
-                    }}
-                  >
-                    <b>{cardDisplay(c.typeKey).glyph}</b>
-                    {cardDisplay(c.typeKey).name}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
+            {player.judgmentZone.length > 0 && (
+              <DetailSection title="เขตไพ่ตัดสิน">
+                <div className="general-detail-equipment">
+                  {player.judgmentZone.map((card) => (
+                    <button type="button" className="general-detail-item is-danger" key={card.id} disabled={!onInspectCard} onClick={() => onInspectCard?.(card)}>
+                      <span className="general-detail-item-glyph">{cardDisplay(card.typeKey).glyph}</span>
+                      <b>{cardDisplay(card.typeKey).name}</b>
+                    </button>
+                  ))}
+                </div>
+              </DetailSection>
+            )}
 
-          {skills.length > 0 && (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", margin: "12px 0 7px" }}>สกิล</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {skills.map((s) => {
-                  const used = player.skillUsedThisTurn[s.id];
-                  return (
-                    <div
-                      key={s.id}
-                      style={{
-                        background: "var(--panel-bg)",
-                        border: "1px solid var(--panel-border)",
-                        borderRadius: 6,
-                        padding: "7px 10px",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ fontWeight: 700, fontSize: 12.5, color: "var(--ink)" }}>{s.name}</span>
-                        {s.lordOnly && (
-                          <span style={{ fontSize: 9, background: "var(--gold)", color: "#5a3d0a", borderRadius: 6, padding: "0 5px" }}>
-                            主公
-                          </span>
-                        )}
-                        {s.active && (
-                          <span style={{ fontSize: 9, background: "var(--red)", color: "#f6ecd2", borderRadius: 6, padding: "0 5px" }}>
-                            技
-                          </span>
-                        )}
-                        {s.active && used ? (
-                          <span style={{ fontSize: 9, color: "var(--ink-faint)", marginLeft: "auto" }}>ใช้แล้วเทิร์นนี้</span>
-                        ) : null}
-                      </div>
-                      <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.35, marginTop: 2 }}>{s.description}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+            <DetailSection title="สกิลประจำตัว">
+              {skills.length ? (
+                <div className="general-detail-skills">
+                  {skills.map((skill) => {
+                    const used = player.skillUsedThisTurn[skill.id] ?? 0;
+                    return (
+                      <article key={skill.id}>
+                        <div>
+                          <b>{skill.name}</b>
+                          {skill.lordOnly && <span>主公</span>}
+                          {skill.active && <span>技</span>}
+                          {used > 0 && <small>ใช้แล้ว {used}</small>}
+                        </div>
+                        <p>{skill.description}</p>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="general-detail-empty">ไม่มีข้อมูลสกิลที่เปิดเผย</div>
+              )}
+            </DetailSection>
 
-          <button
-            onClick={onClose}
-            style={{
-              width: "100%",
-              marginTop: 16,
-              background: "linear-gradient(#241a11,#160f09)",
-              color: "var(--ink-muted)",
-              border: "1px solid var(--panel-border-2)",
-              borderRadius: 6,
-              padding: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            ปิด
-          </button>
+            <button type="button" className="btn-secondary general-detail-bottom-close" onClick={onClose}>ปิดรายละเอียด</button>
+          </div>
         </div>
-      </div>
+      </section>
     </ModalOverlay>
+  );
+}
+
+function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div className={accent ? "is-accent" : undefined}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="general-detail-section">
+      <h3>{title}</h3>
+      {children}
+    </section>
   );
 }

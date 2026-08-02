@@ -23,6 +23,7 @@ import { useInteraction } from "../hooks/useInteraction";
 import { HandCard } from "../components/HandCard";
 import { CombatEffectLayer, type CombatEffect } from "../components/board/CombatEffectLayer";
 import { playSfx } from "../lib/sfx";
+import { CardInspectModal } from "../components/CardInspectModal";
 
 // Center (viewport px) of a player's seat-tile DOM anchor — see the
 // data-player-anchor attribute on PlayerTile.tsx's / SelfDock.tsx's tile
@@ -98,6 +99,7 @@ export function Table() {
   // reset by the decision-change effect above.
   const [busy, setBusy] = useState(false);
   const [inspecting, setInspecting] = useState<PlayerView | null>(null);
+  const [inspectingCard, setInspectingCard] = useState<{ card: Card; canChoose: boolean } | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
@@ -128,6 +130,10 @@ export function Table() {
       if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    setInspectingCard(null);
+  }, [decisionKey]);
 
   // ── Draw feel: flash the flip-in animation on cards that just entered the
   // hand. Diff current hand ids against last render's; animate only the newly
@@ -670,6 +676,7 @@ export function Table() {
             getCardState={getCardState}
             selectedCardIds={selectedCardIds}
             onTapCard={onTapCard}
+            onInspectCard={(card, canChoose) => setInspectingCard({ card, canChoose })}
             selfTargetable={selfTargetable}
             selfTargetSelected={selectedTargetIds.includes(me.id)}
             onToggleSelfTarget={() => toggleTarget(me.id)}
@@ -694,6 +701,7 @@ export function Table() {
             }}
             phaseLabel={phaseLabel}
             onLeave={() => setConfirmingLeave(true)}
+            onInspect={() => setInspecting(me)}
             equipSlots={equipSlotsWithCards}
           />
         }
@@ -812,7 +820,26 @@ export function Table() {
         </div>
       )}
       {showDecisionModal && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
-      {inspecting && <InspectModal player={inspecting} onClose={() => setInspecting(null)} />}
+      {inspecting && (
+        <InspectModal
+          player={inspecting}
+          onClose={() => setInspecting(null)}
+          onInspectCard={(card) => setInspectingCard({ card, canChoose: false })}
+        />
+      )}
+      {inspectingCard && (
+        <CardInspectModal
+          card={inspectingCard.card}
+          onClose={() => setInspectingCard(null)}
+          {...(inspectingCard.canChoose ? {
+            onChoose: () => {
+              const card = inspectingCard.card;
+              setInspectingCard(null);
+              onTapCard(card);
+            },
+          } : {})}
+        />
+      )}
       {showDeathDialog && (
         <DeathDialog
           role={me.role}
@@ -867,7 +894,7 @@ export function Table() {
             <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10, textAlign: "left" }}>ใหม่สุดอยู่บนซ้าย · เอาเมาส์ชี้เพื่อดูรายละเอียด</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-start", maxHeight: "60vh", overflowY: "auto", paddingTop: 40 }}>
               {[...gameView.discardPile].reverse().map((c, i) => (
-                <HandCard key={`${c.id}-${i}`} card={c} selected={false} />
+                <HandCard key={`${c.id}-${i}`} card={c} selected={false} onInspect={() => setInspectingCard({ card: c, canChoose: false })} />
               ))}
             </div>
           </ModalPanel>
@@ -933,4 +960,3 @@ export function Table() {
     </div>
   );
 }
-

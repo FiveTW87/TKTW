@@ -537,6 +537,25 @@ describe("Table: inspect panel shows public skills (SPEC 7.4)", () => {
   });
 });
 
+describe("Table: card inspector", () => {
+  it("opens card details without submitting a game action", async () => {
+    const me = player("p0", {
+      generalId: "caocao",
+      faction: "wei",
+      role: "lord",
+      roleRevealed: true,
+      hand: [{ id: "spade_7_sha", typeKey: "sha", suit: "spade", rank: 7 }],
+    });
+    const rest = [player("p1", { name: "Bob" }), player("p2")];
+    const user = await enterGame("CARDVIEW", me, rest);
+
+    await user.click(screen.getByRole("button", { name: "ดูรายละเอียด จู่โจม" }));
+
+    expect(screen.getByRole("dialog", { name: "รายละเอียดการ์ด จู่โจม" })).toBeInTheDocument();
+    expect(sentEvents.some((event) => event.event === "game:answer")).toBe(false);
+  });
+});
+
 describe("Table: stuck-state safety net", () => {
   it("shows a recovery panel when a view arrives with no pending decision and the game isn't finished", async () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });

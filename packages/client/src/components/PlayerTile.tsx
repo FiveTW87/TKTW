@@ -5,6 +5,7 @@ import { cardDisplay, cardInfo } from "../data/cardNames";
 import { CardTooltip } from "./HandCard";
 import { roleDisplay } from "../data/roles";
 import { DelayedTrickList } from "./board/DelayedTrickCard";
+import { GeneralPortrait } from "./GeneralPortrait";
 
 // A recognizable icon per equipment slot — clearer at a glance than the card's
 // Chinese glyph (and the two horse slots share 馬, so this also tells − from +).
@@ -79,8 +80,8 @@ export function PlayerTile({
         <div style={{ height: compact ? 14 : 18, background: color, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span> : <span style={{ fontFamily: "var(--font-glyph)", fontSize: 11, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>}
         </div>
-        <div className="card-back" style={{ width: headPortrait, height: headPortrait, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: compact ? "4px auto 2px" : "6px auto 4px" }}>
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 12 : 16, color: "rgba(240,220,180,.5)" }}>{d.glyph}</span>
+        <div className="card-back" style={{ width: headPortrait, height: headPortrait, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: compact ? "4px auto 2px" : "6px auto 4px", overflow: "hidden" }}>
+          <GeneralPortrait generalId={player.generalId} faction={player.faction} />
         </div>
         <div style={{ fontSize: compact ? 9 : 10, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 4px" }}>{player.name}</div>
         <div style={{ display: "flex", gap: 1, justifyContent: "center", margin: compact ? "2px 0 4px" : "3px 0 6px", flexWrap: "wrap" }}>
@@ -161,7 +162,7 @@ export function PlayerTile({
             justifyContent: "center",
           }}
         >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: isCompact ? 22 : 26, color: "rgba(240,220,180,.45)", lineHeight: 1.1 }}>{d.glyph}</span>
+          <GeneralPortrait generalId={player.generalId} faction={player.faction} />
           <span
             style={{
               position: "absolute",
