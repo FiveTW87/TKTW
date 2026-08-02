@@ -3,6 +3,7 @@ import { ModalOverlay } from "./Modal";
 import { cardDisplay, cardInfo } from "../data/cardNames";
 import { GENERAL_DISPLAY, generalDisplay, generalFaction, factionColor, factionLabel } from "../data/generalNames";
 import { generalSkills } from "../data/generalSkills";
+import { GeneralPortrait } from "./GeneralPortrait";
 
 // ── content tables ─────────────────────────────────────────────────────
 const ROLES: Array<{ cn: string; cls: string; name: string; goal: string }> = [
@@ -35,10 +36,10 @@ const SUMMARY: Array<{ icon: string; title: string; body: string }> = [
 // ── little building blocks ─────────────────────────────────────────────
 function SectionTitle({ glyph, children }: { glyph: string; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 10px" }}>
-      <span style={{ fontFamily: "var(--font-glyph)", fontSize: 18, color: "var(--red)" }}>{glyph}</span>
-      <span style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "var(--ink)" }}>{children}</span>
-    </div>
+    <h2 className="rules-section-title">
+      <span aria-hidden="true">{glyph}</span>
+      {children}
+    </h2>
   );
 }
 
@@ -47,7 +48,7 @@ const SQUARE_TINT: Record<string, string> = { basic: "#b23a2e", trick: "#7a5f27"
 function CardRow({ typeKey, kind }: { typeKey: string; kind: "basic" | "trick" | "equip" }) {
   const d = cardDisplay(typeKey);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 6, padding: "7px 10px" }}>
+    <div className="rules-card-row">
       <span
         style={{
           width: 30,
@@ -75,27 +76,14 @@ function CardRow({ typeKey, kind }: { typeKey: string; kind: "basic" | "trick" |
 
 function GeneralRow({ generalId }: { generalId: string }) {
   const d = generalDisplay(generalId);
-  const color = factionColor(generalFaction(generalId));
+  const faction = generalFaction(generalId);
+  const color = factionColor(faction);
   const skills = generalSkills(generalId);
   return (
-    <div style={{ display: "flex", gap: 10, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 6, padding: "7px 10px" }}>
-      <span
-        style={{
-          width: 30,
-          height: 30,
-          flexShrink: 0,
-          borderRadius: 5,
-          background: color,
-          color: "#f6ecd2",
-          fontFamily: "var(--font-glyph)",
-          fontSize: 17,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {d.glyph}
-      </span>
+    <div className="rules-general-row">
+      <div className="rules-general-portrait">
+        <GeneralPortrait generalId={generalId} faction={faction} />
+      </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)" }}>{d.name}</span>
@@ -125,114 +113,133 @@ function GeneralRow({ generalId }: { generalId: string }) {
 }
 
 // ── the modal ──────────────────────────────────────────────────────────
+type RulesTab = "overview" | "cards" | "generals";
+
+const RULE_TABS: Array<{ id: RulesTab; glyph: string; label: string; hint: string }> = [
+  { id: "overview", glyph: "始", label: "เริ่มเล่น", hint: "บทบาทและลำดับเทิร์น" },
+  { id: "cards", glyph: "牌", label: "คู่มือการ์ด", hint: "การ์ดทุกประเภท" },
+  { id: "generals", glyph: "將", label: "นายพล", hint: "ความสามารถทุกก๊ก" },
+];
+
 export function RulesModal({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<RulesTab>("overview");
+
   return (
     <ModalOverlay onClose={onClose}>
-      <div
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rules-modal-title"
+        className="rules-modal"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 640,
-          maxWidth: "94vw",
-          maxHeight: "92vh",
-          display: "flex",
-          flexDirection: "column",
-          background: "linear-gradient(#241a11,#160f09)",
-          border: "1px solid var(--panel-border-3)",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 22px 60px rgba(0,0,0,.7)",
-        }}
       >
-        {/* header bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", background: "linear-gradient(90deg,#8f2a22,#b23a2e)", color: "#f6ecd2" }}>
-          <span style={{ width: 38, height: 38, flexShrink: 0, borderRadius: "50%", background: "radial-gradient(circle at 38% 34%,#c0463a,#7c241d)", border: "2px solid #f2e7cf", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-glyph)", fontSize: 20 }}>卷</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, lineHeight: 1.1 }}>วิธีเล่น & กติกา</div>
-            <div style={{ fontSize: 11, opacity: 0.85 }}>三國 · คู่มือฉบับย่อ — สวมบทบาทลับ 3–10 คน</div>
+        <header className="rules-header">
+          <span className="rules-header-seal" aria-hidden="true">卷</span>
+          <div className="rules-header-copy">
+            <div id="rules-modal-title" className="rules-title">วิธีเล่น & กติกา</div>
+            <div className="rules-subtitle">三國 · คู่มือฉบับย่อสำหรับศึกบทบาทลับ 3–10 คน</div>
           </div>
-          <button onClick={onClose} title="ปิด" style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid rgba(246,236,210,.5)", background: "rgba(0,0,0,.15)", color: "#f6ecd2", cursor: "pointer", fontSize: 15, lineHeight: 1 }}>✕</button>
-        </div>
+          <button onClick={onClose} className="rules-close" aria-label="ปิดวิธีเล่นและกติกา">✕</button>
+        </header>
 
-        {/* scroll body */}
-        <div style={{ overflowY: "auto", padding: "10px 18px 6px", textAlign: "left" }}>
-          {/* เป้าหมาย */}
-          <div style={{ background: "rgba(176,64,44,.15)", border: "1px solid rgba(176,64,44,.4)", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--ink)" }}>
-            <b>เป้าหมาย:</b> ทุกคนได้บทบาทลับ (เห็นแต่ของตัวเอง ยกเว้นเจ้าเมืองที่เปิดเผย) แล้วผลัดกันเล่นตามเข็มนาฬิกา
-            ใช้การ์ดโจมตี/ป้องกัน/ฟื้น จนกว่าฝ่ายใดฝ่ายหนึ่งบรรลุเป้าของบทบาทตัวเอง
-          </div>
+        <nav className="rules-tabs" role="tablist" aria-label="หมวดคู่มือ">
+          {RULE_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-label={tab.label}
+              aria-selected={activeTab === tab.id}
+              className={activeTab === tab.id ? "is-active" : ""}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="rules-tab-glyph" aria-hidden="true">{tab.glyph}</span>
+              <span><b>{tab.label}</b><small>{tab.hint}</small></span>
+            </button>
+          ))}
+        </nav>
 
-          {/* บทบาท */}
-          <SectionTitle glyph="爵">บทบาท & เงื่อนไขชนะ</SectionTitle>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {ROLES.map((r) => (
-              <div key={r.cn} style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 7, padding: "8px 10px" }}>
-                <span className={`seal ${r.cls}`} style={{ width: 22, height: 22, flexShrink: 0, fontSize: 13 }}>{r.cn}</span>
+        <div className="rules-body">
+          {activeTab === "overview" && (
+            <div role="tabpanel" className="rules-panel">
+              <div className="rules-hero">
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ink)" }}>{r.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-muted)", lineHeight: 1.4 }}>{r.goal}</div>
+                  <span className="rules-eyebrow">เป้าหมายของเกม</span>
+                  <p>รับบทบาทลับ วางแผนจากตัวตนของนายพล และผลัดกันใช้การ์ดจนฝ่ายของคุณบรรลุเงื่อนไขชนะ</p>
+                </div>
+                <div className="rules-hero-stats" aria-label="ข้อมูลเกมโดยย่อ">
+                  <span><b>3–10</b> ผู้เล่น</span>
+                  <span><b>6</b> ช่วงต่อเทิร์น</span>
+                  <span><b>4</b> บทบาท</span>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* เทิร์น */}
-          <SectionTitle glyph="回">โครงสร้างเทิร์น</SectionTitle>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {PHASES.map((p, i) => (
-              <div key={p} style={{ display: "flex", alignItems: "center", gap: 5, background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
-                <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--red)", color: "#f6ecd2", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
-                <span style={{ fontSize: 12, color: "var(--ink)" }}>{p}</span>
+              <SectionTitle glyph="爵">บทบาท & เงื่อนไขชนะ</SectionTitle>
+              <div className="rules-role-grid">
+                {ROLES.map((role) => (
+                  <div key={role.cn} className="rules-role-card">
+                    <span className={`seal ${role.cls}`}>{role.cn}</span>
+                    <div><b>{role.name}</b><p>{role.goal}</p></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* การ์ด */}
-          <SectionTitle glyph="牌">ความหมายของการ์ด</SectionTitle>
-          <div style={{ fontSize: 11.5, color: "var(--ink-muted)", marginBottom: 6 }}>การ์ดพื้นฐาน</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {BASIC.map((k) => <CardRow key={k} typeKey={k} kind="basic" />)}
-          </div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-muted)", margin: "12px 0 6px" }}>กลอุบาย</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {TRICKS.map((k) => <CardRow key={k} typeKey={k} kind="trick" />)}
-          </div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-muted)", margin: "12px 0 6px" }}>อุปกรณ์ (ชี้ดูรายละเอียดของทุกชิ้นได้ตอนติดตั้ง)</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {EQUIP.map((k) => <CardRow key={k} typeKey={k} kind="equip" />)}
-          </div>
-
-          {/* นายพล */}
-          <SectionTitle glyph="將">นายพล & ความสามารถ</SectionTitle>
-          {FACTIONS.map(({ key, label }) => {
-            const ids = GENERAL_IDS.filter((id) => generalFaction(id) === key);
-            if (ids.length === 0) return null;
-            return (
-              <div key={key} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11.5, color: factionColor(key), fontWeight: 700, marginBottom: 6 }}>{label}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {ids.map((id) => <GeneralRow key={id} generalId={id} />)}
-                </div>
+              <SectionTitle glyph="回">โครงสร้างเทิร์น</SectionTitle>
+              <div className="rules-phase-track">
+                {PHASES.map((phase, index) => (
+                  <div key={phase} className="rules-phase">
+                    <span>{index + 1}</span><b>{phase}</b>
+                  </div>
+                ))}
               </div>
-            );
-          })}
 
-          {/* สรุป */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, margin: "16px 0 4px" }}>
-            {SUMMARY.map((s) => (
-              <div key={s.title} style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 7, padding: "9px 10px" }}>
-                <div style={{ fontSize: 15, marginBottom: 3 }}>{s.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: 12, color: "var(--ink)", marginBottom: 3 }}>{s.title}</div>
-                <div style={{ fontSize: 10.5, color: "var(--ink-muted)", lineHeight: 1.4 }}>{s.body}</div>
+              <div className="rules-summary-grid">
+                {SUMMARY.map((summary) => (
+                  <div key={summary.title} className="rules-summary-card">
+                    <span aria-hidden="true">{summary.icon}</span>
+                    <div><b>{summary.title}</b><p>{summary.body}</p></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {activeTab === "cards" && (
+            <div role="tabpanel" className="rules-panel">
+              <SectionTitle glyph="牌">ความหมายของการ์ด</SectionTitle>
+              <p className="rules-lead">ดูชื่อ สัญลักษณ์ และหน้าที่ของการ์ดก่อนตัดสินใจเล่น—อุปกรณ์ที่ติดตั้งแล้วสามารถชี้เพื่อดูรายละเอียดซ้ำได้</p>
+              <h3 className="rules-category-title">การ์ดพื้นฐาน</h3>
+              <div className="rules-item-grid">{BASIC.map((key) => <CardRow key={key} typeKey={key} kind="basic" />)}</div>
+              <h3 className="rules-category-title">กลอุบาย</h3>
+              <div className="rules-item-grid">{TRICKS.map((key) => <CardRow key={key} typeKey={key} kind="trick" />)}</div>
+              <h3 className="rules-category-title">อุปกรณ์</h3>
+              <div className="rules-item-grid">{EQUIP.map((key) => <CardRow key={key} typeKey={key} kind="equip" />)}</div>
+            </div>
+          )}
+
+          {activeTab === "generals" && (
+            <div role="tabpanel" className="rules-panel">
+              <SectionTitle glyph="將">นายพล & ความสามารถ</SectionTitle>
+              <p className="rules-lead">สีของป้ายบอกก๊ก จุดสีเขียวคือพลังชีวิตพื้นฐาน ส่วนป้าย 主公 และ 技 บอกสกิลเจ้าเมืองหรือสกิลกดใช้</p>
+              {FACTIONS.map(({ key, label }) => {
+                const ids = GENERAL_IDS.filter((id) => generalFaction(id) === key);
+                if (ids.length === 0) return null;
+                return (
+                  <section key={key} className="rules-faction-section" style={{ "--rules-faction": factionColor(key) } as React.CSSProperties}>
+                    <h3><span aria-hidden="true" />{label}<small>{ids.length} นายพล</small></h3>
+                    <div className="rules-general-grid">{ids.map((id) => <GeneralRow key={id} generalId={id} />)}</div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* footer */}
-        <div style={{ padding: "10px 18px", borderTop: "1px solid var(--panel-border-2)", textAlign: "center" }}>
-          <button onClick={onClose} className="btn-primary" style={{ padding: "9px 30px", fontSize: 14 }}>เข้าใจแล้ว</button>
-        </div>
-      </div>
+        <footer className="rules-footer">
+          <span>เลือกหมวดด้านบนเพื่อเปิดดูระหว่างเล่นได้ทุกเวลา</span>
+          <button onClick={onClose} className="btn-primary">เข้าใจแล้ว</button>
+        </footer>
+      </section>
     </ModalOverlay>
   );
 }

@@ -6,6 +6,7 @@ import { CardTooltip } from "./HandCard";
 import { roleDisplay } from "../data/roles";
 import { DelayedTrickList } from "./board/DelayedTrickCard";
 import { GeneralPortrait } from "./GeneralPortrait";
+import { FactionBadge } from "./FactionBadge";
 
 // A recognizable icon per equipment slot — clearer at a glance than the card's
 // Chinese glyph (and the two horse slots share 馬, so this also tells − from +).
@@ -53,6 +54,8 @@ export function PlayerTile({
   const equipEntries = Object.entries(player.equipment).filter(([, c]) => c) as [string, Card][];
   // Role seal shows only when publicly known (lord, or a revealed/dead player).
   const role = player.role && (player.roleRevealed || player.role === "lord") ? roleDisplay(player.role) : undefined;
+  const fullFactionLabel = factionLabel(player.faction);
+  const shortFactionLabel = player.faction === "qun" ? "อิสระ" : fullFactionLabel;
   const isHead = density === "head";
   const isCompact = compact || density === "compact";
 
@@ -77,8 +80,9 @@ export function PlayerTile({
           textAlign: "center",
         }}
       >
-        <div style={{ height: compact ? 14 : 18, background: color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {role ? <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span> : <span style={{ fontFamily: "var(--font-glyph)", fontSize: 11, color: "rgba(255,255,255,.92)" }}>{d.glyph}</span>}
+        <div aria-label={`ฝ่าย${fullFactionLabel}`} style={{ height: compact ? 14 : 18, background: color, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+          {role && <span className={`seal ${role.cls}`} title={role.name} style={{ width: 12, height: 12, fontSize: 8 }}>{role.cn}</span>}
+          <span style={{ fontSize: compact ? 7 : 8.5, fontWeight: 800, color: "rgba(255,255,255,.95)", textShadow: "0 1px 2px rgba(0,0,0,.55)" }}>{shortFactionLabel}</span>
         </div>
         <div className="card-back" style={{ width: headPortrait, height: headPortrait, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: compact ? "4px auto 2px" : "6px auto 4px", overflow: "hidden" }}>
           <GeneralPortrait generalId={player.generalId} faction={player.faction} />
@@ -187,7 +191,7 @@ export function PlayerTile({
         </div>
 
         {/* info column */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: 16 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: isCompact ? 34 : 44 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
             <span style={{ fontSize: 10.5, color: "var(--ink-faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{player.name}</span>
@@ -219,25 +223,7 @@ export function PlayerTile({
           </div>
         </div>
 
-        {/* faction ribbon — right edge, matches SeatTile's vertical strip */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            width: 20,
-            height: "100%",
-            background: color,
-            opacity: 0.9,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>
-            {factionLabel(player.faction).slice(0, 1)}
-          </span>
-        </div>
+        <FactionBadge faction={player.faction} compact={isCompact} />
 
         {distance !== undefined && player.alive && (
           <span
@@ -269,8 +255,8 @@ export function PlayerTile({
             aria-label="เลือกแล้ว"
             style={{
               position: "absolute",
-              top: 4,
-              right: 4,
+              top: isCompact ? 28 : 31,
+              right: 7,
               zIndex: 2,
               width: 16,
               height: 16,
@@ -298,7 +284,7 @@ export function PlayerTile({
             style={{
               position: "absolute",
               bottom: 5,
-              right: 24,
+              right: 7,
               zIndex: 3,
               width: 20,
               height: 20,

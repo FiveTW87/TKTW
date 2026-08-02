@@ -3,7 +3,7 @@ import type { Card, PlayerView } from "@tktw/shared";
 import { HandCard, CardTooltip } from "../HandCard";
 import { RulesButton } from "../RulesModal";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
-import { generalDisplay, factionColor, factionLabel } from "../../data/generalNames";
+import { generalDisplay, factionColor } from "../../data/generalNames";
 import { roleDisplay } from "../../data/roles";
 import { activeSkillSpec } from "../../data/skillInteraction";
 import { cardMeta } from "../../data/cardMeta";
@@ -12,6 +12,7 @@ import { DelayedTrickList } from "./DelayedTrickCard";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { useSfxStore } from "../../store/sfxStore";
 import { GeneralPortrait } from "../GeneralPortrait";
+import { FactionBadge } from "../FactionBadge";
 
 export interface CardTapState {
   tappable: boolean;
@@ -137,7 +138,7 @@ export function SelfDock({
               </button>
             </div>
             {/* info column */}
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: compact ? 10 : 16 }}>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingTop: 2, paddingRight: compact ? 34 : 50 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
                 <span style={{ fontSize: compact ? 12 : 15, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>{generalDisplay(me.generalId).name}</span>
                 <span style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-faint)" }}>{me.name}</span>
@@ -154,10 +155,7 @@ export function SelfDock({
                 ))}
               </div>
             </div>
-            {/* faction ribbon — right edge */}
-            <div style={{ position: "absolute", top: 0, right: 0, width: compact ? 16 : 22, height: "100%", background: factionColor(me.faction), opacity: 0.9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 11 : 14, color: "rgba(255,255,255,.9)", writingMode: "vertical-rl" }}>{factionLabel(me.faction).slice(0, 1)}</span>
-            </div>
+            <FactionBadge faction={me.faction} compact={compact} />
             {selfTargetable && <div className={selfTargetSelected ? "glow-target-selected" : "glow-target"} style={{ borderRadius: 12 }} />}
             {selfTargetable && selfTargetSelected && (
               <div

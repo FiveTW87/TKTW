@@ -31,6 +31,34 @@ describe("PlayerTile character art", () => {
       "src",
       "/assets/generals/cao_cao_head.webp",
     );
+    expect(screen.getByLabelText("ฝ่ายวุย")).toHaveTextContent("วุย");
+  });
+
+  it("keeps the faction readable in the 9–10 player head layout", () => {
+    render(
+      <PlayerTile
+        player={{
+          id: "p2",
+          seat: 2,
+          name: "Lu Bu",
+          generalId: "lubu",
+          faction: "qun",
+          gender: "male",
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 2 },
+          equipment: {},
+          judgmentZone: [],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        isCurrentTurn={false}
+        density="head"
+      />,
+    );
+
+    expect(screen.getByLabelText("ฝ่ายกลุ่มอิสระ")).toHaveTextContent("อิสระ");
   });
 });
 

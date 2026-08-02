@@ -26,7 +26,6 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
           {e.kind === "travel" ? (
             <>
               <div className="combat-source-pulse" />
-              <div className="combat-travel-beam" />
               <div className="combat-travel-token">殺</div>
             </>
           ) : e.kind === "hit" ? (

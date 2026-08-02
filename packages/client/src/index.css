@@ -99,6 +99,359 @@ a:hover {
   color: var(--gold-light);
 }
 
+/* Readable faction identity for compact player tiles. Color supports the
+   label, but never carries the meaning by itself. */
+.faction-badge {
+  --faction-badge-color: #7a6a48;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 21px;
+  padding: 2px 7px 2px 3px;
+  border: 1px solid color-mix(in srgb, var(--faction-badge-color), white 28%);
+  border-radius: 999px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--faction-badge-color), white 9%), color-mix(in srgb, var(--faction-badge-color), black 22%));
+  box-shadow: 0 2px 8px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.14);
+  color: #fff8e7;
+  line-height: 1;
+}
+.faction-badge-glyph {
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(18,11,7,.38);
+  color: #ffe4a0;
+  font-family: var(--font-glyph);
+  font-size: 9px;
+}
+.faction-badge-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.65);
+}
+.faction-badge.is-compact {
+  top: 5px;
+  right: 5px;
+  gap: 2px;
+  min-height: 17px;
+  padding: 1px 5px 1px 2px;
+}
+.faction-badge.is-compact .faction-badge-glyph {
+  width: 12px;
+  height: 12px;
+  font-size: 7px;
+}
+.faction-badge.is-compact .faction-badge-label {
+  font-size: 7.5px;
+}
+
+/* Rules compendium: three focused views instead of one uninterrupted wall of
+   text. The header/tabs/footer stay put while only the active guide scrolls. */
+.rules-modal {
+  width: min(880px, 95vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--panel-border-3);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 88% 0, rgba(197,139,49,.12), transparent 28%),
+    linear-gradient(155deg, #291d12, #150e08 72%);
+  box-shadow: 0 28px 80px rgba(0,0,0,.76), inset 0 1px rgba(255,255,255,.04);
+  text-align: left;
+}
+.rules-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 19px;
+  color: #f9eed6;
+  background:
+    linear-gradient(90deg, rgba(73,15,12,.25), transparent 58%),
+    linear-gradient(135deg, #7e211c, #b03b2f 58%, #7b251e);
+  border-bottom: 1px solid rgba(242,205,121,.32);
+}
+.rules-header-seal {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255,238,198,.8);
+  border-radius: 12px;
+  background: radial-gradient(circle at 35% 30%, #d35b47, #691914 75%);
+  box-shadow: 0 5px 14px rgba(42,7,5,.45), inset 0 1px rgba(255,255,255,.22);
+  font-family: var(--font-glyph);
+  font-size: 22px;
+}
+.rules-header-copy { flex: 1; min-width: 0; }
+.rules-title { font-family: var(--font-display); font-size: 21px; line-height: 1.15; }
+.rules-subtitle { margin-top: 3px; font-size: 10.5px; color: rgba(255,244,220,.78); }
+.rules-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,238,198,.42);
+  border-radius: 50%;
+  background: rgba(20,5,4,.2);
+  color: #fff0cf;
+  cursor: pointer;
+}
+.rules-close:hover { background: rgba(20,5,4,.42); }
+.rules-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  padding: 9px 14px;
+  background: rgba(10,7,4,.42);
+  border-bottom: 1px solid var(--panel-border-2);
+}
+.rules-tabs button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.rules-tabs button:hover {
+  border-color: var(--panel-border-2);
+  background: rgba(255,255,255,.035);
+  color: var(--ink);
+}
+.rules-tabs button.is-active {
+  border-color: rgba(217,165,49,.52);
+  background: linear-gradient(135deg, rgba(176,64,44,.2), rgba(217,165,49,.09));
+  color: var(--gold-light);
+  box-shadow: inset 0 1px rgba(255,255,255,.05);
+}
+.rules-tab-glyph {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  font-family: var(--font-glyph);
+  font-size: 14px;
+  opacity: .88;
+}
+.rules-tabs b, .rules-tabs small { display: block; }
+.rules-tabs b { font-size: 12px; }
+.rules-tabs small { margin-top: 2px; font-size: 8.5px; color: var(--ink-faint); }
+.rules-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: var(--gold-bronze) rgba(0,0,0,.18);
+}
+.rules-panel { padding: 15px 20px 20px; }
+.rules-hero {
+  display: grid;
+  grid-template-columns: 1.35fr .9fr;
+  gap: 16px;
+  align-items: center;
+  padding: 17px 18px;
+  border: 1px solid rgba(196,91,69,.42);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(176,64,44,.18), rgba(217,165,49,.06)),
+    #1b120c;
+}
+.rules-eyebrow {
+  color: #e78b73;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+.rules-hero p { margin: 5px 0 0; color: var(--ink); font-size: 13px; line-height: 1.6; }
+.rules-hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.rules-hero-stats span {
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid var(--panel-border-2);
+  border-radius: 8px;
+  background: rgba(8,5,3,.32);
+  color: var(--ink-muted);
+  font-size: 8.5px;
+  text-align: center;
+}
+.rules-hero-stats b { display: block; color: var(--gold-light); font-size: 14px; }
+.rules-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 19px 0 10px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+}
+.rules-section-title > span {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(176,64,44,.45);
+  border-radius: 7px;
+  background: rgba(176,64,44,.12);
+  color: #dc735d;
+  font-family: var(--font-glyph);
+  font-size: 15px;
+}
+.rules-role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.rules-role-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--panel-border-2);
+  border-radius: 9px;
+  background: linear-gradient(145deg, #21170f, #180f09);
+}
+.rules-role-card .seal { width: 26px; height: 26px; flex: 0 0 auto; font-size: 14px; }
+.rules-role-card b { color: var(--ink); font-size: 12.5px; }
+.rules-role-card p, .rules-summary-card p {
+  margin: 3px 0 0;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.rules-phase-track { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.rules-phase {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 4px;
+  border: 1px solid var(--panel-border-2);
+  border-radius: 8px;
+  background: #1c130c;
+  color: var(--ink-muted);
+  text-align: center;
+}
+.rules-phase span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #c14a3c, #7e211b);
+  color: #fff1d2;
+  font-size: 10px;
+  font-weight: 900;
+}
+.rules-phase b { font-size: 9px; }
+.rules-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+.rules-summary-card {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(217,165,49,.2);
+  border-radius: 9px;
+  background: rgba(29,20,13,.86);
+}
+.rules-summary-card > span { font-size: 16px; }
+.rules-summary-card b { color: var(--ink); font-size: 11.5px; }
+.rules-lead { margin: -2px 0 14px; color: var(--ink-muted); font-size: 11.5px; line-height: 1.55; }
+.rules-category-title {
+  margin: 15px 0 7px;
+  color: var(--gold-light);
+  font-size: 11px;
+  letter-spacing: .4px;
+}
+.rules-item-grid, .rules-general-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.rules-card-row, .rules-general-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border-2);
+  border-radius: 8px;
+  background: linear-gradient(145deg, #21170f, #180f09);
+}
+.rules-general-row { align-items: flex-start; }
+.rules-general-portrait {
+  width: 42px;
+  height: 52px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--panel-border-3);
+  border-radius: 7px;
+  background: #120c08;
+}
+.rules-faction-section { --rules-faction: var(--gold-bronze); margin-top: 17px; }
+.rules-faction-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 7px;
+  color: color-mix(in srgb, var(--rules-faction), white 32%);
+  font-size: 12px;
+}
+.rules-faction-section > h3 > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rules-faction);
+  box-shadow: 0 0 8px var(--rules-faction);
+}
+.rules-faction-section > h3 small { margin-left: auto; color: var(--ink-faint); font-size: 9px; font-weight: 500; }
+.rules-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--panel-border-2);
+  background: rgba(10,7,4,.52);
+}
+.rules-footer span { color: var(--ink-faint); font-size: 9.5px; }
+.rules-footer .btn-primary { padding: 8px 25px; font-size: 12px; }
+
+@media (max-width: 680px), (max-height: 520px) {
+  .rules-modal { width: 96vw; max-height: 95vh; border-radius: 11px; }
+  .rules-header { padding: 9px 12px; gap: 9px; }
+  .rules-header-seal { width: 32px; height: 32px; border-radius: 9px; font-size: 17px; }
+  .rules-title { font-size: 16px; }
+  .rules-subtitle { font-size: 8.5px; }
+  .rules-tabs { padding: 6px 8px; gap: 4px; }
+  .rules-tabs button { justify-content: center; padding: 6px 5px; text-align: center; }
+  .rules-tab-glyph { width: 22px; height: 22px; font-size: 11px; }
+  .rules-tabs small { display: none; }
+  .rules-tabs b { font-size: 9.5px; }
+  .rules-panel { padding: 10px 12px 14px; }
+  .rules-hero { grid-template-columns: 1fr; gap: 9px; padding: 11px 12px; }
+  .rules-hero p { font-size: 11px; }
+  .rules-role-grid, .rules-item-grid, .rules-general-grid { grid-template-columns: 1fr; }
+  .rules-phase-track { grid-template-columns: repeat(3, 1fr); }
+  .rules-summary-grid { grid-template-columns: 1fr; margin-top: 12px; }
+  .rules-section-title { margin: 13px 0 7px; font-size: 14px; }
+  .rules-footer span { display: none; }
+  .rules-footer { justify-content: center; padding: 7px 10px; }
+}
+
 /* ── Keyframes (ported from the design's dc* animations) ───────────── */
 @keyframes dcDrawIn {
   0% {
@@ -569,12 +922,6 @@ a:hover {
 /* Combat feedback (TFT-style): a red impact flash + gold slash streak +
    floating "-N" number for a hit, or a small pop-and-fade "หลบ!" for a
    dodge — see CombatEffectLayer.tsx. */
-@keyframes dcCombatTravel {
-  0% { opacity: 0; transform: scaleX(.05); }
-  18% { opacity: 1; }
-  78% { opacity: 1; transform: scaleX(1); }
-  100% { opacity: 0; transform: scaleX(1); }
-}
 @keyframes dcCombatTokenTravel {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(.65) rotate(-8deg); left: 0; }
   16% { opacity: 1; }
@@ -672,18 +1019,6 @@ a:hover {
   border-radius: 50%;
   box-shadow: 0 0 18px rgba(217,165,49,.65);
   animation: dcCombatSourcePulse .28s ease-out forwards;
-}
-.combat-travel-beam {
-  position: absolute;
-  left: 0;
-  top: -2px;
-  width: 100%;
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(230,192,99,.45) 15%, #fff3c4 72%, transparent);
-  box-shadow: 0 0 8px rgba(230,192,99,.72), 0 0 18px rgba(176,64,44,.36);
-  transform-origin: left center;
-  animation: dcCombatTravel .32s ease-out forwards;
 }
 .combat-travel-token {
   position: absolute;
@@ -914,7 +1249,6 @@ a:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .combat-source-pulse,
-  .combat-travel-beam,
   .combat-travel-token,
   .combat-flash,
   .combat-impact-ring,
