@@ -4,7 +4,7 @@
 // mainAction and pickGeneral aren't here — they have their own dedicated
 // screens/flows.
 import type { GameView, PendingDecision } from "@tktw/shared";
-import { cardDisplay } from "./cardNames";
+import { cardDisplay, cardInfo } from "./cardNames";
 import { skillById } from "./generalSkills";
 
 export type DecisionShape =
@@ -134,12 +134,20 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
         hint: "เลือกได้มากกว่า 1 ใบ (ฟื้นตามจำนวนใบ)",
         shape: { kind: "card", neededType: "tao", multi: true, declineLabel: "ไม่ช่วย", confirmLabel: `ใช้${taoName}` },
       };
-    case "askWuxie":
+    case "askWuxie": {
+      const cancelledType = String(data.cancelledType ?? "");
+      const cancelledName = cardDisplay(cancelledType).name;
+      const sourceId = typeof data.sourceId === "string" ? data.sourceId : undefined;
+      const targetIds = Array.isArray(data.targetIds) ? data.targetIds.filter((t): t is string => typeof t === "string") : [];
+      const fromText = sourceId ? ` จาก ${name(sourceId)}` : "";
+      const atText = targetIds.length > 0 ? ` ใส่ ${targetIds.map(name).join(", ")}` : "";
       return {
         icon: "無",
-        title: `จะใช้ "${wuxieName}" ยกเลิก "${cardDisplay(String(data.cancelledType ?? "")).name}" ไหม?`,
+        title: `จะใช้ "${wuxieName}" ยกเลิก "${cancelledName}"${fromText}${atText} ไหม?`,
+        hint: cardInfo(cancelledType),
         shape: { kind: "card", neededType: "wuxie", declineLabel: "ปล่อยผ่าน", confirmLabel: `ใช้${wuxieName}` },
       };
+    }
     case "swordIceChoice":
       return {
         icon: "冰",

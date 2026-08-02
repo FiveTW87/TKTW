@@ -17,7 +17,7 @@ function* pollForWuxie(state: GameState, event: GameEvent): PollGenerator {
     const answer = yield {
       kind: "askWuxie",
       playerId: pid,
-      data: { targetEventId: event.id, cancelledType: event.type },
+      data: { targetEventId: event.id, cancelledType: event.type, sourceId: event.source, targetIds: event.targets },
     };
     if (!answer.pass && answer.cardIds && answer.cardIds.length > 0) {
       const cardId = answer.cardIds[0]!;
