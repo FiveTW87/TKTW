@@ -7,6 +7,7 @@ import { Result } from "./screens/Result";
 import { RoleRevealModal } from "./components/RoleRevealModal";
 import { RotateOverlay } from "./components/RotateOverlay";
 import { useDeviceMode } from "./lib/useDeviceMode";
+import { GameErrorPopup } from "./components/GameErrorPopup";
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -74,6 +75,8 @@ export default function App() {
   const sessionExpired = useGameStore((s) => s.sessionExpired);
   const dismissSessionExpired = useGameStore((s) => s.dismissSessionExpired);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
+  const error = useGameStore((s) => s.error);
+  const clearError = useGameStore((s) => s.clearError);
   const { orientation } = useDeviceMode();
 
   // Initial connect (no room yet) — a full-screen wait. A mid-room drop keeps
@@ -117,6 +120,7 @@ export default function App() {
   return (
     <>
       {content}
+      {error && <GameErrorPopup error={error} players={gameView?.players} onDismiss={clearError} />}
       {requiresLandscape && orientation === "portrait" && <RotateOverlay />}
       {!connected && roomCode && <ReconnectingOverlay />}
     </>

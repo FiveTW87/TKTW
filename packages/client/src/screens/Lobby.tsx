@@ -92,7 +92,6 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   const createRoom = useGameStore((s) => s.createRoom);
   const joinRoom = useGameStore((s) => s.joinRoom);
   const quickstartWithBots = useGameStore((s) => s.quickstartWithBots);
-  const error = useGameStore((s) => s.error);
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -164,7 +163,6 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
           <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             สร้างห้อง
           </button>
-          {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
         </div>
       ) : (
         <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
@@ -199,7 +197,6 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
             สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
           </div>
 
-          {error && <div style={{ color: "var(--target-red)", fontSize: 12, marginTop: 10 }}>{error}</div>}
         </div>
       )}
     </div>
@@ -212,7 +209,6 @@ function WaitingRoom() {
   const roomState = useGameStore((s) => s.roomState);
   const startGame = useGameStore((s) => s.startGame);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
-  const error = useGameStore((s) => s.error);
   const [starting, setStarting] = useState(false);
 
   const seats = roomState?.seats ?? [];
@@ -337,7 +333,6 @@ function WaitingRoom() {
           <div style={{ color: "var(--ink-faint)", fontSize: 12 }}>ต้องมีผู้เล่นอย่างน้อย 3 คน</div>
         )}
         <RulesButton label="วิธีเล่น & กติกา" style={{ padding: "9px 20px", fontSize: 12 }} />
-        {error && <div style={{ color: "var(--target-red)", fontSize: 13 }}>{error}</div>}
       </div>
 
       {confirmingLeave && (

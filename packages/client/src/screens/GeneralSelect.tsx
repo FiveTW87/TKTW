@@ -9,7 +9,6 @@ import { GeneralPortrait } from "../components/GeneralPortrait";
 export function GeneralSelect() {
   const gameView = useGameStore((s) => s.gameView);
   const answer = useGameStore((s) => s.answer);
-  const error = useGameStore((s) => s.error);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -71,7 +70,7 @@ export function GeneralSelect() {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: compact ? 8 : 14, justifyContent: "center", flexWrap: "wrap", opacity: isMine ? 1 : 0.6 }}>
+        <div style={{ display: "flex", gap: compact ? 8 : 14, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap", opacity: isMine ? 1 : 0.6 }}>
           {options.map((generalId) => {
             const d = generalDisplay(generalId);
             const faction = generalFaction(generalId);
@@ -116,9 +115,9 @@ export function GeneralSelect() {
                     borderBottom: "1px solid var(--card-border-2)",
                   }}
                 />
-                <div style={{ padding: compact ? 7 : 11, minHeight: compact ? 66 : 92 }}>
+                <div className="general-select-card-skills" style={{ padding: compact ? 7 : 11 }}>
                   {skills.map((s) => (
-                    <div key={s.id} style={{ marginBottom: compact ? 5 : 8 }}>
+                    <div className="general-select-card-skill" key={s.id} style={{ marginBottom: compact ? 5 : 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <span style={{ fontWeight: 700, fontSize: compact ? 10.5 : 12.5, color }}>{s.name}</span>
                         {s.lordOnly && <span style={{ fontSize: 8, background: "var(--gold)", color: "#3a2708", borderRadius: 6, padding: "0 5px" }}>主公</span>}
@@ -164,7 +163,6 @@ export function GeneralSelect() {
           </div>
         )}
 
-        {error && <div style={{ color: "var(--target-red)", fontSize: compact ? 11 : 13, textAlign: "center", marginTop: compact ? 8 : 14 }}>{error}</div>}
       </div>
     </div>
   );

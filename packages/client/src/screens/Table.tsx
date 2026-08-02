@@ -740,26 +740,6 @@ export function Table() {
         );
       })()}
 
-      {error && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 28,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 25,
-            color: "var(--target-red)",
-            fontSize: 13,
-            background: "var(--card-bg-2)",
-            border: "1px solid var(--panel-border-2)",
-            borderRadius: 8,
-            padding: "8px 16px",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
       {toast && <SkillToast toast={toast} />}
       <CombatEffectLayer effects={combatEffects} />
       {notice && (
