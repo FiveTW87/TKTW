@@ -40,8 +40,8 @@ export function Result() {
   if (!result) return null;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div className="panel-plain anim-pop" style={{ width: 640, maxWidth: "100%", padding: "36px 40px 40px" }}>
+    <div className="war-table-bg campaign-screen result-screen" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div className="panel-plain anim-pop result-panel" style={{ width: 640, maxWidth: "100%", padding: "36px 40px 40px" }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div
             style={{

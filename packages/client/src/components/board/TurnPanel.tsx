@@ -47,6 +47,7 @@ export function TurnPanel({
 
   return (
     <div
+      className="table-turn-panel"
       style={{
         position: "fixed",
         top: "calc(12px + env(safe-area-inset-top, 0px))",
@@ -69,7 +70,7 @@ export function TurnPanel({
       <div className="glow-turn" style={{ borderRadius: 14 }} />
 
       {/* portrait — same card-back placeholder treatment as every seat tile */}
-      <div className="card-back" style={{ position: "relative", width: compact ? 32 : 44, height: compact ? 38 : 52, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--panel-border-2)" }}>
+      <div className="card-back table-turn-portrait" style={{ position: "relative", width: compact ? 32 : 44, height: compact ? 38 : 52, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--panel-border-2)" }}>
         <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 22, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph ?? "?"}</span>
         {currentTurnPlayerSeat !== undefined && (
           <span style={{ position: "absolute", top: -4, left: -4, width: 16, height: 16, borderRadius: "50%", background: "var(--gold)", color: "#2e1f08", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
@@ -78,7 +79,7 @@ export function TurnPanel({
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div className="table-turn-copy" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: compact ? 12 : 13, fontWeight: 700, color: "var(--ink)" }}>{currentTurnPlayerName ?? "-"}</span>
           <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>{phaseLabel}</span>

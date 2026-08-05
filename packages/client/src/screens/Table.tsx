@@ -269,7 +269,6 @@ export function Table() {
 
   const myHand: Card[] = Array.isArray(me.hand) ? me.hand : [];
   const others = gameView.players.filter((p) => p.id !== gameView.viewerPlayerId);
-  const lastPlay = gameView.discardPileTop;
 
   const isMyDecision = pending?.playerId === gameView.viewerPlayerId;
   const isMainAction = pending?.kind === "mainAction";
@@ -591,13 +590,14 @@ export function Table() {
   const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
 
   return (
-    <div className="war-table-bg" style={{ position: "relative" }}>
+    <div className="war-table-bg table-theme" style={{ position: "relative" }}>
       <div className="war-table-rays" />
       {/* Board + history share ONE flex row (column when narrow) so history
           always owns its own reserved column and never floats over the board
           — previously a position:fixed sidebar could overlap GameBoard's own
           independently-centered viewport-height block at normal desktop widths. */}
       <div
+        className="table-screen-shell"
         style={
           compact
             ? { display: "flex", flexDirection: narrow ? "column" : "row", height: "100vh", overflow: "hidden", position: "relative" }
@@ -628,7 +628,6 @@ export function Table() {
           else void runAnswer({ decisionId: pending.id, choice: "reveal" });
         }}
         busy={busy}
-        lastPlay={lastPlay}
         onOpenDiscard={() => setShowDiscard(true)}
         selfDock={
           <SelfDock
@@ -691,6 +690,7 @@ export function Table() {
 
         return (
           <div
+            className="table-action-cluster"
             style={{
               position: "fixed",
               right: "calc(24px + env(safe-area-inset-right, 0px))",
@@ -718,20 +718,20 @@ export function Table() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center" }}>
               {showConfirmBar && (
-                <button onClick={resetSelection} disabled={busy} className="btn-secondary" style={{ width: 60, height: 60, borderRadius: "50%", fontSize: 11, fontWeight: 700 }}>
+                <button onClick={resetSelection} disabled={busy} className="btn-secondary table-action-cancel" style={{ width: 60, height: 60, borderRadius: "50%", fontSize: 11, fontWeight: 700 }}>
                   ยกเลิก
                 </button>
               )}
               {showConfirmBar ? (
-                <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary table-action-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
                   ยืนยัน
                 </button>
               ) : discardPending ? (
-                <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 14, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary table-action-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 14, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
                   ทิ้ง {selectedCardIds.length}/{mustDiscard}
                 </button>
               ) : (
-                <button onClick={submitEndPhase} disabled={busy} className="btn-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+                <button onClick={submitEndPhase} disabled={busy} className="btn-primary table-action-primary table-end-turn" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
                   จบเทิร์น
                 </button>
               )}

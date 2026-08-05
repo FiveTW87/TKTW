@@ -33,7 +33,7 @@ export function GeneralSelect() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: compact ? 10 : 24, overflowY: "auto" }}>
+    <div className="war-table-bg campaign-screen general-select-screen" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: compact ? 10 : 24, overflowY: "auto" }}>
       <div className="panel-plain anim-fade" style={{ width: 1040, maxWidth: "100%", maxHeight: compact ? "96vh" : undefined, overflowY: compact ? "auto" : undefined, padding: compact ? "16px 14px 18px" : "36px 40px 40px" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: compact ? 3 : 6, flexWrap: "wrap", gap: 6 }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: compact ? 16 : 26, color: "var(--ink)", display: "flex", alignItems: "center", gap: compact ? 6 : 10 }}>

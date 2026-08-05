@@ -88,7 +88,7 @@ export function SelfDock({
   const { compact } = useDeviceMode();
 
   return (
-    <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 6 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
+    <div className="table-self-dock" style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 6 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
           self-target when helping. Uses the same SeatTile.dc.html composition
           as opponents (portrait+badge / info / faction ribbon), sized larger
@@ -97,6 +97,7 @@ export function SelfDock({
       <div style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <div
+            className="table-self-hero"
             data-player-anchor={me.id}
             onClick={selfTargetable ? onToggleSelfTarget : undefined}
             style={{
@@ -187,7 +188,7 @@ export function SelfDock({
           <DelayedTrickList cards={me.judgmentZone} />
         </div>
         {/* skills */}
-        <div style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
+        <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -238,7 +239,7 @@ export function SelfDock({
           dock's total width stays clear of the fixed end-turn button that
           floats over the bottom-right corner of the viewport; extra cards
           past the visible width scroll horizontally instead. */}
-      <div style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
+      <div className="table-hand-zone" style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 3 : 8 }}>
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}

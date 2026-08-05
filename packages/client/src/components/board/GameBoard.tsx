@@ -30,7 +30,6 @@ export function GameBoard({
   revealTitle,
   onReveal,
   busy,
-  lastPlay,
   onOpenDiscard,
   selfDock,
 }: {
@@ -51,7 +50,6 @@ export function GameBoard({
   revealTitle?: string | undefined;
   onReveal: () => void;
   busy: boolean;
-  lastPlay: GameView["discardPileTop"];
   onOpenDiscard: () => void;
   selfDock: ReactNode;
 }) {
@@ -64,7 +62,7 @@ export function GameBoard({
     : density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
-    <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "70px 12px 24px", position: "relative" }}>
+    <div className="table-game-board" style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "70px 12px 24px", position: "relative" }}>
       <TurnPanel
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
@@ -81,7 +79,7 @@ export function GameBoard({
           container so arc percentages resolve against the same box. Flex-grows
           to fill whatever vertical/horizontal space the viewport has, instead
           of a small fixed box that leaves the rest of the screen blank. */}
-      <div className="panel-plain" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: compact ? 6 : 14 }}>
+      <div className="panel-plain table-board-ring" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: compact ? 6 : 14 }}>
         {others.map((p) => {
           const dist = attackDistanceFor(p);
           return (
@@ -103,14 +101,13 @@ export function GameBoard({
           );
         })}
 
-        <div style={{ position: "absolute", left: "50%", top: compact ? "58%" : "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 300 : 420 }}>
+        <div className="table-central-anchor" style={{ position: "absolute", left: "50%", top: compact ? "58%" : "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 210 : 300 }}>
           <CentralZone
             drawPileCount={gameView.drawPileCount}
             pendingReveal={pendingReveal}
             revealTitle={revealTitle}
             onReveal={onReveal}
             busy={busy}
-            lastPlay={lastPlay}
             discardCount={gameView.discardPile.length}
             discardTop={gameView.discardPile.at(-1)}
             onOpenDiscard={onOpenDiscard}

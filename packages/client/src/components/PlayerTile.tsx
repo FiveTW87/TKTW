@@ -63,6 +63,7 @@ export function PlayerTile({
     const headPortrait = compact ? 30 : 40;
     return (
       <div
+        className="table-player-tile table-player-tile-head"
         data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
@@ -126,8 +127,9 @@ export function PlayerTile({
   const portH = isCompact ? 60 : 72;
 
   return (
-    <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
+    <div className="table-player-cluster" style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
       <div
+        className="table-player-tile"
         data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
@@ -152,7 +154,7 @@ export function PlayerTile({
 
         {/* portrait, with the seat number badge (SeatTile's seatBadgeBg/Fg) */}
         <div
-          className="card-back"
+          className="card-back table-player-portrait"
           style={{
             width: portW,
             height: portH,

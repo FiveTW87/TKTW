@@ -6,8 +6,9 @@ import { useDeviceMode } from "../../lib/useDeviceMode";
 
 const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
-// A face-up card visual shared by the "last played" and "discard pile top"
-// zones — both show a real card face now instead of a generic placeholder.
+// A face-up card visual for the discard pile top. Cards currently resolving
+// are presented transiently by CombatEffectLayer instead of occupying a
+// permanent third zone in the middle of the table.
 function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; compact: boolean }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
@@ -82,16 +83,15 @@ function ZoneLabel({ children }: { children: string }) {
   );
 }
 
-// SPEC §11.5 — draw pile / latest played card / discard pile, centered on the
-// board. Delayed Tricks are intentionally NOT rendered here — they attach to
-// the target's panel (see OpponentPanel / SelfDock's judgmentZone chips).
+// Draw pile + discard pile only. Delayed Tricks remain attached to their
+// target's panel (OpponentPanel / SelfDock judgmentZone), and played cards use
+// the transient combat presentation layer.
 export function CentralZone({
   drawPileCount,
   pendingReveal,
   revealTitle,
   onReveal,
   busy,
-  lastPlay,
   discardCount,
   discardTop,
   onOpenDiscard,
@@ -101,7 +101,6 @@ export function CentralZone({
   revealTitle?: string | undefined;
   onReveal: () => void;
   busy: boolean;
-  lastPlay: CardView | undefined;
   discardCount: number;
   discardTop: CardView | undefined;
   onOpenDiscard: () => void;
@@ -155,15 +154,6 @@ export function CentralZone({
           {pendingReveal && <div className="glow-target" />}
         </div>
         <div style={{ marginTop: compact ? 5 : 8, fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)" }}>กองจั่ว · <b>{drawPileCount}</b></div>
-      </div>
-
-      {DIVIDER}
-
-      {/* last played card — hover/tap to preview its effect text */}
-      <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 52 : 96 }}>
-        <ZoneLabel>เพิ่งเล่น</ZoneLabel>
-        {lastPlay ? <CardFace card={lastPlay} rotate={-4} compact={compact} /> : <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>—</div>}
-        <div style={{ marginTop: compact ? 5 : 8, fontSize: compact ? 9.5 : 11, color: "var(--ink-faint)" }}>ใบล่าสุด</div>
       </div>
 
       {DIVIDER}

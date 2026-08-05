@@ -228,7 +228,7 @@ function WaitingRoom() {
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", display: "flex", flexDirection: "column", background: "radial-gradient(100% 80% at 50% 8%, #352516aa, #120d08 72%), #120d08" }}>
+    <div className="campaign-screen lobby-waiting-screen" style={{ position: "relative", width: "100%", height: "100dvh", display: "flex", flexDirection: "column" }}>
       <div className="war-table-rays" />
 
       {/* header row — normal flow, so it never competes for space with the footer */}
@@ -352,14 +352,14 @@ export function Lobby() {
 
   if (roomCode) {
     return (
-      <div className="war-table-bg" style={{ minHeight: "100vh" }}>
+      <div className="war-table-bg campaign-screen" style={{ minHeight: "100dvh" }}>
         <WaitingRoom />
       </div>
     );
   }
 
   return (
-    <div className="war-table-bg" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+    <div className="war-table-bg campaign-screen campaign-home" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
       <Home onCreate={() => { setDialogTab("create"); setDialogOpen(true); }} onJoin={() => { setDialogTab("join"); setDialogOpen(true); }} />
       {dialogOpen && <EntryDialog initialTab={dialogTab} onClose={() => setDialogOpen(false)} />}
     </div>

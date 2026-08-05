@@ -255,11 +255,21 @@ function HistorySheet({ gameView }: { gameView: GameView }) {
 // rewrite).
 export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; narrow: boolean }) {
   const { compact } = useDeviceMode();
+  const [open, setOpen] = useState(true);
   if (compact) return <HistorySheet gameView={gameView} />;
+
+  if (!narrow && !open) {
+    return (
+      <button className="table-history-toggle" onClick={() => setOpen(true)} title="เปิดประวัติการเล่นและแชท">
+        <span aria-hidden="true">💬</span>
+        <span>ประวัติ</span>
+      </button>
+    );
+  }
 
   return (
     <aside
-      className="panel-plain"
+      className="panel-plain table-history-panel"
       style={{
         width: narrow ? "100%" : 300,
         flexShrink: 0,
@@ -275,6 +285,11 @@ export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; nar
         padding: narrow ? "10px 16px 14px" : "10px 16px 14px calc(16px + env(safe-area-inset-left, 0px))",
       }}
     >
+      {!narrow && (
+        <button className="table-history-close" onClick={() => setOpen(false)} aria-label="ย่อแผงประวัติและแชท">
+          ‹
+        </button>
+      )}
       <HistoryChatContent gameView={gameView} />
     </aside>
   );
