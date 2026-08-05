@@ -62,7 +62,7 @@ export function GameBoard({
     : density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   return (
-    <div className="table-game-board" style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "70px 12px 24px", position: "relative" }}>
+    <div className="table-game-board" style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "56px 12px 8px", position: "relative" }}>
       <TurnPanel
         turnNumber={gameView.turnNumber}
         phaseLabel={phaseLabel}
@@ -101,7 +101,7 @@ export function GameBoard({
           );
         })}
 
-        <div className="table-central-anchor" style={{ position: "absolute", left: "50%", top: compact ? "58%" : "78%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 210 : 300 }}>
+        <div className="table-central-anchor" style={{ position: "absolute", left: "50%", top: compact ? "58%" : "62%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 210 : 300 }}>
           <CentralZone
             drawPileCount={gameView.drawPileCount}
             pendingReveal={pendingReveal}
@@ -121,7 +121,7 @@ export function GameBoard({
           regardless of window width — mirrors how compact mode already
           keeps the hand area clear of that same button, just via padding
           instead of shrinking dock content. */}
-      <div style={{ display: "flex", justifyContent: "center", width: "100%", paddingRight: compact ? 0 : 200 }}>{selfDock}</div>
+      <div className="table-self-dock-wrap" style={{ display: "flex", justifyContent: "center", width: "100%", paddingRight: compact ? 0 : 200 }}>{selfDock}</div>
     </div>
   );
 }

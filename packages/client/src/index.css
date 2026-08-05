@@ -130,12 +130,20 @@ body {
 }
 
 .table-game-board {
+  height: 100%;
   min-height: 0;
   max-height: 100dvh;
   overflow: hidden;
 }
 
+.table-self-dock-wrap {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
 .table-board-ring {
+  min-height: 0 !important;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 62%, rgba(94, 68, 38, .2), transparent 43%),
@@ -961,6 +969,10 @@ a:hover {
 }
 .hand-card[style*="pointer"]:hover {
   filter: brightness(1.03);
+}
+
+.hand-card-selected {
+  filter: brightness(1.08) saturate(1.08);
 }
 
 .card-inspect-trigger {
@@ -2055,12 +2067,12 @@ a:hover {
 .table-history-close {
   position: absolute;
   top: 50%;
-  left: -15px;
+  right: -15px;
   width: 28px;
   height: 52px;
   transform: translateY(-50%);
   border: 1px solid var(--panel-border-3);
-  border-radius: 14px 0 0 14px;
+  border-radius: 0 14px 14px 0;
   color: var(--gold);
   background: #181008;
   cursor: pointer;
@@ -2070,7 +2082,7 @@ a:hover {
   position: fixed;
   z-index: 65;
   top: 50%;
-  right: 0;
+  left: 0;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
@@ -2078,8 +2090,8 @@ a:hover {
   gap: 3px;
   padding: 11px 7px;
   border: 1px solid var(--panel-border-3);
-  border-right: 0;
-  border-radius: 12px 0 0 12px;
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
   color: var(--gold);
   background: linear-gradient(#241a11, #130d08);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .55);

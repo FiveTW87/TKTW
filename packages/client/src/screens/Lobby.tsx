@@ -163,6 +163,18 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
           <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             สร้างห้อง
           </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: compact ? "12px 0 8px" : "18px 0 12px" }}>
+            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
+            หรือ
+            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
+          </div>
+          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
+            เล่นกับบอท (ทดสอบคนเดียว)
+          </button>
+          <div style={{ fontSize: compact ? 9.5 : 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
+            สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
+          </div>
         </div>
       ) : (
         <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
@@ -184,18 +196,6 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
           <button onClick={handleJoin} disabled={busy || !name.trim() || !roomCode.trim()} className="btn-secondary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             เข้าร่วมห้อง
           </button>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-faint)", fontSize: 12, margin: compact ? "12px 0 8px" : "18px 0 12px" }}>
-            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
-            หรือ
-            <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
-          </div>
-          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
-            เล่นกับบอท (ทดสอบคนเดียว)
-          </button>
-          <div style={{ fontSize: compact ? 9.5 : 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
-            สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
-          </div>
 
         </div>
       )}

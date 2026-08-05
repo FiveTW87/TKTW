@@ -54,7 +54,7 @@ export function HandCard({
       onTouchStart={startHold}
       onTouchEnd={endHold}
       onTouchCancel={endHold}
-      className={`hand-card${animateIn ? " anim-draw" : ""}`}
+      className={`hand-card${selected ? " hand-card-selected" : ""}${animateIn ? " anim-draw" : ""}`}
       style={{
         position: "relative",
         width: compact ? 44 : 76,
@@ -65,7 +65,9 @@ export function HandCard({
         boxShadow: selected ? "0 0 14px rgba(217,165,49,.75), 0 4px 10px rgba(60,40,15,.18)" : "0 4px 10px rgba(60,40,15,.18)",
         padding: compact ? 3 : 6,
         cursor: onClick || onInspect ? "pointer" : "default",
-        transition: "box-shadow .12s, border-color .12s",
+        transform: selected ? `translateY(${compact ? -8 : -14}px)` : "translateY(0)",
+        zIndex: selected ? 4 : 1,
+        transition: "transform .14s ease, box-shadow .14s, border-color .14s, filter .14s",
         opacity: dimmed ? 0.42 : 1,
         flexShrink: 0,
       }}
