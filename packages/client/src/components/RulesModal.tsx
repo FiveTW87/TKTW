@@ -245,16 +245,18 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
 }
 
 /** A "ดูกฎ" button + the modal, self-contained so any screen can drop it in. */
-export function RulesButton({ style, label = "ดูกฎ" }: { style?: React.CSSProperties; label?: string }) {
+export function RulesButton({ style, label = "ดูกฎ", iconOnly = false }: { style?: React.CSSProperties; label?: string; iconOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="btn-secondary"
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 13, padding: "7px 14px", ...style }}
-      >
-        📖 {label}
+          onClick={() => setOpen(true)}
+          className="btn-secondary"
+          aria-label={iconOnly ? label : undefined}
+          title={iconOnly ? label : undefined}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 13, padding: "7px 14px", ...style }}
+        >
+          📖 {!iconOnly && label}
       </button>
       {open && <RulesModal onClose={() => setOpen(false)} />}
     </>

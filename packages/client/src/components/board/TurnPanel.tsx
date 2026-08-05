@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useCountdown } from "../../lib/useCountdown";
 import { useDeviceMode } from "../../lib/useDeviceMode";
+import { GeneralPortrait } from "../GeneralPortrait";
 
 // SPEC §11.4 — turn/phase/timer, pinned top-center and above any dialog
 // (z-index 90 > ModalOverlay's 40) so it's readable even mid-decision.
@@ -14,6 +15,8 @@ export function TurnPanel({
   currentTurnPlayerName,
   currentTurnPlayerSeat,
   currentTurnGeneralGlyph,
+  currentTurnGeneralId,
+  currentTurnFaction,
   responderLabel,
   actionPrompt,
   expiresAt,
@@ -24,6 +27,8 @@ export function TurnPanel({
   currentTurnPlayerName?: string | undefined;
   currentTurnPlayerSeat?: number | undefined;
   currentTurnGeneralGlyph?: string | undefined;
+  currentTurnGeneralId?: string | undefined;
+  currentTurnFaction?: string | undefined;
   /** e.g. "กำลังรอ Nont ใช้ หลบคม" — set when someone else must respond. */
   responderLabel?: string | null | undefined;
   /** Short hint for the viewer's own pending action. */
@@ -70,8 +75,12 @@ export function TurnPanel({
       <div className="glow-turn" style={{ borderRadius: 14 }} />
 
       {/* portrait — same card-back placeholder treatment as every seat tile */}
-      <div className="card-back table-turn-portrait" style={{ position: "relative", width: compact ? 32 : 44, height: compact ? 38 : 52, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--panel-border-2)" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 22, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph ?? "?"}</span>
+      <div className="card-back table-turn-portrait" style={{ position: "relative", width: compact ? 32 : 44, height: compact ? 38 : 52, borderRadius: 6, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--panel-border-2)" }}>
+        {currentTurnGeneralId && currentTurnFaction ? (
+          <GeneralPortrait generalId={currentTurnGeneralId} faction={currentTurnFaction} style={{ width: "100%", height: "100%" }} />
+        ) : (
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 22, color: "rgba(240,220,180,.5)" }}>{currentTurnGeneralGlyph ?? "?"}</span>
+        )}
         {currentTurnPlayerSeat !== undefined && (
           <span style={{ position: "absolute", top: -4, left: -4, width: 16, height: 16, borderRadius: "50%", background: "var(--gold)", color: "#2e1f08", fontFamily: "var(--font-glyph-2)", fontWeight: 900, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
             {currentTurnPlayerSeat + 1}

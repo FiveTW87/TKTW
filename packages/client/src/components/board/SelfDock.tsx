@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import type { Card, PlayerView } from "@tktw/shared";
 import { HandCard, CardTooltip } from "../HandCard";
-import { RulesButton } from "../RulesModal";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
 import { generalDisplay, factionColor } from "../../data/generalNames";
 import { roleDisplay } from "../../data/roles";
@@ -49,8 +48,6 @@ export function SelfDock({
   zhangbaAvailable,
   zhangbaMode,
   onToggleZhangba,
-  phaseLabel,
-  onLeave,
   onInspect,
   equipSlots,
 }: {
@@ -79,8 +76,6 @@ export function SelfDock({
   zhangbaAvailable: boolean;
   zhangbaMode: boolean;
   onToggleZhangba: () => void;
-  phaseLabel: string;
-  onLeave: () => void;
   onInspect: () => void;
   equipSlots: { slot: string; label: string; glyph: string; card: Card | undefined }[];
 }) {
@@ -244,7 +239,18 @@ export function SelfDock({
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
-        <div style={{ display: "flex", gap: compact ? 5 : 8, flexWrap: "nowrap", overflowX: "auto", overflowY: "visible", paddingBottom: 4 }}>
+        <div
+          className="table-hand-scroll"
+          style={{
+            display: "flex",
+            gap: compact ? 5 : 8,
+            flexWrap: "nowrap",
+            overflowX: "auto",
+            overflowY: "hidden",
+            paddingTop: compact ? 10 : 16,
+            paddingBottom: 4,
+          }}
+        >
           {myHand.map((c) => {
             const { tappable, dimmed } = getCardState(c);
             return (
@@ -264,7 +270,8 @@ export function SelfDock({
         </div>
       </div>
 
-      {/* RIGHT: equipment zone + phase + end-turn */}
+      {/* RIGHT: equipment only. Global table controls live in the top-right
+          utility rail so this dock can spend its limited height on play. */}
       <div style={{ width: compact ? 140 : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
         <div>
           <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: compact ? 3 : 5, textAlign: "center" }}>ของสวมใส่</div>
@@ -292,16 +299,6 @@ export function SelfDock({
             </button>
           )}
         </div>
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
-          <span style={{ fontSize: compact ? 10 : 12, color: "var(--ink-muted)", background: "var(--panel-bg)", border: "1px solid var(--panel-border-2)", borderRadius: 5, padding: compact ? "4px 8px" : "6px 10px", textAlign: "center" }}>
-            {phaseLabel}
-          </span>
-          <RulesButton label="วิธีเล่น & กติกา" style={{ width: "100%", padding: compact ? "5px 8px" : "7px 10px", fontSize: compact ? 10.5 : 12 }} />
-          <SfxControl compact={compact} />
-          <button onClick={onLeave} className="btn-danger" style={{ width: "100%", padding: compact ? "4px 8px" : "6px 10px", fontSize: compact ? 9.5 : 11, borderRadius: 5 }}>
-            ออกจากเกม
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -310,7 +307,7 @@ export function SelfDock({
 // Mute toggle + volume slider for the synthesized sound effects (Web Audio,
 // see lib/sfx.ts) — the app's only local UI preference, so it lives in its
 // own tiny popover instead of a full settings screen.
-function SfxControl({ compact }: { compact: boolean }) {
+export function SfxControl({ compact, iconOnly = false }: { compact: boolean; iconOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const muted = useSfxStore((s) => s.muted);
   const volume = useSfxStore((s) => s.volume);
@@ -322,18 +319,22 @@ function SfxControl({ compact }: { compact: boolean }) {
       <button
         onClick={() => setOpen((o) => !o)}
         className="btn-secondary"
-        style={{ width: "100%", padding: compact ? "5px 8px" : "7px 10px", fontSize: compact ? 10.5 : 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+        style={{ width: iconOnly ? 44 : "100%", height: iconOnly ? 44 : undefined, padding: iconOnly ? 0 : compact ? "5px 8px" : "7px 10px", fontSize: iconOnly ? 17 : compact ? 10.5 : 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+        aria-label="ตั้งค่าเสียง"
+        title="เสียง"
       >
         <span>{muted || volume === 0 ? "🔇" : "🔊"}</span>
-        เสียง
+        {!iconOnly && "เสียง"}
       </button>
       {open && (
         <div
           style={{
             position: "absolute",
-            bottom: "calc(100% + 6px)",
-            left: "50%",
-            transform: "translateX(-50%)",
+            top: iconOnly ? "calc(100% + 6px)" : undefined,
+            right: iconOnly ? 0 : undefined,
+            bottom: iconOnly ? undefined : "calc(100% + 6px)",
+            left: iconOnly ? undefined : "50%",
+            transform: iconOnly ? undefined : "translateX(-50%)",
             width: 160,
             zIndex: 80,
             background: "rgba(28,22,14,.96)",

@@ -263,6 +263,40 @@ body {
 
 .table-theme .table-hand-zone {
   box-shadow: inset 0 10px 24px rgba(0,0,0,.18);
+  align-self: flex-start;
+  overflow: hidden;
+}
+
+.table-hand-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #9b6a2d rgba(8, 6, 4, .72);
+  scrollbar-gutter: stable;
+}
+
+.table-hand-scroll::-webkit-scrollbar {
+  height: 7px;
+}
+
+.table-hand-scroll::-webkit-scrollbar-track {
+  background: rgba(8, 6, 4, .72);
+  border: 1px solid rgba(132, 89, 38, .32);
+  border-radius: 999px;
+}
+
+.table-hand-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #6f431d, #c28b3d, #6f431d);
+  border: 1px solid #d1a45b;
+  border-radius: 999px;
+}
+
+.table-hand-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #8a5523, #e0ad55, #8a5523);
+}
+
+.table-hand-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .table-theme .table-action-cluster {
@@ -2108,5 +2142,52 @@ a:hover {
 
   .campaign-home {
     padding: 10px !important;
+  }
+}
+.table-utility-rail {
+  position: fixed;
+  z-index: 72;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-utility-rail > div > button,
+.table-utility-rail > button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 9px;
+  border: 1px solid rgba(193, 139, 57, .68);
+  background: linear-gradient(#271b10, #130d08);
+  color: var(--gold);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, .5);
+}
+
+.table-utility-leave {
+  font-family: var(--font-glyph);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.table-utility-leave:hover {
+  color: #ff8c76;
+  border-color: var(--target-red);
+}
+
+@media (max-width: 720px), (max-height: 620px) {
+  .table-utility-rail {
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    right: calc(6px + env(safe-area-inset-right, 0px));
+    gap: 4px;
+  }
+
+  .table-utility-rail > div > button,
+  .table-utility-rail > button {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 14px !important;
   }
 }

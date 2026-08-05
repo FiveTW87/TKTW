@@ -69,6 +69,8 @@ export function GameBoard({
         currentTurnPlayerName={currentTurnPlayer?.name}
         currentTurnPlayerSeat={currentTurnPlayer?.seat}
         currentTurnGeneralGlyph={currentTurnPlayer ? generalDisplay(currentTurnPlayer.generalId).glyph : undefined}
+        currentTurnGeneralId={currentTurnPlayer?.generalId}
+        currentTurnFaction={currentTurnPlayer?.faction}
         responderLabel={responderLabel}
         actionPrompt={actionPrompt}
         expiresAt={gameView.pendingDecision?.expiresAt}

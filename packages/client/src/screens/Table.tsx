@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Card, PlayerView } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
-import { SelfDock, type CardTapState } from "../components/board/SelfDock";
+import { SelfDock, SfxControl, type CardTapState } from "../components/board/SelfDock";
+import { RulesButton } from "../components/RulesModal";
 import { GameHistoryPanel } from "../components/board/GameHistoryPanel";
 import { DecisionModal } from "../components/DecisionModal";
 import { InspectModal } from "../components/InspectModal";
@@ -592,6 +593,15 @@ export function Table() {
   return (
     <div className="war-table-bg table-theme" style={{ position: "relative" }}>
       <div className="war-table-rays" />
+      <nav className="table-utility-rail" aria-label="เมนูโต๊ะเล่น">
+        <div title="วิธีเล่นและกติกา">
+          <RulesButton label="วิธีเล่น & กติกา" iconOnly style={{ width: 44, height: 44, padding: 0, fontSize: 17 }} />
+        </div>
+        <SfxControl compact iconOnly />
+        <button className="table-utility-leave" onClick={() => setConfirmingLeave(true)} aria-label="ออกจากเกม" title="ออกจากเกม">
+          退
+        </button>
+      </nav>
       {/* Board + history share ONE flex row (column when narrow) so history
           always owns its own reserved column and never floats over the board
           — previously a position:fixed sidebar could overlap GameBoard's own
@@ -664,8 +674,6 @@ export function Table() {
               resetSelection();
               dispatch({ type: "SET_ZHANGBA_MODE", on: true });
             }}
-            phaseLabel={phaseLabel}
-            onLeave={() => setConfirmingLeave(true)}
             onInspect={() => setInspecting(me)}
             equipSlots={equipSlotsWithCards}
           />
