@@ -7,6 +7,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:json": "vitest run --reporter=json --outputFile=.vitest-report.json",
     "sim": "tsx src/sim/cli.ts"
   },
   "devDependencies": {
