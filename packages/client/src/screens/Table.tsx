@@ -18,6 +18,7 @@ import { cardMeta, needsManualTarget, targetCount, type EquipSlot } from "../dat
 import { skillInteraction, sameFactionTeammateAlive, activeSkillSpec } from "../data/skillInteraction";
 import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/conversions";
 import { attackDistance, weaponRange } from "../data/distance";
+import { useCountdown } from "../lib/useCountdown";
 import { useIsNarrow } from "../lib/useIsNarrow";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
@@ -58,6 +59,17 @@ function LeaveGameConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void
   );
 }
 
+// Cards the engine rejects targeting yourself with (turnLoop.ts's
+// NO_SELF_TARGET), and the subset of those whose whole effect is taking a
+// card off the target — a target with nothing at all (hand count + public
+// equipment) is not a legal target for them either (NEEDS_A_TAKEABLE_CARD).
+const NO_SELF_TARGET_TYPES = new Set(["sha", "guohe", "shunshou"]);
+const NEEDS_A_TAKEABLE_CARD_TYPES = new Set(["guohe", "shunshou"]);
+function holdsSomething(p: PlayerView): boolean {
+  const handCount = Array.isArray(p.hand) ? p.hand.length : p.hand.count;
+  return handCount > 0 || Object.values(p.equipment).some(Boolean);
+}
+
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
   { slot: "armor", label: "เกราะ", glyph: "甲" },
@@ -78,6 +90,14 @@ export function Table() {
 
   const pending = gameView?.pendingDecision;
   const decisionKey = pending?.id ?? null;
+
+  // Feature C: once I've picked my own general, App.tsx sends me straight
+  // here instead of leaving me on GeneralSelect for the rest of the table —
+  // so pendingDecision can legitimately still be someone ELSE's pickGeneral
+  // while I'm already looking at my own hand. Hooks must run unconditionally,
+  // so this is computed here regardless of whether it's currently relevant.
+  const generalPickPending = pending?.kind === "pickGeneral" ? pending : undefined;
+  const generalPickRemaining = useCountdown(generalPickPending?.expiresAt, gameView?.serverNow ?? 0);
 
   // SPEC §11.1 — card/target/skill selection lives in a dedicated interaction
   // reducer, reset whenever the authoritative decision changes.
@@ -270,6 +290,9 @@ export function Table() {
 
   const myHand: Card[] = Array.isArray(me.hand) ? me.hand : [];
   const others = gameView.players.filter((p) => p.id !== gameView.viewerPlayerId);
+  const generalPickWaitingName = generalPickPending
+    ? (gameView.players.find((p) => p.id === generalPickPending.playerId)?.name ?? generalPickPending.playerId)
+    : null;
 
   const isMyDecision = pending?.playerId === gameView.viewerPlayerId;
   const isMainAction = pending?.kind === "mainAction";
@@ -398,6 +421,8 @@ export function Table() {
     // injured player (self handled via the character card).
     if (isJieyuan) return p.hp < p.maxHp && p.id !== me.id;
     if (isQingnang) return p.hp < p.maxHp;
+    if (selectedEffType && NO_SELF_TARGET_TYPES.has(selectedEffType) && p.id === me.id) return false;
+    if (selectedEffType && NEEDS_A_TAKEABLE_CARD_TYPES.has(selectedEffType) && !holdsSomething(p)) return false;
     return true;
   };
   const onTapTarget = (pid: string) => {
@@ -750,6 +775,37 @@ export function Table() {
 
       {toast && <SkillToast toast={toast} />}
       <CombatEffectLayer effects={combatEffects} />
+      {generalPickPending && (
+        <div
+          className="anim-rise"
+          style={{
+            position: "fixed",
+            top: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: "linear-gradient(#241a11,#160f09)",
+            border: "1px solid var(--panel-border-3)",
+            borderRadius: 10,
+            padding: "10px 18px",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--ink)",
+            boxShadow: "0 12px 34px rgba(0,0,0,.5)",
+            pointerEvents: "none",
+          }}
+        >
+          <span>รอ {generalPickWaitingName} เลือกนายพล...</span>
+          {generalPickRemaining !== null && (
+            <span style={{ fontSize: 12, fontWeight: 700, color: generalPickRemaining <= 5 ? "var(--target-red)" : "var(--ink-muted)" }}>
+              เหลือ {generalPickRemaining} วิ
+            </span>
+          )}
+        </div>
+      )}
       {notice && (
         <div
           className="anim-rise"

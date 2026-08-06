@@ -88,6 +88,19 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
 // R0D — the create/join entry dialog (name + room code), shown once the
 // player picks a path from Home. Keeps the "เล่นกับบอท" quickstart button
 // even though the source mockup omits it — real dev/test value.
+// Decision-timeout presets shown to the host at create/quickstart time —
+// three plain choices rather than a free-form input, since the only real
+// decision is "normal / a bit more / a lot more" (SPEC never asked for finer
+// control, and the schema still accepts 15-180s if that ever changes).
+const TIMEOUT_PRESETS: { label: string; seconds: number }[] = [
+  { label: "ปกติ (30 วิ)", seconds: 30 },
+  { label: "ยาวขึ้น (60 วิ)", seconds: 60 },
+  { label: "ยาวมาก (90 วิ)", seconds: 90 },
+];
+
+const MIN_TOTAL_PLAYERS = 3;
+const MAX_TOTAL_PLAYERS = 10;
+
 function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; onClose: () => void }) {
   const createRoom = useGameStore((s) => s.createRoom);
   const joinRoom = useGameStore((s) => s.joinRoom);
@@ -95,12 +108,14 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [totalPlayers, setTotalPlayers] = useState(3);
+  const [timeoutSec, setTimeoutSec] = useState(30);
   const { compact } = useDeviceMode();
 
   const handleCreate = async () => {
     if (!name.trim()) return;
     setBusy(true);
-    await createRoom(name.trim());
+    await createRoom(name.trim(), timeoutSec);
     setBusy(false);
   };
   const handleJoin = async () => {
@@ -111,7 +126,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   };
   const handleQuickstart = async () => {
     setBusy(true);
-    await quickstartWithBots(name.trim() || "ผู้เล่นทดสอบ", 2);
+    await quickstartWithBots(name.trim() || "ผู้เล่นทดสอบ", totalPlayers - 1, timeoutSec);
     setBusy(false);
   };
 
@@ -158,8 +173,21 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
             onChange={(e) => setName(e.target.value)}
             maxLength={24}
             placeholder="ใส่ชื่อของคุณ"
-            style={{ ...inputStyle, marginBottom: compact ? 14 : 22 }}
+            style={{ ...inputStyle, marginBottom: compact ? 12 : 18 }}
           />
+          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>เวลาตัดสินใจต่อตา</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, marginBottom: compact ? 14 : 22 }}>
+            {TIMEOUT_PRESETS.map((preset) => (
+              <button
+                key={preset.seconds}
+                onClick={() => setTimeoutSec(preset.seconds)}
+                className={timeoutSec === preset.seconds ? "btn-primary" : "btn-secondary"}
+                style={{ flex: 1, padding: compact ? "7px 4px" : "9px 6px", fontSize: compact ? 11 : 12.5, borderRadius: 8 }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             สร้างห้อง
           </button>
@@ -169,11 +197,33 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
             หรือ
             <span style={{ flex: 1, height: 1, background: "var(--panel-border-2)" }} />
           </div>
+          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>จำนวนผู้เล่นทั้งหมด (รวมคุณ)</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, marginBottom: compact ? 10 : 14 }}>
+            <button
+              onClick={() => setTotalPlayers((n) => Math.max(MIN_TOTAL_PLAYERS, n - 1))}
+              disabled={totalPlayers <= MIN_TOTAL_PLAYERS}
+              className="btn-secondary"
+              style={{ width: compact ? 32 : 38, height: compact ? 32 : 38, padding: 0, fontSize: 16, borderRadius: 8 }}
+            >
+              −
+            </button>
+            <span style={{ flex: 1, textAlign: "center", fontSize: compact ? 15 : 17, fontWeight: 700, color: "var(--ink)" }}>
+              {totalPlayers} คน
+            </span>
+            <button
+              onClick={() => setTotalPlayers((n) => Math.min(MAX_TOTAL_PLAYERS, n + 1))}
+              disabled={totalPlayers >= MAX_TOTAL_PLAYERS}
+              className="btn-secondary"
+              style={{ width: compact ? 32 : 38, height: compact ? 32 : 38, padding: 0, fontSize: 16, borderRadius: 8 }}
+            >
+              +
+            </button>
+          </div>
           <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
             เล่นกับบอท (ทดสอบคนเดียว)
           </button>
           <div style={{ fontSize: compact ? 9.5 : 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
-            สร้างห้อง + บอท 2 ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
+            สร้างห้อง + บอท {totalPlayers - 1} ตัว แล้วเริ่มเกมทันที ไม่ต้องรอผู้เล่นคนอื่น
           </div>
         </div>
       ) : (

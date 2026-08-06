@@ -98,14 +98,24 @@ export function registerSocketHandlers(
   opts: SocketHandlerOptions = {},
 ): void {
   const { decisionTimeoutMs, gracePeriodMs, revealDurationMs, botAnswerDelayMs } = opts;
+  // A per-room decisionTimeoutMs (host-chosen at create/quickstart time, see
+  // RoomManager.createRoom) overrides this server-wide SocketHandlerOptions
+  // default, which itself overrides gameFlow.ts's own DECISION_TIMEOUT_MS
+  // fallback. Resolved per-call (not once) since it depends on which room.
+  const effectiveTimeout = (room: GameRoom): number | undefined =>
+    room.decisionTimeoutMs ?? decisionTimeoutMs;
   const runAfterRespond = (room: GameRoom): void =>
-    afterRespond(io, room, decisionTimeoutMs, botAnswerDelayMs);
+    afterRespond(io, room, effectiveTimeout(room), botAnswerDelayMs);
   const runBeginRevealPhase = (room: GameRoom): void =>
-    beginRevealPhase(io, room, revealDurationMs, decisionTimeoutMs, botAnswerDelayMs);
-  const graceOpts: { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } = {};
-  if (gracePeriodMs !== undefined) graceOpts.graceMs = gracePeriodMs;
-  if (decisionTimeoutMs !== undefined) graceOpts.decisionTimeoutMs = decisionTimeoutMs;
-  if (botAnswerDelayMs !== undefined) graceOpts.botDelayMs = botAnswerDelayMs;
+    beginRevealPhase(io, room, revealDurationMs, effectiveTimeout(room), botAnswerDelayMs);
+  const graceOptsFor = (room: GameRoom): { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } => {
+    const timeout = effectiveTimeout(room);
+    return {
+      ...(gracePeriodMs !== undefined ? { graceMs: gracePeriodMs } : {}),
+      ...(timeout !== undefined ? { decisionTimeoutMs: timeout } : {}),
+      ...(botAnswerDelayMs !== undefined ? { botDelayMs: botAnswerDelayMs } : {}),
+    };
+  };
 
   io.on("connection", (socket: Socket) => {
     const data = socket.data as SocketData;
@@ -114,7 +124,9 @@ export function registerSocketHandlers(
       const parsed = createRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
-      const { room, sessionToken, seatIndex } = rooms.createRoom(parsed.data.playerName);
+      const roomTimeoutMs =
+        parsed.data.decisionTimeoutSec !== undefined ? parsed.data.decisionTimeoutSec * 1000 : undefined;
+      const { room, sessionToken, seatIndex } = rooms.createRoom(parsed.data.playerName, roomTimeoutMs);
       rooms.attachSocket(room, seatIndex, socket.id);
       data.roomCode = room.code;
       data.seatIndex = seatIndex;
@@ -128,9 +140,11 @@ export function registerSocketHandlers(
       const parsed = quickstartWithBotsSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
+      const roomTimeoutMs =
+        parsed.data.decisionTimeoutSec !== undefined ? parsed.data.decisionTimeoutSec * 1000 : undefined;
       let result: ReturnType<RoomManager["quickstartWithBots"]>;
       try {
-        result = rooms.quickstartWithBots(parsed.data.playerName, parsed.data.botCount);
+        result = rooms.quickstartWithBots(parsed.data.playerName, parsed.data.botCount, roomTimeoutMs);
       } catch (err) {
         return fail(ack, err, "failed to start");
       }
@@ -220,7 +234,7 @@ export function registerSocketHandlers(
         delete data.roomCode;
         delete data.seatIndex;
         ok(ack);
-        forfeitAndContinue(io, rooms, room, seatIndex, decisionTimeoutMs, botAnswerDelayMs);
+        forfeitAndContinue(io, rooms, room, seatIndex, effectiveTimeout(room), botAnswerDelayMs);
       }
     });
 
@@ -356,7 +370,7 @@ export function registerSocketHandlers(
       // counts as in-match too (SPEC 7.2) — a drop during the reveal screen
       // needs the same grace protection as one mid-match.
       if ((room.phase === "playing" || room.phase === "revealing") && seatIndex !== undefined) {
-        armGraceTimer(io, rooms, room, seatIndex, graceOpts);
+        armGraceTimer(io, rooms, room, seatIndex, graceOptsFor(room));
       }
       // Everyone else sees the "reconnecting" status immediately.
       broadcastRoomState(io, room);

@@ -24,6 +24,13 @@ export function GeneralSelect() {
   const me = gameView.players.find((p) => p.id === gameView.viewerPlayerId);
   const isLord = me?.role === "lord";
   const waitingName = gameView.players.find((p) => p.id === pending.playerId)?.name ?? pending.playerId;
+  // The lord's role is always public (view.ts), and generalId/generalRevealed
+  // for the lord flip true the instant they confirm — before anyone else has
+  // picked (identity.ts: setupIdentityGame). So a loyalist still choosing can
+  // already see who to support; only hide this from the lord themselves
+  // (redundant) and from before the lord has actually confirmed yet.
+  const lord = gameView.players.find((p) => p.role === "lord");
+  const showLordPick = !!(lord && lord.id !== gameView.viewerPlayerId && lord.generalRevealed && lord.generalId);
 
   const confirm = async (choice: string | null) => {
     setBusy(true);
@@ -67,6 +74,28 @@ export function GeneralSelect() {
         {isMine && (
           <div style={{ fontSize: compact ? 10.5 : 13, color: "var(--ink-faint)", marginBottom: compact ? 10 : 20 }}>
             แตะการ์ดเพื่อเลือก ดูสกิลได้บนการ์ด แล้วกดยืนยัน — หรือ "สุ่มให้เลย"
+          </div>
+        )}
+
+        {showLordPick && lord && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: compact ? 8 : 12,
+              background: "rgba(217,165,49,.1)",
+              border: "1px solid var(--panel-border-3)",
+              borderRadius: 10,
+              padding: compact ? "7px 12px" : "10px 16px",
+              marginBottom: compact ? 10 : 18,
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 18, color: "var(--gold)" }}>主</span>
+            <span style={{ fontSize: compact ? 10.5 : 13, color: "var(--ink-muted)" }}>
+              เจ้าเมือง <b style={{ color: "var(--ink)" }}>{lord.name}</b> เลือก{" "}
+              <b style={{ color: factionColor(generalFaction(lord.generalId)) }}>{generalDisplay(lord.generalId).name}</b>
+              {" — "}เผื่อไว้เลือกใครมาช่วย
+            </span>
           </div>
         )}
 

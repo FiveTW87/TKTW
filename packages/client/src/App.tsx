@@ -94,7 +94,14 @@ export default function App() {
   // before the reveal window elapses.
   const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
   const isRevealing = !!(roomState?.phase === "revealing" && me);
-  const isGeneralSelect = !isRevealing && gameView?.pendingDecision?.kind === "pickGeneral";
+  // Self-visibility of generalId is unconditional (view.ts: genVisible = own
+  // id || generalRevealed), so this is a true server signal, not a guess — a
+  // player who has already confirmed their own pick moves on to the table
+  // immediately instead of sitting through everyone else's picks too.
+  // "none" is the engine's real placeholder general (core/setup.ts) every
+  // player starts on, NOT an empty/hidden value — must not count as "picked".
+  const myGeneralPicked = !!me?.generalId && me.generalId !== "none";
+  const isGeneralSelect = !isRevealing && gameView?.pendingDecision?.kind === "pickGeneral" && !myGeneralPicked;
   const isTable = !!roomCode && !!gameView && !matchResult && !isRevealing && !isGeneralSelect;
   const content =
     !roomCode || !gameView ? (

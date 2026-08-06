@@ -18,8 +18,14 @@ export const playerNameSchema = z.string().trim().min(1).max(24);
 // long opaque string) so the format is free to change server-side.
 export const sessionTokenSchema = z.string().min(16).max(128);
 
+// Host-configurable "time to think" per decision — absent means the
+// server's default (see server/src/timeouts.ts's DECISION_TIMEOUT_MS).
+// Room-level, not match-level: survives a rematch in the same room.
+export const decisionTimeoutSecSchema = z.number().int().min(15).max(180).optional();
+
 export const createRoomSchema = z.object({
   playerName: playerNameSchema,
+  decisionTimeoutSec: decisionTimeoutSecSchema,
 });
 
 export const joinRoomSchema = z.object({
@@ -51,6 +57,7 @@ export const returnToLobbySchema = z.object({
 export const quickstartWithBotsSchema = z.object({
   playerName: playerNameSchema,
   botCount: z.number().int().min(2).max(9),
+  decisionTimeoutSec: decisionTimeoutSecSchema,
 });
 
 // Mirrors engine's PlayerAnswer (types.ts) minus playerId/decisionId, which

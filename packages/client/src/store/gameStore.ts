@@ -93,9 +93,9 @@ interface GameStoreState {
    *  unmounting, so a badge can show "unread" even after closing it. */
   chatSeenCount: number;
 
-  createRoom: (playerName: string) => Promise<void>;
+  createRoom: (playerName: string, decisionTimeoutSec?: number) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
-  quickstartWithBots: (playerName: string, botCount: number) => Promise<void>;
+  quickstartWithBots: (playerName: string, botCount: number, decisionTimeoutSec?: number) => Promise<void>;
   startGame: () => Promise<void>;
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
   leaveRoom: () => Promise<void>;
@@ -205,8 +205,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     chatMessages: [],
     chatSeenCount: 0,
 
-    createRoom: async (playerName) => {
-      const ack = await emitAck<CreateRoomAck>(ClientEvents.RoomCreate, { playerName });
+    createRoom: async (playerName, decisionTimeoutSec) => {
+      const ack = await emitAck<CreateRoomAck>(ClientEvents.RoomCreate, {
+        playerName,
+        ...(decisionTimeoutSec !== undefined ? { decisionTimeoutSec } : {}),
+      });
       if (!ack.ok) {
         set({ error: ack.error });
         return;
@@ -225,10 +228,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ roomCode, sessionToken: ack.sessionToken, seatIndex: ack.seatIndex, error: null });
     },
 
-    quickstartWithBots: async (playerName, botCount) => {
+    quickstartWithBots: async (playerName, botCount, decisionTimeoutSec) => {
       const ack = await emitAck<QuickstartWithBotsAck>(ClientEvents.RoomQuickstartWithBots, {
         playerName,
         botCount,
+        ...(decisionTimeoutSec !== undefined ? { decisionTimeoutSec } : {}),
       });
       if (!ack.ok) {
         set({ error: ack.error });

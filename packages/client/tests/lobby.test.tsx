@@ -69,7 +69,9 @@ describe("Lobby -> waiting room -> start", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
     const createCall = sentEvents.find((e) => e.event === "room:create")!;
-    expect(createCall.payload).toEqual({ playerName: "Alice" });
+    // decisionTimeoutSec now always rides along (the dialog's own default
+    // preset, 30s — see Lobby.tsx's TIMEOUT_PRESETS).
+    expect(createCall.payload).toEqual({ playerName: "Alice", decisionTimeoutSec: 30 });
 
     respondTo("room:create", { ok: true, roomCode: "ABCDEF", sessionToken: "a".repeat(20), seatIndex: 0 });
 
