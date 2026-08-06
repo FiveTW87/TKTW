@@ -24,13 +24,14 @@ registerGeneral({
           if (!attacker.alive || attacker.hand.length === 0) return;
           const answer = yield { kind: "fankuiPick", playerId: ownerId, data: { sourceId } };
           const cid = answer.cardIds?.[0];
-          const idx = cid ? attacker.hand.findIndex((c) => c.id === cid) : 0;
-          if (idx < 0 && attacker.hand.length === 0) return;
-          const [card] = attacker.hand.splice(idx >= 0 ? idx : 0, 1);
-          if (card) {
-            getPlayer(state, ownerId).hand.push(card);
-            log(state, "skillUse", { actorId: ownerId, skillId: "simayi_fankui", targetIds: [sourceId], cardType: card.typeKey });
+          let idx = 0;
+          if (cid !== undefined) {
+            idx = attacker.hand.findIndex((c) => c.id === cid);
+            if (idx < 0) throw new Error(`simayi_fankui: ${cid} is not in ${sourceId}'s hand`);
           }
+          const [card] = attacker.hand.splice(idx, 1);
+          getPlayer(state, ownerId).hand.push(card!);
+          log(state, "skillUse", { actorId: ownerId, skillId: "simayi_fankui", targetIds: [sourceId], cardType: card!.typeKey });
         },
       },
     },

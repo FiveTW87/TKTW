@@ -3,8 +3,8 @@
 // cards/nanman.ts) with the same box pattern as Cao Cao's hujia/OnNeedDodge.
 import { registerGeneral } from "./registry";
 import { heal } from "../core/damage";
-import { getPlayer, removeFromHand, discardFromHand, seatOrderAfter, log } from "../core/state";
-import { countsAsType } from "../core/cardChecks";
+import { getPlayer, removeFromHand, discardCardsFromHand, seatOrderAfter, log } from "../core/state";
+import { commitShaCards } from "../core/shaCommit";
 
 const GIVEN = "liubei_rende_given";
 const HEALED = "liubei_rende_healed";
@@ -21,7 +21,10 @@ registerGeneral({
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];
         const cid = cardIds[0];
-        if (!targetId || !cid) return;
+        if (!targetId) throw new Error(`${ownerId}: ปันทรัพย์รวมใจ needs a target`);
+        if (targetId === ownerId) throw new Error(`${ownerId}: cannot give a card to themselves`);
+        if (!getPlayer(state, targetId).alive) throw new Error(`${ownerId}: target ${targetId} is not alive`);
+        if (!cid) throw new Error(`${ownerId}: ปันทรัพย์รวมใจ needs a card`);
         const card = removeFromHand(state, ownerId, cid);
         getPlayer(state, targetId).hand.push(card);
         log(state, "skillUse", { actorId: ownerId, skillId: "liubei_rende", targetIds: [targetId], cardType: card.typeKey });
@@ -48,15 +51,14 @@ registerGeneral({
             const p = getPlayer(state, pid);
             if (!p.alive || p.faction !== "shu" || pid === ownerId) continue;
             const answer = yield { kind: "hujiaVolunteer", playerId: pid, data: { lordId: ownerId } };
-            if (!answer.pass && (answer.cardIds?.length ?? 0) > 0) {
-              const cid = answer.cardIds![0]!;
-              if (!countsAsType(state, pid, cid, "sha")) {
-                throw new Error(`hujia: ${cid} does not count as sha`);
+            if (!answer.pass) {
+              const spend = commitShaCards(state, pid, answer.cardIds ?? [], 1, "hujia");
+              if (spend) {
+                discardCardsFromHand(state, pid, spend);
+                box.covered = true;
+                log(state, "skillUse", { actorId: pid, skillId: "liubei_hujia", targetIds: [ownerId], cardType: "sha" });
+                return;
               }
-              discardFromHand(state, pid, cid);
-              box.covered = true;
-              log(state, "skillUse", { actorId: pid, skillId: "liubei_hujia", targetIds: [ownerId], cardType: "sha" });
-              return;
             }
           }
         },

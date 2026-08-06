@@ -34,6 +34,10 @@ registerGeneral({
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           for (;;) {
+            // Both piles empty: nothing left to judge with. End the skill
+            // here rather than let judgment.ts's drawOneForJudgment throw
+            // and kill the whole turn.
+            if (state.drawPile.length === 0 && state.discardPile.length === 0) break;
             const judged = yield* runJudgment(ctx, ownerId);
             if (colorOf(judged.suit) !== "black") break;
             const idx = state.discardPile.findIndex((c) => c.id === judged.id);

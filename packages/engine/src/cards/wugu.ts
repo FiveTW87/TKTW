@@ -16,6 +16,7 @@ export const wuguCard: CardDef = {
 
     for (const pid of seatOrderFrom(state, playerId)) {
       if (revealed.length === 0) break;
+      if (!getPlayer(state, pid).alive) continue; // died earlier in this same loop
       // Send the full revealed card faces (not just ids): wugu turns them
       // face-up for everyone by the rules, so there's no hidden info, and
       // the client needs the faces to show names/suits when picking.
@@ -25,8 +26,16 @@ export const wuguCard: CardDef = {
         data: { options: revealed.slice() },
       };
       const wantedId = answer.cardIds?.[0];
-      const idx = wantedId ? revealed.findIndex((c) => c.id === wantedId) : 0;
-      const chosen = revealed.splice(idx >= 0 ? idx : 0, 1)[0]!;
+      let idx = 0;
+      if (wantedId !== undefined) {
+        idx = revealed.findIndex((c) => c.id === wantedId);
+        if (idx < 0) throw new Error(`${pid}: ${wantedId} is not one of the revealed cards`);
+      }
+      // Forfeited/killed while this prompt was pending — the pick is void;
+      // the card stays in the pool and ends up in the discard pile with
+      // whatever else is left over.
+      if (!getPlayer(state, pid).alive) continue;
+      const chosen = revealed.splice(idx, 1)[0]!;
       getPlayer(state, pid).hand.push(chosen);
       log(state, "wuguPick", { actorId: pid, cardType: chosen.typeKey });
     }

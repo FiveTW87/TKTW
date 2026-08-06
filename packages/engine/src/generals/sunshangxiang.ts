@@ -16,9 +16,12 @@ registerGeneral({
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];
-        if (!targetId || targetId === ownerId || cardIds.length < 2) return; // another player
+        if (!targetId) throw new Error(`${ownerId}: ผูกวาสนาสองแคว้น needs a target`);
+        if (targetId === ownerId) throw new Error(`${ownerId}: must target another player`);
         const p = getPlayer(state, targetId);
-        if (p.hp >= p.maxHp) return; // must be injured
+        if (!p.alive) throw new Error(`${ownerId}: target ${targetId} is not alive`);
+        if (p.hp >= p.maxHp) throw new Error(`${ownerId}: cannot heal a full-hp target`);
+        if (cardIds.length < 2) throw new Error(`${ownerId}: ผูกวาสนาสองแคว้น costs exactly 2 cards`);
         discardCardsFromHand(state, ownerId, cardIds.slice(0, 2));
         yield* heal(ctx, ownerId, 1);
         yield* heal(ctx, targetId, 1);

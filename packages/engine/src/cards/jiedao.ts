@@ -2,8 +2,8 @@
 // targetIds[1] = who they're forced to shoot at.
 import type { CardDef } from "../core/cardEffects";
 import { shaCard } from "./sha";
-import { discardFromHand, equipCard, getPlayer, log } from "../core/state";
-import { countsAsType } from "../core/cardChecks";
+import { discardCardsFromHand, equipCard, getPlayer, log } from "../core/state";
+import { commitShaCards } from "../core/shaCommit";
 
 export const jiedaoCard: CardDef = {
   play: function* (ctx) {
@@ -17,13 +17,15 @@ export const jiedaoCard: CardDef = {
       playerId: targetId,
       data: { mustTarget: victimId, sourceId: playerId },
     };
-    const offered = !answer.pass && (answer.cardIds?.length ?? 0) > 0;
-    if (offered) {
-      const cid = answer.cardIds![0]!;
-      if (!countsAsType(state, targetId, cid, "sha")) throw new Error(`jiedao: ${cid} does not count as sha`);
-      discardFromHand(state, targetId, cid);
+    const ids = answer.pass ? [] : (answer.cardIds ?? []);
+    const spend = commitShaCards(state, targetId, ids, 1, "jiedao");
+    if (spend) {
+      discardCardsFromHand(state, targetId, spend);
       log(state, "jiedaoForce", { actorId: targetId, targetIds: [victimId], cardType: "jiedao" });
-      yield* shaCard.play!({ ...ctx, playerId: targetId, cardIds: [cid], targetIds: [victimId] });
+      // First spent card stands in as the reference สังหาร for a zhangba
+      // substitute (see turnLoop.ts's playZhangbaSha) — the discard above
+      // already spent whichever card(s) were actually committed.
+      yield* shaCard.play!({ ...ctx, playerId: targetId, cardIds: [spend[0]!], targetIds: [victimId] });
     } else {
       const victim = getPlayer(state, targetId);
       const weapon = victim.equipment.weapon;

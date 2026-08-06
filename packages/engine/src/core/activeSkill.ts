@@ -41,7 +41,13 @@ export function* useActiveSkill(
   if (used >= max) {
     throw new Error(`${playerId}: "${skillId}" already used ${max} time(s) this turn`);
   }
-  p.skillUsedThisTurn[skillId] = used + 1;
 
   yield* skill.active({ ...ctx, ownerId: playerId, cardIds, targetIds });
+
+  // Commit the quota only once the skill has actually run to completion: a
+  // rejected attempt (invalid target/card, thrown from inside active()) must
+  // leave state byte-identical, and the counter was the one thing that used
+  // to survive the throw. Re-read the player rather than reuse `p` — the
+  // skill may have run a whole duel/dying flow in between.
+  getPlayer(ctx.state, playerId).skillUsedThisTurn[skillId] = used + 1;
 }

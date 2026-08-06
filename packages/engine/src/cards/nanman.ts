@@ -1,8 +1,8 @@
 // SPEC 8.2 — ศึกชนเผ่าใต้
 import type { CardDef } from "../core/cardEffects";
 import { dealDamage } from "../core/damage";
-import { discardFromHand, getPlayer, seatOrderAfter } from "../core/state";
-import { countsAsType } from "../core/cardChecks";
+import { discardCardsFromHand, getPlayer, seatOrderAfter } from "../core/state";
+import { commitShaCards } from "../core/shaCommit";
 import { fireTrigger } from "../core/triggers";
 
 export const nanmanCard: CardDef = {
@@ -18,13 +18,12 @@ export const nanmanCard: CardDef = {
       if (box.covered) continue;
 
       const answer = yield { kind: "respondSha", playerId: pid, data: { reason: "nanman" } };
-      const offered = !answer.pass && (answer.cardIds?.length ?? 0) > 0;
-      if (offered) {
-        const cid = answer.cardIds![0]!;
-        if (!countsAsType(state, pid, cid, "sha")) throw new Error(`nanman: ${cid} does not count as sha`);
-        discardFromHand(state, pid, cid);
+      const ids = answer.pass ? [] : (answer.cardIds ?? []);
+      const spend = commitShaCards(state, pid, ids, 1, "nanman");
+      if (spend) {
+        discardCardsFromHand(state, pid, spend);
       } else {
-        yield* dealDamage(ctx, playerId, pid, 1);
+        yield* dealDamage(ctx, playerId, pid, 1, ctx.cardIds[0]);
       }
     }
   },

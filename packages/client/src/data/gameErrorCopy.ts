@@ -78,8 +78,27 @@ export function gameErrorCopy(rawError: string, players: PlayerView[] = []): Gam
   if (/needs?\s+\d+(?:-\d+)?\s+target|takes at most 1 target|needs a target/i.test(error)) {
     return { title: "จำนวนเป้าหมายไม่ถูกต้อง", message: "ไพ่ใบนี้ต้องเลือกเป้าหมายตามจำนวนที่กำหนด", hint: "ยกเลิกตัวเลือกเดิม แล้วเลือกเป้าหมายใหม่", glyph: "標" };
   }
-  if (lower.includes("target must be alive") || lower.includes("needs exactly 1 living target")) {
+  if (
+    lower.includes("target must be alive") ||
+    lower.includes("needs exactly 1 living target") ||
+    lower.includes("is not alive")
+  ) {
     return { title: "เลือกเป้าหมายนี้ไม่ได้", message: "ไพ่ใบนี้ใช้ได้กับผู้เล่นที่ยังอยู่ในการต่อสู้เท่านั้น", hint: "เลือกผู้เล่นที่ยังมีชีวิตอยู่", glyph: "生" };
+  }
+  if (lower.includes("cannot target themselves") || lower.includes("can only target its own player")) {
+    return { title: "เลือกตัวเองไม่ได้", message: "ไพ่ใบนี้ต้องเลือกผู้เล่นคนอื่น ไม่ใช่ตัวเอง", hint: "เลือกเป้าหมายเป็นผู้เล่นคนอื่น", glyph: "己" };
+  }
+  if (lower.includes("has no card") && lower.includes("can take")) {
+    return { title: "เป้าหมายไม่มีไพ่ให้ยึด", message: "ผู้เล่นคนนี้ไม่มีไพ่ในมือหรืออุปกรณ์ให้ไพ่ใบนี้ยึดได้", hint: "เลือกเป้าหมายที่ยังมีไพ่หรืออุปกรณ์อยู่", glyph: "空" };
+  }
+  if (lower.includes("duplicate target id")) {
+    return { title: "เลือกเป้าหมายซ้ำ", message: "มีผู้เล่นคนเดิมอยู่ในรายการเป้าหมายมากกว่าหนึ่งครั้ง", hint: "ยกเลิกการเลือกแล้วเลือกเป้าหมายใหม่", glyph: "重" };
+  }
+  if (lower.includes("needs a victim as its 2nd target")) {
+    return { title: "ยังไม่ได้เลือกเป้าหมายที่ 2", message: "ต้องเลือกทั้งผู้ถืออาวุธและผู้ที่จะถูกบังคับโจมตี", hint: "เลือกเป้าหมายที่ 2 ให้ครบก่อนยืนยัน", glyph: "標" };
+  }
+  if (lower.includes("the victim cannot be the coerced player")) {
+    return { title: "เลือกเป้าหมายซ้ำกัน", message: "ผู้ถืออาวุธกับผู้ถูกบังคับโจมตีต้องเป็นคนละคนกัน", hint: "เลือกเป้าหมายที่ 2 เป็นผู้เล่นอีกคน", glyph: "標" };
   }
   if (/cannot\s+\S+\s+a full-hp target/i.test(error)) {
     return { title: "พลังชีวิตเต็มอยู่แล้ว", message: "ไม่สามารถใช้ไพ่ฟื้นฟูกับเป้าหมายที่พลังชีวิตเต็ม", hint: "เลือกผู้เล่นที่บาดเจ็บ หรือเก็บไพ่ไว้ใช้ภายหลัง", glyph: "滿" };

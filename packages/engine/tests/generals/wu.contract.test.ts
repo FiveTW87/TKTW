@@ -854,7 +854,11 @@ describe("G-SUNSHANGXIANG ซุนซางเซียง — ผูกวา�
     expectLog(g.state, { eventType: "skillUse", skillId: "sunshangxiang_jiehun" }, 2);
   });
 
-  it("[G-SUNSHANGXIANG-06] equipping over her own gear is not a loss and must not trigger", () => {
+  it("[G-SUNSHANGXIANG-06a] equipping over her own gear counts as a loss too (house reading)", () => {
+    // Catalog text ("ถูกแทนที่") and the engine's house reading agree:
+    // voluntary self-replacement is still losing the old piece. Confirmed via
+    // core/state.ts:equipCard's returned displaced card + turnLoop.ts firing
+    // OnEquipmentLost on it.
     const g = contractGame({
       seed: SEED(1302), assigns: [["p0", "sunshangxiang"]],
       hands: { p0: [C.horse_dilu.any] },
@@ -862,6 +866,28 @@ describe("G-SUNSHANGXIANG ซุนซางเซียง — ผูกวา�
     });
     step(g, { kind: "mainAction" }, play([C.horse_dilu.any], []));
     expectZone(g.state, C.horse_chitu.any, "discardPile");
+    acceptSkill(g, "sunshangxiang_jiehun");
+    expectHandSize(g.state, "p0", 2);
+  });
+
+  it("[G-SUNSHANGXIANG-06b] equipment swept away by death is not a live loss and must not trigger", () => {
+    // killPlayer (core/damage.ts) clears the corpse's equipment directly as
+    // part of death cleanup — a different event from losing a piece while
+    // alive, and it deliberately does not fire OnEquipmentLost.
+    const g = contractGame({
+      seed: SEED(1303), playerCount: 3, currentSeat: 1,
+      assigns: [["p0", "sunshangxiang"]],
+      hands: { p1: [SHA] },
+      after: (s) => { equip(s, "p0", C.crossbow.any); setHp(s, "p0", 1); },
+    });
+    step(g, { kind: "mainAction", playerId: "p1" }, play([SHA], ["p0"]));
+    step(g, { kind: "respondShan", playerId: "p0" }, pass);
+    // dying poll runs seatOrderFrom(p0): p0, then p1, then p2
+    step(g, { kind: "respondTao", playerId: "p0" }, pass);
+    step(g, { kind: "respondTao", playerId: "p1" }, pass);
+    step(g, { kind: "respondTao", playerId: "p2" }, pass);
+    expectAlive(g.state, "p0", false);
+    expectZone(g.state, C.crossbow.any, "discardPile");
     expectNoLog(g.state, { eventType: "skillUse", skillId: "sunshangxiang_jiehun" });
   });
 });
@@ -984,6 +1010,7 @@ describe("G-LUXUN ลกซุน — ถ่อมตนซ่อนคม / ก
     step(g, { kind: "swordIceChoice" }, choose("discard2"));
     step(g, { kind: "discardChosenBy", playerId: "p0" }, withCards(SHAN, SHAN_B));
     expectHandSize(g.state, "p0", 0);
+    acceptSkill(g, "luxun_lianying");
     expectSkillUsed(g.state, "luxun_lianying", 1);
   });
 

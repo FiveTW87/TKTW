@@ -284,7 +284,9 @@ describe("Diaochan lijian (ยุแยง)", () => {
     expect(getPlayer(state, "p0").hand.some((c) => c.id === "heart_1_2")).toBe(false); // spent
   });
 
-  it("does nothing (no duel, card not spent) if a target is female", () => {
+  it("rejects a female target atomically (no duel, card not spent, usage not burned)", () => {
+    // Was previously a silent no-op; the catalog (G-DIAOCHAN-02a) requires an
+    // atomic reject instead, same as the other illegal-target cases below.
     const rng = createRng(92);
     const state = createInitialState({ playerCount: 3, seed: 92 }, rng);
     assignGeneral(state, "p0", "diaochan", true);
@@ -296,10 +298,14 @@ describe("Diaochan lijian (ยุแยง)", () => {
 
     const main = session.state.pendingDecision!;
     forceIntoHand(state, "p0", "heart_1_2");
-    respond(session, { decisionId: main.id, playerId: "p0", choice: "useSkill", skillId: "diaochan_lijian", cardIds: ["heart_1_2"], targetIds: ["p1", "p2"] });
+
+    expect(() =>
+      respond(session, { decisionId: main.id, playerId: "p0", choice: "useSkill", skillId: "diaochan_lijian", cardIds: ["heart_1_2"], targetIds: ["p1", "p2"] }),
+    ).toThrow();
 
     expect(session.state.pendingDecision!.kind).toBe("mainAction"); // no duel
     expect(getPlayer(state, "p0").hand.some((c) => c.id === "heart_1_2")).toBe(true); // not spent
+    expect(getPlayer(state, "p0").skillUsedThisTurn["diaochan_lijian"]).toBeUndefined(); // quota not burned
   });
 });
 

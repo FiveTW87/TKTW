@@ -36,6 +36,9 @@ function* resolveShaHit(
       assertDiscardAnswer(targetId, ids, data);
       discardCardsFromHand(state, targetId, ids);
       log(state, "swordIceDiscard", { actorId: targetId, cardType: "sword_ice" });
+      if (getPlayer(state, targetId).hand.length === 0) {
+        yield* fireTrigger(ctx, "OnHandEmpty", { playerId: targetId });
+      }
       return;
     }
   }
@@ -61,6 +64,7 @@ function* resolveShaHit(
       delete p.equipment[slot];
       state.discardPile.push(c);
       log(state, "qilinDestroyHorse", { actorId: targetId, cardType: "qilin", data: { slot } });
+      yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
     }
   }
 }

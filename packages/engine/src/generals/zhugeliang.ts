@@ -1,7 +1,7 @@
 // SPEC 11 — ขงเบ้ง (Shu)
 import { registerGeneral } from "./registry";
 import type { Card } from "../types";
-import { aliveIds, log } from "../core/state";
+import { aliveIds, log, popCard } from "../core/state";
 
 registerGeneral({
   id: "zhugeliang",
@@ -13,13 +13,16 @@ registerGeneral({
       id: "zhugeliang_guandou",
       triggers: {
         TurnStart: function* (ctx) {
-          const { state, ownerId, payload } = ctx;
+          const { state, rng, ownerId, payload } = ctx;
           const { playerId } = payload as { playerId: string };
           if (ownerId !== playerId) return;
           const n = Math.min(5, aliveIds(state).length);
           const revealed: Card[] = [];
           for (let i = 0; i < n; i++) {
-            const c = state.drawPile.pop();
+            // popCard is the single reshuffle chokepoint — a raw drawPile.pop()
+            // here would silently under-deliver once it runs dry instead of
+            // shuffling the discard pile back in.
+            const c = popCard(state, rng);
             if (c) revealed.push(c);
           }
           if (revealed.length === 0) return;

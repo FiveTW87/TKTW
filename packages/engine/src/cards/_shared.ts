@@ -31,17 +31,22 @@ export function* pickCardFrom(
   };
 
   const chosenId = answer.cardIds?.[0];
-  if (chosenId) {
+  if (chosenId !== undefined) {
+    // Only the target's own EQUIPMENT is nameable this way (hand cards are
+    // hidden and taken blind, below). Naming anything else — a card the
+    // target doesn't hold, or one of their hand cards by id — is an illegal
+    // answer, not a silent fall-through to a random hand card.
     const slotEntry = (Object.entries(target.equipment) as [string, Card | undefined][]).find(
       ([, c]) => c?.id === chosenId,
     );
-    if (slotEntry) {
-      const [slot] = slotEntry;
-      const c = target.equipment[slot as keyof typeof target.equipment];
-      delete target.equipment[slot as keyof typeof target.equipment];
-      yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
-      return c;
+    if (!slotEntry) {
+      throw new Error(`${actingId}: ${chosenId} is not selectable from ${targetId}`);
     }
+    const [slot] = slotEntry;
+    const c = target.equipment[slot as keyof typeof target.equipment];
+    delete target.equipment[slot as keyof typeof target.equipment];
+    yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
+    return c;
   }
 
   if (target.hand.length === 0) return undefined;

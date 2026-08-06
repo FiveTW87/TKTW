@@ -126,13 +126,20 @@ export function drawCards(state: GameState, rng: Rng, playerId: string, n: numbe
   return drawn;
 }
 
-export function equipCard(state: GameState, playerId: string, card: Card): void {
+/** Equip `card`, discarding whatever was already in that slot. Returns the
+ *  displaced card (if any) so the caller can fire OnEquipmentLost — equipping
+ *  over one's own gear is itself a loss by the house reading this engine
+ *  uses, not just theft/discard/destruction. Not a generator itself (the
+ *  trigger fire needs to be a `yield*`), hence the return-and-let-caller-fire
+ *  shape rather than firing it here. */
+export function equipCard(state: GameState, playerId: string, card: Card): Card | undefined {
   const def = cardDef(card.typeKey);
   if (!def.slot) throw new Error(`card ${card.typeKey} is not equipment`);
   const p = getPlayer(state, playerId);
   const old = p.equipment[def.slot];
   if (old) state.discardPile.push(old);
   p.equipment[def.slot] = card;
+  return old;
 }
 
 export function healPlayer(state: GameState, playerId: string, amount: number): void {

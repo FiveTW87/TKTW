@@ -33,10 +33,17 @@ registerGeneral({
             playerId: ownerId,
             data: { eligible: eligible.map((id) => ({ id, count: getPlayer(state, id).hand.length })) },
           };
-          const chosen = [...new Set(answer.targetIds ?? [])]
-            .filter((id) => eligible.includes(id))
-            .slice(0, 2);
-          for (const targetId of chosen) {
+          const named = answer.targetIds ?? [];
+          if (named.length > 2) throw new Error(`${ownerId}: แปดร้อยทลายค่าย takes at most 2 targets`);
+          if (new Set(named).size !== named.length) {
+            throw new Error(`${ownerId}: duplicate target id`);
+          }
+          for (const id of named) {
+            if (!eligible.includes(id)) {
+              throw new Error(`${ownerId}: ${id} is not selectable for แปดร้อยทลายค่าย`);
+            }
+          }
+          for (const targetId of named) {
             const card = yield* pickCardFrom(ctx, ownerId, targetId, "tuxi");
             if (card) {
               getPlayer(state, ownerId).hand.push(card);

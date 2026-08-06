@@ -1,6 +1,8 @@
 # TKTW Test Case Catalog
 
-<!-- catalog-sync: 226 pass / 30 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ 684f943, 2026-08-05 -->
+<!-- catalog-sync: 256 pass / 0 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ a8d526b, 2026-08-06 -->
+
+
 
 
 
@@ -30,7 +32,7 @@
 > **ใต้ธงวุย (`caocao_hujia`)** — สกิลเจ้าเมือง: เมื่อจำเป็นต้องใช้หลบคม ให้ผู้เล่นวุยก๊กอื่นใช้แทนได้
 
 - [x] [G-CAOCAO-01] `jianxiong`: ได้รับ damage จาก `sha` แล้วรับ physical source card จาก discard เข้ามือ
-- [ ] ❌ [G-CAOCAO-02] `jianxiong`: ได้รับ damage จาก `juedou`, `nanman`, `wanjian` หรือการ์ดชนิดอื่นที่มี `sourceCardId` แล้วรับ physical source card ได้เช่นเดียวกัน <!-- FAIL: AssertionError: expected { zone: 'discardPile', …(1) } to deeply equal { zone: 'hand', ownerId: 'p0' } -->
+- [x] [G-CAOCAO-02] `jianxiong`: ได้รับ damage จาก `juedou`, `nanman`, `wanjian` หรือการ์ดชนิดอื่นที่มี `sourceCardId` แล้วรับ physical source card ได้เช่นเดียวกัน
 - [x] [G-CAOCAO-03] `jianxiong`: เงื่อนไขคือ “damage มาจาก physical card” ไม่ใช่ “ต้องถูกโจมตีด้วย sha”
 - [x] [G-CAOCAO-04] `jianxiong`: decline แล้วการ์ดยังคงอยู่ discard
 - [x] [G-CAOCAO-05] `jianxiong`: damage ที่ไม่มี `sourceCardId` ไม่ trigger
@@ -49,7 +51,7 @@
 > **พลิกชะตา (`simayi_guicai`)** — ก่อนผลไพ่ตัดสินของผู้เล่นใดมีผล สามารถใช้การ์ดในมือแทนไพ่ตัดสิน
 
 - [x] [G-SIMAYI-01] `fankui`: หลังเสีย HP ขโมยหนึ่งใบจากผู้สร้าง damage
-- [ ] ❌ [G-SIMAYI-02] `fankui`: เลือก card ID ที่มีจริง; invalid ID ต้อง atomic reject <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-SIMAYI-02] `fankui`: เลือก card ID ที่มีจริง; invalid ID ต้อง atomic reject
 - [x] [G-SIMAYI-03] `fankui`: source มือว่าง, source ตาย หรือไม่มี source แล้วไม่ trigger
 - [x] [G-SIMAYI-04] `guicai`: เปลี่ยน judgment ของตนเองและของผู้อื่นด้วยการ์ดในมือ
 - [x] [G-SIMAYI-05] `guicai`: ไพ่เดิมไป discard ไพ่ใหม่กลายเป็น judgment card
@@ -86,7 +88,7 @@
 - [x] [G-ZHANGLIAO-02] `tuxi`: เลือกหนึ่งคน ขโมยหนึ่งใบและไม่จั่ว
 - [x] [G-ZHANGLIAO-03] `tuxi`: เลือกสองคน ขโมยคนละหนึ่งใบและไม่จั่ว
 - [x] [G-ZHANGLIAO-04] `tuxi`: ไม่มีผู้เล่นอื่นมีไพ่แล้วไม่ prompt และจั่วปกติ
-- [ ] ❌ [G-ZHANGLIAO-05] `tuxi`: reject ตัวเอง, ผู้ตาย, คนมือว่าง, duplicate target และมากกว่าสองเป้าหมาย <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-ZHANGLIAO-05] `tuxi`: reject ตัวเอง, ผู้ตาย, คนมือว่าง, duplicate target และมากกว่าสองเป้าหมาย
 - [x] [G-ZHANGLIAO-06] `tuxi`: hidden hand ต้องให้ผู้ใช้เลือกตาม visibility policy ที่กำหนด ไม่เปิดมือเป้าหมายเกินกฎ
 
 #### G-GUOJIA กุยแก
@@ -101,7 +103,7 @@
 - [x] [G-GUOJIA-04] `yiji`: เสียหนึ่ง HP เปิดสองใบและแจกทั้งสองให้ตนเอง/คนเดียว/คนละคน
 - [x] [G-GUOJIA-05] `yiji`: เสีย N HP ต้อง resolve N ชุด ชุดละสองใบ
 - [x] [G-GUOJIA-06] `yiji`: ผู้รับตายระหว่าง distribution และกองจั่วมีการ์ดไม่พอ
-- [ ] ❌ [G-GUOJIA-07] `yiji`: invalid target/duplicate assignment ต้อง atomic reject <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-GUOJIA-07] `yiji`: invalid target/duplicate assignment ต้อง atomic reject
 
 #### G-ZHENJI เอียนสี
 
@@ -115,7 +117,7 @@
 - [x] [G-ZHENJI-04] `luoshen`: red ใบแรกหยุดทันทีและไม่เข้ามือ
 - [x] [G-ZHENJI-05] `luoshen`: decline แล้วไม่เริ่ม judgment loop
 - [x] [G-ZHENJI-06] `luoshen`: ทำงานร่วมกับ `guicai` โดยใช้สีของ judgment ใบสุดท้าย
-- [ ] ❌ [G-ZHENJI-07] `luoshen`: กองจั่วหมดต้องจบอย่างปลอดภัย ไม่ loop <!-- FAIL: Error: no cards left to judge with -->
+- [x] [G-ZHENJI-07] `luoshen`: กองจั่วหมดต้องจบอย่างปลอดภัย ไม่ loop
 
 ### จ๊ก
 
@@ -128,7 +130,7 @@
 - [x] [G-LIUBEI-01] `rende`: ให้หนึ่งใบแก่ผู้เล่นอื่น การ์ดย้ายจริง
 - [x] [G-LIUBEI-02] `rende`: ให้ครบสองใบในเทิร์นแล้วฟื้นหนึ่ง HP เพียงครั้งเดียว
 - [x] [G-LIUBEI-03] `rende`: ให้สามใบขึ้นไปยังฟื้นรวมเพียงหนึ่งครั้ง
-- [ ] ❌ [G-LIUBEI-04] `rende`: HP เต็ม, target ตาย, target เป็นตนเอง และ invalid/duplicate card ID <!-- FAIL: AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1004, seq: 2, …(10) } to deeply equal { seed: 1004, seq: 2, …(10) } -->
+- [x] [G-LIUBEI-04] `rende`: HP เต็ม, target ตาย, target เป็นตนเอง และ invalid/duplicate card ID
 - [x] [G-LIUBEI-05] `rende`: counter reset เมื่อขึ้นเทิร์นใหม่
 - [x] [G-LIUBEI-06] lord skill: Shu ally ใช้ `sha` แทนเมื่อ lord ต้องตอบ `sha`
 - [x] [G-LIUBEI-07] lord skill: ally หลายคนเรียง seat order; non-Shu/dead/self ไม่ถูกถาม
@@ -184,7 +186,7 @@
 - [x] [G-ZHUGELIANG-01] `guandou`: เปิด min(5, alive count) ใบและไม่รั่วข้อมูลแก่ viewer อื่น
 - [x] [G-ZHUGELIANG-02] `guandou`: จัดบางใบ/ทุกใบไว้บนกองตามลำดับที่เลือก ส่วนที่เหลือลงใต้กอง
 - [x] [G-ZHUGELIANG-03] `guandou`: duplicate, unknown ID และ ID เกินชุดเปิดต้อง atomic reject
-- [ ] ❌ [G-ZHUGELIANG-04] `guandou`: หากกองจั่วมีไม่พอ ให้เปิดการ์ดที่เหลือในกองจั่วก่อน จากนั้นสับกองทิ้งเป็นกองจั่วใหม่และเปิดเพิ่มจนได้ครบ min(5, alive count) <!-- FAIL: AssertionError: expected 1 to be 3 // Object.is equality -->
+- [x] [G-ZHUGELIANG-04] `guandou`: หากกองจั่วมีไม่พอ ให้เปิดการ์ดที่เหลือในกองจั่วก่อน จากนั้นสับกองทิ้งเป็นกองจั่วใหม่และเปิดเพิ่มจนได้ครบ min(5, alive count)
 - [x] [G-ZHUGELIANG-05] `guandou`: การเติมจากกองทิ้งต้องใช้ RNG/seed แบบ deterministic, ห้ามทำ physical card ซ้ำหรือหาย และต้องไม่นำการ์ดที่กำลัง resolve/อยู่ zone อื่นมาสับรวม
 - [x] [G-ZHUGELIANG-06] `guandou`: หากจำนวนการ์ดที่เหลือรวมทั้งกองจั่วและกองทิ้งยังไม่พอ ให้เปิดเท่าที่มีทั้งหมดและจบอย่างปลอดภัย
 - [x] [G-ZHUGELIANG-07] `guandou`: หากทั้งกองจั่วและกองทิ้งว่าง ให้ไม่สร้าง decision เปล่าและดำเนิน turn ต่อได้
@@ -201,7 +203,7 @@
 
 - [x] [G-PANGTONG-01] `juhui`: ใช้ instant trick จากมือแล้วจั่วหนึ่ง
 - [x] [G-PANGTONG-02] `juhui`: delayed trick, equipment, basic และ converted trick ไม่ trigger
-- [ ] ❌ [G-PANGTONG-03] `juhui`: trick ถูก `wuxie` ยังนับ “ใช้” เพียงครั้งเดียว <!-- FAIL: Error: expected decision {"kind":"activateSkill","skillId":"pangtong_juhui"}, got mainAction@p0 {} -->
+- [x] [G-PANGTONG-03] `juhui`: trick ถูก `wuxie` ยังนับ “ใช้” เพียงครั้งเดียว
 - [x] [G-PANGTONG-04] `juhui`: multi-target trick trigger ครั้งเดียว ไม่ใช่ต่อเป้าหมาย
 - [x] [G-PANGTONG-05] `qicai`: ข้ามเฉพาะ range restriction ของ trick
 - [x] [G-PANGTONG-06] `qicai`: ไม่ข้าม immunity, duplicate delayed zone และ target validity อื่น
@@ -215,7 +217,7 @@
 > **แคว้นง่อค้ำชู (`sunquan_jiujia`)** — สกิลเจ้าเมือง: เมื่อผู้เล่นง่อก๊กอื่นใช้ท้อคืนชีพกับตน ฟื้นเพิ่มอีก 1 พลังชีวิต
 
 - [x] [G-SUNQUAN-01] `zhiheng`: ทิ้ง N ใบแล้วจั่ว N ใบ
-- [ ] ❌ [G-SUNQUAN-02] `zhiheng`: zero cards ไม่ทำอะไร; duplicate/unknown IDs atomic reject <!-- FAIL: AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1203, seq: 2, …(10) } to deeply equal { seed: 1203, seq: 2, …(10) } -->
+- [x] [G-SUNQUAN-02] `zhiheng`: zero cards ไม่ทำอะไร; duplicate/unknown IDs atomic reject
 - [x] [G-SUNQUAN-03] `zhiheng`: ใช้ครั้งที่สองในเทิร์นเดียวถูกปฏิเสธและ reset เทิร์นถัดไป
 - [x] [G-SUNQUAN-04] `jiujia`: Wu ally คนอื่นใช้ `tao` ช่วย lord แล้วฟื้นเพิ่มหนึ่ง
 - [x] [G-SUNQUAN-05] `jiujia`: ไม่ทำงานกับรักษาตนเอง, non-Wu healer, non-lord หรือ HP เต็ม
@@ -230,12 +232,12 @@
 - [x] [G-ZHOUYU-01] `yingzi`: draw phase จั่วเพิ่มหนึ่งและไม่รั่วให้คนอื่น
 - [x] [G-ZHOUYU-02] `yingzi`: รวม modifier ถูกต้องกับ draw replacement เช่น `tuxi`
 - [x] [G-ZHOUYU-03] `fanjian`: ผู้ใช้ต้องเลือก physical card จากมือ 1 ใบก่อนเป้าหมายทาย และห้ามเปิดหน้า/ดอกแก่เป้าหมายก่อนส่งคำตอบ
-- [ ] ❌ [G-ZHOUYU-04] `fanjian`: หลังเป้าหมายทาย ต้องเปิด physical card ที่เลือกให้ผู้ทายรับทราบไม่ว่าทายถูกหรือผิด <!-- FAIL: AssertionError: expected a log entry matching {"eventType":"skillUse","skillId":"zhouyu_fanjian","cardId":"spade_11_2"}: expected 0 to be greater than 0 -->
+- [x] [G-ZHOUYU-04] `fanjian`: หลังเป้าหมายทาย ต้องเปิด physical card ที่เลือกให้ผู้ทายรับทราบไม่ว่าทายถูกหรือผิด
 - [x] [G-ZHOUYU-05] `fanjian`: target ทาย suit ถูก ได้การ์ดที่เปิดเผยและไม่เสีย HP
 - [x] [G-ZHOUYU-06] `fanjian`: ทายผิด ได้การ์ดที่เปิดเผยและเสียหนึ่ง HP
 - [x] [G-ZHOUYU-07] `fanjian`: target ตายจาก HP loss และเข้าสู่ dying flow ถูกต้อง
-- [ ] ❌ [G-ZHOUYU-08] `fanjian`: invalid target/card, ใช้ซ้ำเทิร์นเดียว และ reset เทิร์นใหม่ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
-- [ ] ❌ [G-ZHOUYU-09] `fanjian`: suit ต้องดูจาก physical card ที่เลือกจริง; log/view ต้องเปิดเผย card ID, type, suit และ rank หลังทายโดยไม่รั่วก่อนตอบ <!-- FAIL: AssertionError: expected undefined to be 'heart_2_1' // Object.is equality -->
+- [x] [G-ZHOUYU-08] `fanjian`: invalid target/card, ใช้ซ้ำเทิร์นเดียว และ reset เทิร์นใหม่
+- [x] [G-ZHOUYU-09] `fanjian`: suit ต้องดูจาก physical card ที่เลือกจริง; log/view ต้องเปิดเผย card ID, type, suit และ rank หลังทายโดยไม่รั่วก่อนตอบ
 
 #### G-GANNING กำเหลง
 
@@ -243,7 +245,7 @@
 
 - [x] [G-GANNING-01] `qixi`: spade/club ทุก category counts-as-`guohe`
 - [x] [G-GANNING-02] `qixi`: heart/diamond ถูกปฏิเสธ
-- [ ] ❌ [G-GANNING-03] `qixi`: ยังตรวจ target/zone และ `wuxie` ตาม `guohe` ปกติ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-GANNING-03] `qixi`: ยังตรวจ target/zone และ `wuxie` ตาม `guohe` ปกติ
 - [x] [G-GANNING-04] `qixi`: conversion ไม่รั่วให้คนอื่น
 
 #### G-LUMENG ลิบอง
@@ -286,10 +288,10 @@
 > **ศาสตราไม่ขาดมือ (`sunshangxiang_jiehun`)** — เมื่อเสียอุปกรณ์ 1 ใบ จั่ว 2 ใบ
 
 - [x] [G-SUNSHANGXIANG-01] `jieyuan`: ทิ้งสองใบแล้วตนและ injured target ฟื้นคนละหนึ่ง
-- [ ] ❌ [G-SUNSHANGXIANG-02] `jieyuan`: target HP เต็ม, target ตาย, target=self และการ์ดไม่ครบสองใบถูกปฏิเสธ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
-- [ ] ❌ [G-SUNSHANGXIANG-03] `jieyuan`: duplicate/invalid IDs atomic reject และใช้ได้ครั้งเดียวต่อเทิร์น <!-- FAIL: AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1296, seq: 2, …(10) } to deeply equal { seed: 1296, seq: 2, …(10) } -->
+- [x] [G-SUNSHANGXIANG-02] `jieyuan`: target HP เต็ม, target ตาย, target=self และการ์ดไม่ครบสองใบถูกปฏิเสธ
+- [x] [G-SUNSHANGXIANG-03] `jieyuan`: duplicate/invalid IDs atomic reject และใช้ได้ครั้งเดียวต่อเทิร์น
 - [x] [G-SUNSHANGXIANG-04] `jiehun`: เสีย weapon/armor/horsePlus/horseMinus แต่ละใบแล้วจั่วสอง
-- [ ] ❌ [G-SUNSHANGXIANG-05] `jiehun`: equipment ถูกขโมย, ทิ้ง, ทำลาย หรือถูกแทนที่ต้อง trigger ครั้งต่อ physical card <!-- FAIL: Error: expected decision {"kind":"activateSkill","skillId":"sunshangxiang_jiehun"}, got mainAction@p1 {} -->
+- [x] [G-SUNSHANGXIANG-05] `jiehun`: equipment ถูกขโมย, ทิ้ง, ทำลาย หรือถูกแทนที่ต้อง trigger ครั้งต่อ physical card
 - [x] [G-SUNSHANGXIANG-06] `jiehun`: การย้ายอุปกรณ์ที่ไม่ถือว่า “เสีย” ตามกฎต้องไม่ trigger
 
 #### G-LUXUN ลกซุน
@@ -301,7 +303,7 @@
 - [x] [G-LUXUN-01] `qianxun`: ไม่เป็นเป้าหมาย `shunshou` และ `lebusishu`
 - [x] [G-LUXUN-02] `qianxun`: card/trick ชนิดอื่นยังเลือกได้
 - [x] [G-LUXUN-03] `lianying`: เล่น/ทิ้ง/ถูกขโมย/มอบการ์ดใบสุดท้ายแล้วจั่วหนึ่ง
-- [ ] ❌ [G-LUXUN-04] `lianying`: เสียหลายใบพร้อมกัน trigger เมื่อ transition non-empty -> empty เพียงครั้งเดียว <!-- FAIL: AssertionError: log entries matching {"eventType":"skillUse","skillId":"luxun_lianying"}: expected +0 to be 1 // Object.is equality -->
+- [x] [G-LUXUN-04] `lianying`: เสียหลายใบพร้อมกัน trigger เมื่อ transition non-empty -> empty เพียงครั้งเดียว
 - [x] [G-LUXUN-05] `lianying`: ไม่ trigger เมื่อมือว่างอยู่แล้วและไม่เกิด infinite loop
 
 ### ก๊กอื่น
@@ -323,7 +325,7 @@
 > **จันทร์หลบโฉม (`diaochan_libu`)** — จบเทิร์น จั่ว 1 ใบ
 
 - [x] [G-DIAOCHAN-01] `lijian`: ทิ้งหนึ่งใบ เลือกชายมีชีวิตสองคน แล้วเริ่ม duel ตาม source/target ที่กำหนด
-- [ ] ❌ [G-DIAOCHAN-02] `lijian`: reject ผู้หญิง, ตนเอง, target ซ้ำ, ผู้ตาย, ไพ่ invalid และใช้ซ้ำในเทิร์น <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-DIAOCHAN-02] `lijian`: reject ผู้หญิง, ตนเอง, target ซ้ำ, ผู้ตาย, ไพ่ invalid และใช้ซ้ำในเทิร์น
 - [x] [G-DIAOCHAN-03] `lijian`: duel ที่สร้างโดยสกิลไม่ต้องมี physical `juedou` และ interaction กับ `wushuang`
 - [x] [G-DIAOCHAN-04] `libu`: จบเทิร์นแล้วจั่วหนึ่งใบตามเงื่อนไขข้อความสกิล
 - [x] [G-DIAOCHAN-05] `libu`: trigger เฉพาะเจ้าของ, เพียงครั้งต่อ turn end และยังทำงานเมื่อมือว่าง
@@ -335,7 +337,7 @@
 > **เข็มทองต่อชีพ (`huatuo_jiuxing`)** — นอกเทิร์นตัวเอง ใช้การ์ดสีแดงเป็นท้อคืนชีพได้
 
 - [x] [G-HUATUO-01] `qingnang`: ทิ้งหนึ่งใบรักษาผู้บาดเจ็บหนึ่ง HP
-- [ ] ❌ [G-HUATUO-02] `qingnang`: target HP เต็ม/ตาย, invalid card และใช้ซ้ำในเทิร์นถูกปฏิเสธ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [G-HUATUO-02] `qingnang`: target HP เต็ม/ตาย, invalid card และใช้ซ้ำในเทิร์นถูกปฏิเสธ
 - [x] [G-HUATUO-03] `qingnang`: รักษาตนเองและผู้อื่นตาม target rule
 - [x] [G-HUATUO-04] `jiuxing`: นอกเทิร์นใช้ heart/diamond เป็น `tao` ช่วยผู้กำลัง dying
 - [x] [G-HUATUO-05] `jiuxing`: spade/club และการใช้ในเทิร์นตนเองถูกปฏิเสธ
@@ -347,7 +349,7 @@
 
 #### C-SHA `sha`
 
-- [ ] ❌ [C-SHA-01] เลือกหนึ่งเป้าหมายที่มีชีวิต อยู่ในระยะ และไม่ใช่ตนเอง <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-SHA-01] เลือกหนึ่งเป้าหมายที่มีชีวิต อยู่ในระยะ และไม่ใช่ตนเอง
 - [x] [C-SHA-02] ใช้ได้หนึ่งครั้งต่อเทิร์นโดยปกติ; usage counter commit หลัง validation สำเร็จเท่านั้น
 - [x] [C-SHA-03] target ตอบ `shan` แล้วไม่เสีย HP; pass/ตอบไม่ได้แล้วเสียหนึ่ง HP
 - [x] [C-SHA-04] invalid target/range/card ID/duplicate answer atomic reject
@@ -372,32 +374,32 @@
 #### C-WUZHONG `wuzhong`
 
 - [x] [C-WUZHONG-01] ใช้กับตนเองแล้วจั่วสอง; ถูก `wuxie` แล้วไม่จั่ว
-- [ ] ❌ [C-WUZHONG-02] ห้ามกำหนดเป้าหมายอื่น; กองจั่วเหลือน้อย/ว่างต้องปลอดภัย <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-WUZHONG-02] ห้ามกำหนดเป้าหมายอื่น; กองจั่วเหลือน้อย/ว่างต้องปลอดภัย
 
 #### C-GUOHE `guohe`
 
 - [x] [C-GUOHE-01] เลือกผู้เล่นอื่นที่มีการ์ดใน hand/equipment/judgment แล้วทิ้งหนึ่งใบจาก zone ที่เลือก
-- [ ] ❌ [C-GUOHE-02] target ไม่มีการ์ด, invalid/hidden card choice และ target=self ถูกปฏิเสธ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-GUOHE-02] target ไม่มีการ์ด, invalid/hidden card choice และ target=self ถูกปฏิเสธ
 - [x] [C-GUOHE-03] ถูก `wuxie`; equipment loss/delayed removal triggers ถูกต้อง
 
 #### C-SHUNSHOU `shunshou`
 
 - [x] [C-SHUNSHOU-01] ขโมยหนึ่งใบจากเป้าหมายระยะหนึ่งเข้ามือผู้ใช้
-- [ ] ❌ [C-SHUNSHOU-02] นอกระยะ, target ว่าง/self และ Lu Xun immunity ถูกปฏิเสธ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-SHUNSHOU-02] นอกระยะ, target ว่าง/self และ Lu Xun immunity ถูกปฏิเสธ
 - [x] [C-SHUNSHOU-03] range modifier/horse/Qicai และ `wuxie` interaction
 
 #### C-JUEDOU `juedou`
 
 - [x] [C-JUEDOU-01] source/target สลับตอบ `sha` จนคนหนึ่งตอบไม่ได้และเสียหนึ่ง damage
 - [x] [C-JUEDOU-02] wrong player/wrong card/stale answer atomic reject
-- [ ] ❌ [C-JUEDOU-03] `wushuang`, converted `sha`, lord-supplied `sha`, death mid-loop และ `wuxie` <!-- FAIL: Error: expected decision {"kind":"activateSkill","skillId":"liubei_hujia"}, got respondSha@p1 {"opponentId":"p0","reason":"juedou","needed":1} -->
+- [x] [C-JUEDOU-03] `wushuang`, converted `sha`, lord-supplied `sha`, death mid-loop และ `wuxie`
 
 #### C-JIEDAO `jiedao`
 
 - [x] [C-JIEDAO-01] เลือกผู้ถืออาวุธและ legal victim; ผู้ถือใช้ `sha` โจมตี victim
 - [x] [C-JIEDAO-02] หากปฏิเสธ/โจมตีไม่ได้ อาวุธย้ายให้ผู้ใช้
 - [x] [C-JIEDAO-03] ผู้ใช้มีอาวุธอยู่แล้ว ต้องยืนยัน swap และทิ้งใบที่ไม่เลือก
-- [ ] ❌ [C-JIEDAO-04] unarmed source, illegal victim, range, death, `wuxie` และ atomicity <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-JIEDAO-04] unarmed source, illegal victim, range, death, `wuxie` และ atomicity
 
 #### C-NANMAN `nanman`
 
@@ -409,7 +411,7 @@
 #### C-WANJIAN `wanjian`
 
 - [x] [C-WANJIAN-01] ผู้เล่นอื่นทุกคนตอบ `shan` หรือเสียหนึ่ง damage
-- [ ] ❌ [C-WANJIAN-02] caster/dead skipped; ordering, `wuxie`, `hujia`, `bagua`, conversion และ death mid-loop <!-- FAIL: AssertionError: p1 hp: expected 3 to be 4 // Object.is equality -->
+- [x] [C-WANJIAN-02] caster/dead skipped; ordering, `wuxie`, `hujia`, `bagua`, conversion และ death mid-loop
 
 #### C-TAOYUAN `taoyuan`
 
@@ -421,7 +423,7 @@
 
 - [x] [C-WUGU-01] เปิดการ์ดเท่าจำนวนผู้เล่นมีชีวิตและเลือกคนละหนึ่งตาม seat order
 - [x] [C-WUGU-02] การ์ดที่เหลือไป discard; choices ไม่รั่วก่อนถึงคิว
-- [ ] ❌ [C-WUGU-03] duplicate/unknown choice atomic reject, ผู้เล่นตายกลาง resolution และกองมีไม่พอ <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [C-WUGU-03] duplicate/unknown choice atomic reject, ผู้เล่นตายกลาง resolution และกองมีไม่พอ
 - [x] [C-WUGU-04] `wuxie` interaction ไม่ทำให้จำนวน pool/state ผิด
 
 #### C-WUXIE `wuxie`
@@ -478,7 +480,7 @@
 
 #### E-ZHANGBA `zhangba`
 
-- [ ] ❌ [E-ZHANGBA-01] ใช้การ์ดมือสองใบแทน `sha` ทั้ง main action และ response <!-- FAIL: Error: juedou: heart_2_2 does not count as sha -->
+- [x] [E-ZHANGBA-01] ใช้การ์ดมือสองใบแทน `sha` ทั้ง main action และ response
 - [x] [E-ZHANGBA-02] ต้องเป็นสอง physical IDs ที่ต่างกันและอยู่ในมือ; invalid batch atomic reject
 - [x] [E-ZHANGBA-03] counts-as interaction กับ usage limit/lord skill/duel
 
@@ -492,13 +494,13 @@
 
 - [x] [E-FANGTIAN-01] เมื่อใช้การ์ดใบสุดท้ายในมือเป็น `sha` เลือกเป้าหมายเพิ่มตาม limit
 - [x] [E-FANGTIAN-02] ไม่ใช่ใบสุดท้าย/converted batch แล้วไม่เพิ่มเป้า
-- [ ] ❌ [E-FANGTIAN-03] target legality, duplicate targets, redirect และ AOE-like resolution order <!-- FAIL: AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined -->
+- [x] [E-FANGTIAN-03] target legality, duplicate targets, redirect และ AOE-like resolution order
 
 #### E-QILIN `qilin`
 
 - [x] [E-QILIN-01] เมื่อ `sha` ทำ damage เลือกทิ้ง horsePlus/horseMinus ของเป้าหมาย
 - [x] [E-QILIN-02] target ไม่มีม้า/decline; เลือก slot ถูกต้อง
-- [ ] ❌ [E-QILIN-03] equipment-loss triggers และ distance recalculation หลังม้าหาย <!-- FAIL: Error: expected decision {"kind":"activateSkill","skillId":"sunshangxiang_jiehun"}, got mainAction@p0 {} -->
+- [x] [E-QILIN-03] equipment-loss triggers และ distance recalculation หลังม้าหาย
 
 ### Armor
 
@@ -585,43 +587,3 @@ describe("physical deck contract", () => {
 - focused suites ผ่านพร้อม atomicity invariant
 - fuzz 1,000 เกมและ identity 3–10 players ผ่านหลังเพิ่ม tests
 
-
-
-
-
-## บั๊กที่พบใน engine (auto-generated)
-
-เคสที่เขียนเทสตามข้อความใน catalog แล้ว engine ทำงานไม่ตรง — ปล่อยแดงไว้ตามนโยบาย ไม่แก้ `src/`
-
-| Case | หัวข้อ | อาการ |
-| --- | --- | --- |
-| `G-CAOCAO-02` | `jianxiong`: ได้รับ damage จาก `juedou`, `nanman`, `wanjian` หรือการ์ดชนิดอื่นที่มี `sourceCardId` แล้วรับ phy | AssertionError: expected { zone: 'discardPile', …(1) } to deeply equal { zone: 'hand', ownerId: 'p0' } |
-| `G-SIMAYI-02` | `fankui`: เลือก card ID ที่มีจริง; invalid ID ต้อง atomic reject | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-ZHANGLIAO-05` | `tuxi`: reject ตัวเอง, ผู้ตาย, คนมือว่าง, duplicate target และมากกว่าสองเป้าหมาย | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-GUOJIA-07` | `yiji`: invalid target/duplicate assignment ต้อง atomic reject | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-ZHENJI-07` | `luoshen`: กองจั่วหมดต้องจบอย่างปลอดภัย ไม่ loop | Error: no cards left to judge with |
-| `G-LIUBEI-04` | `rende`: HP เต็ม, target ตาย, target เป็นตนเอง และ invalid/duplicate card ID | AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1004, seq: 2, …(10) } to d |
-| `G-ZHUGELIANG-04` | `guandou`: หากกองจั่วมีไม่พอ ให้เปิดการ์ดที่เหลือในกองจั่วก่อน จากนั้นสับกองทิ้งเป็นกองจั่วใหม่และเปิดเพิ่มจนไ | AssertionError: expected 1 to be 3 // Object.is equality |
-| `G-PANGTONG-03` | `juhui`: trick ถูก `wuxie` ยังนับ “ใช้” เพียงครั้งเดียว | Error: expected decision {"kind":"activateSkill","skillId":"pangtong_juhui"}, got mainAction@p0 {} |
-| `G-SUNQUAN-02` | `zhiheng`: zero cards ไม่ทำอะไร; duplicate/unknown IDs atomic reject | AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1203, seq: 2, …(10) } to d |
-| `G-ZHOUYU-04` | `fanjian`: หลังเป้าหมายทาย ต้องเปิด physical card ที่เลือกให้ผู้ทายรับทราบไม่ว่าทายถูกหรือผิด | AssertionError: expected a log entry matching {"eventType":"skillUse","skillId":"zhouyu_fanjian","cardId":"spa |
-| `G-ZHOUYU-08` | `fanjian`: invalid target/card, ใช้ซ้ำเทิร์นเดียว และ reset เทิร์นใหม่ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-ZHOUYU-09` | `fanjian`: suit ต้องดูจาก physical card ที่เลือกจริง; log/view ต้องเปิดเผย card ID, type, suit และ rank หลังทา | AssertionError: expected undefined to be 'heart_2_1' // Object.is equality |
-| `G-GANNING-03` | `qixi`: ยังตรวจ target/zone และ `wuxie` ตาม `guohe` ปกติ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-SUNSHANGXIANG-02` | `jieyuan`: target HP เต็ม, target ตาย, target=self และการ์ดไม่ครบสองใบถูกปฏิเสธ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-SUNSHANGXIANG-03` | `jieyuan`: duplicate/invalid IDs atomic reject และใช้ได้ครั้งเดียวต่อเทิร์น | AssertionError: a rejected answer must leave state byte-identical: expected { seed: 1296, seq: 2, …(10) } to d |
-| `G-SUNSHANGXIANG-05` | `jiehun`: equipment ถูกขโมย, ทิ้ง, ทำลาย หรือถูกแทนที่ต้อง trigger ครั้งต่อ physical card | Error: expected decision {"kind":"activateSkill","skillId":"sunshangxiang_jiehun"}, got mainAction@p1 {} |
-| `G-LUXUN-04` | `lianying`: เสียหลายใบพร้อมกัน trigger เมื่อ transition non-empty -> empty เพียงครั้งเดียว | AssertionError: log entries matching {"eventType":"skillUse","skillId":"luxun_lianying"}: expected +0 to be 1  |
-| `G-DIAOCHAN-02` | `lijian`: reject ผู้หญิง, ตนเอง, target ซ้ำ, ผู้ตาย, ไพ่ invalid และใช้ซ้ำในเทิร์น | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `G-HUATUO-02` | `qingnang`: target HP เต็ม/ตาย, invalid card และใช้ซ้ำในเทิร์นถูกปฏิเสธ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-SHA-01` | เลือกหนึ่งเป้าหมายที่มีชีวิต อยู่ในระยะ และไม่ใช่ตนเอง | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-WUZHONG-02` | ห้ามกำหนดเป้าหมายอื่น; กองจั่วเหลือน้อย/ว่างต้องปลอดภัย | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-GUOHE-02` | target ไม่มีการ์ด, invalid/hidden card choice และ target=self ถูกปฏิเสธ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-SHUNSHOU-02` | นอกระยะ, target ว่าง/self และ Lu Xun immunity ถูกปฏิเสธ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-JUEDOU-03` | `wushuang`, converted `sha`, lord-supplied `sha`, death mid-loop และ `wuxie` | Error: expected decision {"kind":"activateSkill","skillId":"liubei_hujia"}, got respondSha@p1 {"opponentId":"p |
-| `C-JIEDAO-04` | unarmed source, illegal victim, range, death, `wuxie` และ atomicity | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `C-WANJIAN-02` | caster/dead skipped; ordering, `wuxie`, `hujia`, `bagua`, conversion และ death mid-loop | AssertionError: p1 hp: expected 3 to be 4 // Object.is equality |
-| `C-WUGU-03` | duplicate/unknown choice atomic reject, ผู้เล่นตายกลาง resolution และกองมีไม่พอ | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `E-ZHANGBA-01` | ใช้การ์ดมือสองใบแทน `sha` ทั้ง main action และ response | Error: juedou: heart_2_2 does not count as sha |
-| `E-FANGTIAN-03` | target legality, duplicate targets, redirect และ AOE-like resolution order | AssertionError: expected this answer to be rejected, but it was accepted: expected undefined to be defined |
-| `E-QILIN-03` | equipment-loss triggers และ distance recalculation หลังม้าหาย | Error: expected decision {"kind":"activateSkill","skillId":"sunshangxiang_jiehun"}, got mainAction@p0 {} |

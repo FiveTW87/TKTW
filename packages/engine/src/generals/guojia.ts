@@ -41,12 +41,32 @@ registerGeneral({
           }
           if (revealed.length === 0) return;
           for (const card of revealed) {
+            // The owner may already be dying/dead by the time this round
+            // comes up (yiji is an OnHPLost trigger, so a lethal hit can beat
+            // it here), and a forfeit answers a dead owner's prompt with
+            // `pass`. Never route a card into a corpse's hand — that is the
+            // exact hang the forfeit drive exists to prevent — send it to
+            // the discard pile instead.
+            if (!getPlayer(state, ownerId).alive) {
+              state.discardPile.push(card);
+              continue;
+            }
             const answer = yield {
               kind: "yijiGive",
               playerId: ownerId,
               data: { cardId: card.id },
             };
-            const toId = answer.targetIds?.[0] ?? ownerId;
+            const named = answer.targetIds?.[0];
+            if (named !== undefined) {
+              const t = getPlayer(state, named);
+              if (!t.alive) throw new Error(`guojia_yiji: ${named} is not alive`);
+            }
+            const toId = named ?? ownerId;
+            if (!getPlayer(state, toId).alive) {
+              // owner died while this exact prompt was pending
+              state.discardPile.push(card);
+              continue;
+            }
             getPlayer(state, toId).hand.push(card);
             log(state, "skillUse", { actorId: ownerId, skillId: "guojia_yiji", targetIds: [toId], cardType: card.typeKey });
           }

@@ -551,12 +551,12 @@ describe("C-WANJIAN — ห่าธนู", () => {
       },
     });
     playTrick(g, [WANJIAN], []);
-    // The catalog asks for ค่ายกลแปดทิศ to work here; wanjian's own loop bypasses
-    // the OnNeedDodge trigger that armour hangs off.
-    expectDecision(g, { kind: "respondShan", playerId: "p1" });
-    step(g, { kind: "respondShan" }, pass);
+    // ห่าธนู now routes each arrow through the same OnNeedDodge box a สังหาร
+    // uses, so bagua's own judgment reveal is the very next decision.
+    step(g, { kind: "judgmentReveal", playerId: "p1" }, choose("reveal"));
+    expectHp(g.state, "p1", 4); // auto-dodged — never even asked for a หลบ
     step(g, { kind: "respondShan", playerId: "p2" }, pass);
-    expectHp(g.state, "p1", 4);
+    expectHp(g.state, "p2", 3);
   });
 
   it("[C-WANJIAN-02d] a converted หลบ answers it", () => {

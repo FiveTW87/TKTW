@@ -3,12 +3,19 @@ import type { CardDef } from "../core/cardEffects";
 import { dealDamage } from "../core/damage";
 import { discardFromHand, getPlayer, seatOrderAfter } from "../core/state";
 import { countsAsType } from "../core/cardChecks";
+import { fireTrigger } from "../core/triggers";
 
 export const wanjianCard: CardDef = {
   play: function* (ctx) {
     const { state, playerId } = ctx;
     for (const pid of seatOrderAfter(state, playerId)) {
       if (!getPlayer(state, pid).alive) continue;
+      // Same box pattern as a สังหาร's own dodge: an armour auto-dodge
+      // (ค่ายกลแปดทิศ) must get first crack at each arrow before asking for
+      // a หลบ from hand.
+      const box = { autoDodged: false };
+      yield* fireTrigger(ctx, "OnNeedDodge", { sourceId: playerId, targetId: pid, box });
+      if (box.autoDodged) continue;
       const answer = yield { kind: "respondShan", playerId: pid, data: { reason: "wanjian" } };
       const offered = !answer.pass && (answer.cardIds?.length ?? 0) > 0;
       if (offered) {
@@ -16,7 +23,7 @@ export const wanjianCard: CardDef = {
         if (!countsAsType(state, pid, cid, "shan")) throw new Error(`wanjian: ${cid} does not count as shan`);
         discardFromHand(state, pid, cid);
       } else {
-        yield* dealDamage(ctx, playerId, pid, 1);
+        yield* dealDamage(ctx, playerId, pid, 1, ctx.cardIds[0]);
       }
     }
   },

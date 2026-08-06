@@ -35,7 +35,13 @@ registerGeneral({
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];
         const cardId = cardIds[0];
-        if (!targetId || !cardId) return;
+        if (!targetId) throw new Error(`${ownerId}: ไพ่ลวงซ่อนคม needs a target`);
+        if (targetId === ownerId) throw new Error(`${ownerId}: cannot target themselves`);
+        if (!getPlayer(state, targetId).alive) throw new Error(`${ownerId}: target ${targetId} is not alive`);
+        if (!cardId) throw new Error(`${ownerId}: ไพ่ลวงซ่อนคม needs a card`);
+        if (!getPlayer(state, ownerId).hand.some((c) => c.id === cardId)) {
+          throw new Error(`${ownerId}: ${cardId} is not in hand`);
+        }
 
         const answer = yield {
           kind: "fanjianGuess",
@@ -46,7 +52,14 @@ registerGeneral({
 
         const card = removeFromHand(state, ownerId, cardId);
         getPlayer(state, targetId).hand.push(card);
-        log(state, "skillUse", { actorId: ownerId, skillId: "zhouyu_fanjian", targetIds: [targetId], cardType: card.typeKey });
+        log(state, "skillUse", {
+          actorId: ownerId,
+          skillId: "zhouyu_fanjian",
+          targetIds: [targetId],
+          cardId: card.id,
+          cardType: card.typeKey,
+          data: { suit: card.suit, rank: card.rank },
+        });
 
         if (guess !== card.suit) {
           log(state, "fanjianGuess", { actorId: targetId, data: { correct: false, guess: guess ?? "", actual: card.suit } });

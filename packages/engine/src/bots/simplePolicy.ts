@@ -62,6 +62,14 @@ function immuneToShaOrDuel(p: ProjectedPlayer): boolean {
   return p.generalId === "zhugeliang" && isHandEmpty(p);
 }
 
+// ข้ามสะพานแล้วรื้อทิ้ง/ฉวยโอกาสลักแกะ take a card off the target — a target
+// with nothing at all (empty hand, no equipment) is no longer a legal target
+// for them (both are public info, safe to read from the projected view).
+function holdsSomething(p: ProjectedPlayer): boolean {
+  const handCount = Array.isArray(p.hand) ? p.hand.length : p.hand.count;
+  return handCount > 0 || Object.values(p.equipment).some(Boolean);
+}
+
 export function simpleBotAnswer(session: GameSession): PlayerAnswer {
   const pending = session.state.pendingDecision;
   if (!pending) throw new Error("simpleBotAnswer: no pending decision");
@@ -139,14 +147,15 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       // rather than teaching every future targeting-restriction skill to it.
       const shunshou = find("shunshou");
       const shunshouTarget = others.find(
-        (p) => netDistance(view, me, p) <= 1 && p.generalId !== "luxun",
+        (p) => netDistance(view, me, p) <= 1 && p.generalId !== "luxun" && holdsSomething(p),
       );
       if (shunshou && shunshouTarget) {
         return { ...base, choice: "playCard", cardIds: [shunshou.id], targetIds: [shunshouTarget.id] };
       }
       const guohe = find("guohe");
-      if (guohe && others[0]) {
-        return { ...base, choice: "playCard", cardIds: [guohe.id], targetIds: [others[0].id] };
+      const guoheTarget = others.find(holdsSomething);
+      if (guohe && guoheTarget) {
+        return { ...base, choice: "playCard", cardIds: [guohe.id], targetIds: [guoheTarget.id] };
       }
       const jiedao = find("jiedao");
       const armed = others.find((p) => p.equipment.weapon);
