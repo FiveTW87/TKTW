@@ -50,6 +50,7 @@ export function SelfDock({
   onToggleZhangba,
   onInspect,
   equipSlots,
+  showHero = true,
 }: {
   me: PlayerView;
   isMyTurn: boolean;
@@ -78,6 +79,7 @@ export function SelfDock({
   onToggleZhangba: () => void;
   onInspect: () => void;
   equipSlots: { slot: string; label: string; glyph: string; card: Card | undefined }[];
+  showHero?: boolean;
 }) {
   const role = roleDisplay(me.role);
   const { compact } = useDeviceMode();
@@ -90,7 +92,7 @@ export function SelfDock({
           for self, with delayed tricks as separate purple cards beside it —
           not the old faction-bar-header shape. */}
       <div style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+        {showHero && <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <div
             className="table-self-hero"
             data-player-anchor={me.id}
@@ -181,7 +183,7 @@ export function SelfDock({
           {/* pending judgment cards (delayed tricks awaiting judgment) — attached
               beside this panel, per bug list "Attach Delayed Tricks to target". */}
           <DelayedTrickList cards={me.judgmentZone} />
-        </div>
+        </div>}
         {/* skills */}
         <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}

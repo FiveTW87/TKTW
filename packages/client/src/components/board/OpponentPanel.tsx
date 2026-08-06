@@ -1,6 +1,6 @@
 import type { ConnectionStatus, PlayerView } from "@tktw/shared";
 import { PlayerTile } from "../PlayerTile";
-import { arcPosition, type DensityMode } from "../../lib/seatLayout";
+import { tableRingPosition, type DensityMode } from "../../lib/seatLayout";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 
 // SPEC §11.3 — absolute-positions a single opponent on the arc above the
@@ -34,9 +34,9 @@ export function OpponentPanel({
   onClick?: (() => void) | undefined;
   onInspect?: (() => void) | undefined;
 }) {
-  const { leftPct, topPct } = arcPosition(relSeat, playerCount);
+  const { leftPct, topPct } = tableRingPosition(relSeat, playerCount);
   const { compact } = useDeviceMode();
-  const fullWidth = density === "head" ? 84 : density === "compact" ? 130 : 170;
+  const fullWidth = density === "head" ? 84 : density === "compact" ? 150 : 170;
   return (
     <div
       style={{

@@ -255,7 +255,7 @@ function HistorySheet({ gameView }: { gameView: GameView }) {
 // rewrite).
 export function GameHistoryPanel({ gameView, narrow }: { gameView: GameView; narrow: boolean }) {
   const { compact } = useDeviceMode();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => !(window.matchMedia?.("(max-width: 1400px) and (max-height: 700px)").matches ?? false));
   if (compact) return <HistorySheet gameView={gameView} />;
 
   if (!narrow && !open) {

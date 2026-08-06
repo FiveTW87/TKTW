@@ -13,8 +13,18 @@ export function relativeSeat(targetSeat: number, viewerSeat: number, playerCount
  *  mobile-landscape sizing on top of this). */
 export function densityMode(playerCount: number): DensityMode {
   if (playerCount <= 5) return "medium";
-  if (playerCount <= 8) return "compact";
-  return "head";
+  return "compact";
+}
+
+/** Full table ring. Seat 0 (the viewer) sits at the bottom, and every other
+ * seat continues clockwise around the same ellipse. */
+export function tableRingPosition(relSeat: number, playerCount: number): { leftPct: number; topPct: number } {
+  if (playerCount <= 0) return { leftPct: 50, topPct: 50 };
+  const angle = Math.PI / 2 + relSeat * ((2 * Math.PI) / playerCount);
+  return {
+    leftPct: 50 + 45 * Math.cos(angle),
+    topPct: 49 + 38 * Math.sin(angle),
+  };
 }
 
 /** Percentage position (of the board container) for an opponent at the given

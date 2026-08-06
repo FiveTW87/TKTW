@@ -129,7 +129,7 @@ export function PlayerTile({
   return (
     <div className="table-player-cluster" style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
       <div
-        className="table-player-tile"
+        className={`table-player-tile${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
         data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
@@ -226,6 +226,8 @@ export function PlayerTile({
         </div>
 
         <FactionBadge faction={player.faction} compact={isCompact} />
+
+        {inRange === false && player.alive && <div className="table-range-fog" aria-label="อยู่นอกระยะ" />}
 
         {distance !== undefined && player.alive && (
           <span

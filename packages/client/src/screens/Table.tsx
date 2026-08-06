@@ -701,6 +701,7 @@ export function Table() {
             }}
             onInspect={() => setInspecting(me)}
             equipSlots={equipSlotsWithCards}
+            showHero={false}
           />
         }
       />

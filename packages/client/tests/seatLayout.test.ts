@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { relativeSeat, densityMode, arcPosition, lobbyRingPosition } from "../src/lib/seatLayout";
+import { relativeSeat, densityMode, arcPosition, lobbyRingPosition, tableRingPosition } from "../src/lib/seatLayout";
 
 describe("relativeSeat (SPEC §11.3)", () => {
   it("is 0 for the viewer's own seat", () => {
@@ -33,9 +33,19 @@ describe("densityMode (SPEC §11.3)", () => {
     expect(densityMode(6)).toBe("compact");
     expect(densityMode(8)).toBe("compact");
   });
-  it("9-10 players -> head", () => {
-    expect(densityMode(9)).toBe("head");
-    expect(densityMode(10)).toBe("head");
+  it("9-10 players keep the information-rich compact tile", () => {
+    expect(densityMode(9)).toBe("compact");
+    expect(densityMode(10)).toBe("compact");
+  });
+});
+
+describe("tableRingPosition", () => {
+  it("puts self at the bottom and gives all 10 seats distinct positions", () => {
+    const positions = Array.from({ length: 10 }, (_, i) => tableRingPosition(i, 10));
+    expect(positions[0]!.leftPct).toBeCloseTo(50, 0);
+    expect(positions[0]!.topPct).toBeGreaterThan(85);
+    const keys = new Set(positions.map((p) => `${p.leftPct.toFixed(1)},${p.topPct.toFixed(1)}`));
+    expect(keys.size).toBe(10);
   });
 });
 

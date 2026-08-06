@@ -3,9 +3,10 @@ import type { GameView, PlayerView } from "@tktw/shared";
 import { OpponentPanel } from "./OpponentPanel";
 import { CentralZone } from "./CentralZone";
 import { TurnPanel } from "./TurnPanel";
-import { relativeSeat, densityMode } from "../../lib/seatLayout";
+import { relativeSeat, densityMode, tableRingPosition } from "../../lib/seatLayout";
 import { generalDisplay } from "../../data/generalNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
+import { PlayerTile } from "../PlayerTile";
 
 // SPEC §11.3 — the circular war-table: opponents on an arc above a central
 // zone, local player pinned as a bottom-center dock (rendered by the caller
@@ -102,6 +103,24 @@ export function GameBoard({
             />
           );
         })}
+
+        {(() => {
+          const selfPos = tableRingPosition(0, playerCount);
+          return (
+            <div className="table-self-ring-seat" style={{ position: "absolute", left: `${selfPos.leftPct}%`, top: `${selfPos.topPct}%`, transform: "translate(-50%, -50%)", width: compact ? 105 : 150 }}>
+              <PlayerTile
+                player={me}
+                isCurrentTurn={currentTurnPlayerId === me.id}
+                targetable={targetableFor(me)}
+                selected={selectedTargetIds.includes(me.id)}
+                density="compact"
+                compact={compact}
+                onClick={() => onTapTarget(me.id)}
+                onInspect={() => onInspect(me)}
+              />
+            </div>
+          );
+        })()}
 
         <div className="table-central-anchor" style={{ position: "absolute", left: "50%", top: compact ? "58%" : "62%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 210 : 300 }}>
           <CentralZone
