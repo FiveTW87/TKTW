@@ -23,17 +23,17 @@ Before generating, approving, or integrating any card artwork, compare it with t
 ## Basic cards
 
 - [x] `sha` — master approved
-- [x] `shan` — approved; paired visual response to `sha`
-- [x] `tao` — approved; three ink-painted peaches in a woven basket
+- [ ] `shan`
+- [ ] `tao`
 
 ## Trick cards
 
 - [x] `wuzhong` — master approved
-- [x] `guohe` — approved; ink-silhouette commander cuts the bridge behind him
-- [x] `shunshou` — approved; clean-robed ink thief flees carrying a whole lamb and tied loot sack
-- [x] `juedou` — approved; Guan Yu-inspired decisive duel beside a still-warm cup of wine
-- [x] `jiedao` — approved; two-scene Zhou Yu deception flowing into Cao Cao's execution order
-- [x] `nanman` — approved; Meng Huo leads a southern elephant charge with rattan-shield warriors
+- [ ] `guohe`
+- [ ] `shunshou`
+- [ ] `juedou`
+- [ ] `jiedao`
+- [ ] `nanman`
 - [ ] `wanjian`
 - [ ] `taoyuan`
 - [ ] `wugu`
