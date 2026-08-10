@@ -35,11 +35,11 @@ Before generating, approving, or integrating any card artwork, compare it with t
 - [x] `jiedao` — approved; two-scene Zhou Yu deception flowing into Cao Cao's execution order
 - [x] `nanman` — approved; Meng Huo leads a southern elephant charge with rattan-shield warriors
 - [x] `wanjian` — approved
-- [ ] `taoyuan`
+- [x] `taoyuan` — approved; three sworn companions raise cups beneath a peach tree
 - [ ] `wugu`
-- [ ] `wuxie`
-- [ ] `lebusishu`
-- [ ] `shandian`
+- [x] `wuxie` — approved
+- [x] `lebusishu` — approved
+- [x] `shandian` — approved
 
 ## Weapon cards
 
