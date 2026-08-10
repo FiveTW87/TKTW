@@ -8,7 +8,7 @@ Before generating, approving, or integrating any card artwork, compare it with t
 - [x] Trick card master: `packages/client/public/assets/cards/wuzhong.png`
 - [x] Weapon card master: `packages/client/public/assets/cards/qinglong.png`
 - [x] Horse card master: `packages/client/public/assets/cards/horse_chitu.png`
-- [ ] Armor master: create and approve the first armor artwork before producing the second armor card
+- [x] Armor master: `packages/client/public/assets/cards/bagua.png` approved
 
 ### Review checklist for every artwork
 
@@ -55,8 +55,8 @@ Before generating, approving, or integrating any card artwork, compare it with t
 
 ## Armor cards
 
-- [ ] `bagua` — use to establish the armor master
-- [ ] `renwang`
+- [x] `bagua` — armor master approved
+- [x] `renwang` — approved; massive royal lamellar armor with a colossal guardian silhouette
 
 ## Horse cards
 
