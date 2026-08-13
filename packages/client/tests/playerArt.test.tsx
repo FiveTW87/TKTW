@@ -144,7 +144,10 @@ describe("PlayerTile character art", () => {
     const delayedTrick = screen.getByLabelText(/อุบายรอเวลา:/);
     expect(delayedTrick).not.toHaveAttribute("title");
     fireEvent.mouseEnter(delayedTrick);
-    expect(screen.getByRole("tooltip")).toHaveTextContent("อสนีบาตเวียนค่าย");
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toHaveTextContent("อสนีบาตเวียนค่าย");
+    expect(tooltip.parentElement).toBe(document.body);
+    expect(tooltip).toHaveStyle({ width: "min(200px, calc(100vw - 24px))" });
   });
 });
 

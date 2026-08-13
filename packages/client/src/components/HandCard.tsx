@@ -167,16 +167,25 @@ export function CardTooltip({ name, info }: { name: string; info: string }) {
 export function CardTooltipPortal({ anchorRef, name, info }: { anchorRef: RefObject<HTMLElement | null>; name: string; info: string }) {
   const rect = anchorRef.current?.getBoundingClientRect();
   if (!rect) return null;
+  const tooltipHalfWidth = 100;
+  const viewportGutter = 12;
+  const center = rect.left + rect.width / 2;
+  const left = Math.min(
+    window.innerWidth - tooltipHalfWidth - viewportGutter,
+    Math.max(tooltipHalfWidth + viewportGutter, center),
+  );
+  const placeBelow = rect.top < 140;
   return createPortal(
     <div
       role="tooltip"
       style={{
         position: "fixed",
-        left: rect.left + rect.width / 2,
-        top: rect.top - 8,
-        transform: "translate(-50%, -100%)",
+        left,
+        top: placeBelow ? rect.bottom + 8 : rect.top - 8,
+        transform: placeBelow ? "translateX(-50%)" : "translate(-50%, -100%)",
         zIndex: 200,
         ...TOOLTIP_BOX_STYLE,
+        width: "min(200px, calc(100vw - 24px))",
       }}
     >
       <TooltipBody name={name} info={info} />

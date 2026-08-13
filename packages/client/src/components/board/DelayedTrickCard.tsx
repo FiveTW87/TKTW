@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CardView } from "@tktw/shared";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
-import { CardTooltip } from "../HandCard";
+import { CardTooltipPortal } from "../HandCard";
 import { ModalOverlay, ModalPanel } from "../Modal";
 import { cardArtUrl } from "../../data/cardArt";
 
@@ -52,10 +52,12 @@ function SingleTrickCard({ card }: { card: CardView }) {
   const info = cardInfo(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
   const [hovered, setHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const showArt = !!artUrl && failedArtKey !== card.typeKey;
   return (
     <div
+      ref={cardRef}
       className="card-art-frame"
       aria-label={`อุบายรอเวลา: ${d.name}`}
       style={CARD_BOX}
@@ -65,7 +67,7 @@ function SingleTrickCard({ card }: { card: CardView }) {
       {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
       {!showArt && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "var(--purple-light)" }}>{d.glyph}</span>}
       <OrderBadge>1</OrderBadge>
-      {hovered && info && <CardTooltip name={d.name} info={info} />}
+      {hovered && info && <CardTooltipPortal anchorRef={cardRef} name={d.name} info={info} />}
     </div>
   );
 }
@@ -76,6 +78,7 @@ function SingleTrickCard({ card }: { card: CardView }) {
 function TrickStack({ cards }: { cards: CardView[] }) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const stackRef = useRef<HTMLButtonElement>(null);
   const topCard = cards[cards.length - 1]!;
   const topDisplay = cardDisplay(topCard.typeKey);
   const topGlyph = topDisplay.glyph;
@@ -86,6 +89,7 @@ function TrickStack({ cards }: { cards: CardView[] }) {
   return (
     <>
       <button
+        ref={stackRef}
         onClick={() => setOpen(true)}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -119,7 +123,7 @@ function TrickStack({ cards }: { cards: CardView[] }) {
         >
           {cards.length}
         </span>
-        {hovered && topInfo && <CardTooltip name={`${topDisplay.name} · ${cards.length} ใบ`} info={topInfo} />}
+        {hovered && topInfo && <CardTooltipPortal anchorRef={stackRef} name={`${topDisplay.name} · ${cards.length} ใบ`} info={topInfo} />}
       </button>
       {open && (
         <ModalOverlay onClose={() => setOpen(false)}>
