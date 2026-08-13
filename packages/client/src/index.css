@@ -323,6 +323,40 @@ body {
   height: 0;
 }
 
+/* Vertical counterpart of the hand-zone scrollbar, shared by game history
+   and chat so the native white track never clashes with the war-table UI. */
+.history-chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #9b6a2d rgba(8, 6, 4, .72);
+  scrollbar-gutter: stable;
+}
+
+.history-chat-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.history-chat-scroll::-webkit-scrollbar-track {
+  background: rgba(8, 6, 4, .72);
+  border: 1px solid rgba(132, 89, 38, .32);
+  border-radius: 999px;
+}
+
+.history-chat-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6f431d, #c28b3d, #6f431d);
+  border: 1px solid #d1a45b;
+  border-radius: 999px;
+}
+
+.history-chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8a5523, #e0ad55, #8a5523);
+}
+
+.history-chat-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .table-theme .table-action-cluster {
   filter: drop-shadow(0 12px 20px rgba(0,0,0,.5));
 }

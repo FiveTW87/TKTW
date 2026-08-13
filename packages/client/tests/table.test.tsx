@@ -781,18 +781,25 @@ describe("Table: card conversion + distance", () => {
   it("renders the game history log", async () => {
     const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true });
     const rest = [player("p1", { name: "Bob" }), player("p2")];
-    await enterGame("LOG1", me, rest);
+    const user = await enterGame("LOG1", me, rest);
 
     fireView(me, rest, { id: "dec_m", kind: "mainAction", playerId: "p0", data: {} }, {
       gameLogs: [
         { id: "log_0", turn: 1, eventType: "roleReveal", actorId: "p0", visibility: "public", data: { role: "lord" } },
         { id: "log_1", turn: 1, eventType: "draw", actorId: "p0", amount: 2, visibility: "public" },
+        { id: "log_2", turn: 1, eventType: "equip", actorId: "p0", cardType: "qinglong", visibility: "public" },
       ],
     });
 
     expect(await screen.findByText("ประวัติการเล่น")).toBeInTheDocument();
     // the structured entries are resolved to Thai by logResolver
     expect(screen.getByText(/จั่ว 2 ใบ/)).toBeInTheDocument();
+    expect(document.querySelector(".history-chat-scroll")).toBeInTheDocument();
+
+    await user.hover(screen.getByText('"ง้าวมังกรเขียว"'));
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toHaveTextContent("ง้าวมังกรเขียว");
+    expect(tooltip.parentElement).toBe(document.body);
   });
 
   it("chat: typing a message and sending it emits chat:send and clears the input", async () => {

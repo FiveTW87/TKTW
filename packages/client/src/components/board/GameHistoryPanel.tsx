@@ -3,7 +3,7 @@ import type { GameLogView, GameView } from "@tktw/shared";
 import { resolveLogEntry } from "../../data/logResolver";
 import { cardInfoByName } from "../../data/cardNames";
 import { skillByName } from "../../data/generalSkills";
-import { CardTooltip } from "../HandCard";
+import { CardTooltipPortal } from "../HandCard";
 import { ModalOverlay } from "../Modal";
 import { useGameStore } from "../../store/gameStore";
 import { useDeviceMode } from "../../lib/useDeviceMode";
@@ -13,8 +13,10 @@ import { useDeviceMode } from "../../lib/useDeviceMode";
 // know from hand cards and equipment.
 function UnderlinedTerm({ label, info }: { label: string; info: string }) {
   const [hovered, setHovered] = useState(false);
+  const termRef = useRef<HTMLSpanElement>(null);
   return (
     <span
+      ref={termRef}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -28,7 +30,7 @@ function UnderlinedTerm({ label, info }: { label: string; info: string }) {
       }}
     >
       {label}
-      {hovered && <CardTooltip name={label.replace(/"/g, "")} info={info} />}
+      {hovered && <CardTooltipPortal anchorRef={termRef} name={label.replace(/"/g, "")} info={info} />}
     </span>
   );
 }
@@ -114,7 +116,7 @@ function HistoryChatContent({ gameView }: { gameView: GameView }) {
       {tab === "log" ? (
         <>
           <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 8, flexShrink: 0 }}>ล่าสุดอยู่บนสุด · {logs.length} เหตุการณ์</div>
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="history-chat-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
             {logs.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ยังไม่มีเหตุการณ์</div>}
             {[...logs].reverse().map((entry, i) => (
               <div key={logs.length - i} style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.45, borderLeft: "2px solid var(--card-border-2)", paddingLeft: 8 }}>
@@ -126,7 +128,7 @@ function HistoryChatContent({ gameView }: { gameView: GameView }) {
         </>
       ) : (
         <>
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="history-chat-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
             {chatMessages.length === 0 && <div style={{ fontSize: 12, color: "var(--ink-faint)", fontStyle: "italic" }}>ยังไม่มีข้อความ</div>}
             {chatMessages.map((m) => {
               const isMe = m.seat === mySeatIndex;
