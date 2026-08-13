@@ -54,6 +54,28 @@ body,
   height: 100%;
 }
 
+/* Game copy is primarily labels, not editable text: keep the arrow cursor
+   instead of showing an I-beam when hovering names, stats, or descriptions. */
+#root {
+  cursor: default;
+}
+
+#root button:not(:disabled),
+#root a[href],
+#root [role="button"] {
+  cursor: pointer;
+}
+
+#root button:disabled {
+  cursor: not-allowed;
+}
+
+#root input,
+#root textarea,
+#root [contenteditable="true"] {
+  cursor: text;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
