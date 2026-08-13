@@ -60,6 +60,34 @@ describe("PlayerTile character art", () => {
 
     expect(screen.getByLabelText("ฝ่ายกลุ่มอิสระ")).toHaveTextContent("อิสระ");
   });
+
+  it("shows the viewer's own hidden role seal when the projection includes it", () => {
+    render(
+      <PlayerTile
+        player={{
+          id: "p0",
+          seat: 0,
+          name: "Alice",
+          generalId: "zhaoyun",
+          faction: "shu",
+          gender: "male",
+          role: "traitor",
+          roleRevealed: false,
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 3 },
+          equipment: {},
+          judgmentZone: [],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        isCurrentTurn={false}
+      />,
+    );
+
+    expect(screen.getByTitle("ไส้ศึก")).toHaveTextContent("內");
+  });
 });
 
 describe("InspectModal character art", () => {

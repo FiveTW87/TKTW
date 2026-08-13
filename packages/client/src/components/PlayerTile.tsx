@@ -52,8 +52,9 @@ export function PlayerTile({
   const color = factionColor(player.faction);
   const handCount = Array.isArray(player.hand) ? player.hand.length : player.hand.count;
   const equipEntries = Object.entries(player.equipment).filter(([, c]) => c) as [string, Card][];
-  // Role seal shows only when publicly known (lord, or a revealed/dead player).
-  const role = player.role && (player.roleRevealed || player.role === "lord") ? roleDisplay(player.role) : undefined;
+  // projectFor only includes a hidden role for its owner. If role is present
+  // here, it is therefore safe to render (public lord/dead roles are included too).
+  const role = roleDisplay(player.role);
   const fullFactionLabel = factionLabel(player.faction);
   const shortFactionLabel = player.faction === "qun" ? "อิสระ" : fullFactionLabel;
   const isHead = density === "head";
