@@ -22,7 +22,10 @@ export function tableRingPosition(relSeat: number, playerCount: number): { leftP
   if (playerCount <= 0) return { leftPct: 50, topPct: 50 };
   const angle = Math.PI / 2 + relSeat * ((2 * Math.PI) / playerCount);
   return {
-    leftPct: 50 + 45 * Math.cos(angle),
+    // Leave a 10% horizontal gutter for the half-width of edge seat tiles.
+    // A 45% radius put 4-player side seats at 5/95%, so medium (170px)
+    // tiles could extend beyond the viewport on narrower desktop windows.
+    leftPct: 50 + 40 * Math.cos(angle),
     topPct: 49 + 38 * Math.sin(angle),
   };
 }

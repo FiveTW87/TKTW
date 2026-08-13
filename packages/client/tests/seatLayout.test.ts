@@ -47,6 +47,16 @@ describe("tableRingPosition", () => {
     const keys = new Set(positions.map((p) => `${p.leftPct.toFixed(1)},${p.topPct.toFixed(1)}`));
     expect(keys.size).toBe(10);
   });
+
+  it("keeps every seat center inside the horizontal tile-safe gutter", () => {
+    for (let playerCount = 3; playerCount <= 10; playerCount++) {
+      const positions = Array.from({ length: playerCount }, (_, i) => tableRingPosition(i, playerCount));
+      for (const position of positions) {
+        expect(position.leftPct).toBeGreaterThanOrEqual(10);
+        expect(position.leftPct).toBeLessThanOrEqual(90);
+      }
+    }
+  });
 });
 
 describe("arcPosition", () => {
