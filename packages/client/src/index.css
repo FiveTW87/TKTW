@@ -936,6 +936,48 @@ a:hover {
   color: var(--gold-light);
 }
 
+/* Role announcement uses the same semantic palette as every role seal.
+   Text and glyph remain present so identity never relies on colour alone. */
+.role-reveal-modal.seal-lord {
+  --role-accent: #e0b64a;
+  --role-deep: #a87218;
+  --role-ink: #3a2708;
+  --role-glow: rgba(180, 130, 30, .15);
+}
+.role-reveal-modal.seal-loyalist {
+  --role-accent: #72b56c;
+  --role-deep: #2f6939;
+  --role-ink: #f1ffe9;
+  --role-glow: rgba(65, 142, 73, .16);
+}
+.role-reveal-modal.seal-rebel {
+  --role-accent: #d1644e;
+  --role-deep: #7d241b;
+  --role-ink: #fff0e9;
+  --role-glow: rgba(176, 64, 44, .18);
+}
+.role-reveal-modal.seal-traitor {
+  --role-accent: #aaa18f;
+  --role-deep: #4d4942;
+  --role-ink: #fff5df;
+  --role-glow: rgba(166, 156, 138, .12);
+}
+.role-reveal-modal.seal-unknown {
+  --role-accent: var(--gold-light);
+  --role-deep: #49341c;
+  --role-ink: #fff0ca;
+}
+.role-reveal-seal {
+  border: 3px solid var(--role-accent);
+  background: radial-gradient(circle at 38% 34%, var(--role-accent), var(--role-deep));
+  box-shadow: 0 10px 34px var(--role-glow), inset 0 1px rgba(255,255,255,.25);
+  color: var(--role-ink);
+}
+.role-reveal-name {
+  color: var(--role-accent);
+  text-shadow: 0 0 18px var(--role-glow);
+}
+
 /* ── HP dots ──────────────────────────────────────────────────────── */
 .hp-dot {
   border-radius: 50%;
