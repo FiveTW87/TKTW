@@ -407,9 +407,9 @@ function EquipSlotCell({ label, glyph, card, compact, onInspect }: { label: stri
       <div style={{ fontSize: compact ? 8 : 9, color: "var(--ink-faint)", marginBottom: compact ? 2 : 3 }}>{label}</div>
       <div
         style={{
-          height: compact ? 24 : 44,
+          height: compact ? 34 : 64,
           borderRadius: 6,
-          background: filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
+          background: showArt ? "linear-gradient(145deg,#e5d8b7,#bda676)" : filled ? "linear-gradient(var(--gold-deep),var(--gold-bronze))" : "#1c150e",
           border: filled ? "none" : "1px dashed var(--panel-border-2)",
           display: "flex",
           alignItems: "center",
@@ -422,7 +422,7 @@ function EquipSlotCell({ label, glyph, card, compact, onInspect }: { label: stri
             src={artUrl}
             alt={`ภาพการ์ด ${cardDisplay(card.typeKey).name}`}
             onError={() => setFailedArtKey(card.typeKey)}
-            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", filter: "drop-shadow(0 2px 3px rgba(45,28,10,.28))" }}
           />
         ) : (
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
