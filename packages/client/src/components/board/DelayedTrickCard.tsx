@@ -55,7 +55,13 @@ function SingleTrickCard({ card }: { card: CardView }) {
   const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const showArt = !!artUrl && failedArtKey !== card.typeKey;
   return (
-    <div className="card-art-frame" title={d.name} style={CARD_BOX} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div
+      className="card-art-frame"
+      aria-label={`อุบายรอเวลา: ${d.name}`}
+      style={CARD_BOX}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
       {!showArt && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "var(--purple-light)" }}>{d.glyph}</span>}
       <OrderBadge>1</OrderBadge>
@@ -69,8 +75,11 @@ function SingleTrickCard({ card }: { card: CardView }) {
 // precisely, so instead tap to browse the full list with descriptions.
 function TrickStack({ cards }: { cards: CardView[] }) {
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const topCard = cards[cards.length - 1]!;
-  const topGlyph = cardDisplay(topCard.typeKey).glyph;
+  const topDisplay = cardDisplay(topCard.typeKey);
+  const topGlyph = topDisplay.glyph;
+  const topInfo = cardInfo(topCard.typeKey);
   const topArtUrl = cardArtUrl(topCard.typeKey);
   const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const showTopArt = !!topArtUrl && failedArtKey !== topCard.typeKey;
@@ -78,7 +87,9 @@ function TrickStack({ cards }: { cards: CardView[] }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        title="ดูการ์ดอุบายที่ติดอยู่ทั้งหมด"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        aria-label={`อุบายรอเวลา ${cards.length} ใบ; ใบบนสุด ${topDisplay.name}`}
         style={{ all: "unset", cursor: "pointer", position: "relative", width: 30, height: 40, display: "block" }}
       >
         <div style={{ ...CARD_BOX, position: "absolute", top: 4, left: 3, opacity: 0.5 }} />
@@ -108,6 +119,7 @@ function TrickStack({ cards }: { cards: CardView[] }) {
         >
           {cards.length}
         </span>
+        {hovered && topInfo && <CardTooltip name={`${topDisplay.name} · ${cards.length} ใบ`} info={topInfo} />}
       </button>
       {open && (
         <ModalOverlay onClose={() => setOpen(false)}>

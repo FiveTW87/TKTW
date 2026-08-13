@@ -117,6 +117,35 @@ describe("PlayerTile character art", () => {
     fireEvent.mouseEnter(icon);
     expect(screen.getByRole("tooltip")).toHaveTextContent("ง้าวมังกรเขียว");
   });
+
+  it("uses the themed tooltip for delayed trick icons", () => {
+    render(
+      <PlayerTile
+        player={{
+          id: "p0",
+          seat: 0,
+          name: "Alice",
+          generalId: "zhaoyun",
+          faction: "shu",
+          gender: "male",
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 3 },
+          equipment: {},
+          judgmentZone: [{ id: "delay-1", typeKey: "shandian", suit: "spade", rank: 9 }],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        isCurrentTurn={false}
+      />,
+    );
+
+    const delayedTrick = screen.getByLabelText(/อุบายรอเวลา:/);
+    expect(delayedTrick).not.toHaveAttribute("title");
+    fireEvent.mouseEnter(delayedTrick);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("อสนีบาตเวียนค่าย");
+  });
 });
 
 describe("InspectModal character art", () => {
