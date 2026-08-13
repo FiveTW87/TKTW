@@ -44,14 +44,14 @@ Before generating, approving, or integrating any card artwork, compare it with t
 ## Weapon cards
 
 - [x] `qinglong` — master approved
-- [ ] `crossbow`
-- [ ] `sword_yy`
-- [ ] `sword_ice`
-- [ ] `sword_qinggang`
-- [ ] `zhangba`
-- [ ] `guanshi`
-- [ ] `fangtian`
-- [ ] `qilin`
+- [x] `crossbow` — approved repeating crossbow with visible magazine and lever
+- [x] `sword_yy` — approved paired dark-and-silver jian
+- [x] `sword_ice` — approved cold-forged jian with restrained frost
+- [x] `sword_qinggang` — approved armor-piercing Qinggang sword
+- [x] `zhangba` — approved serpent spear with one coiling ink snake
+- [x] `guanshi` — approved stone-cleaving axe splitting a natural boulder
+- [x] `fangtian` — approved full polearm with exactly three primary ink strokes; no Lu Bu figure
+- [x] `qilin` — approved Qilin bow
 
 ## Armor cards
 
@@ -61,18 +61,18 @@ Before generating, approving, or integrating any card artwork, compare it with t
 ## Horse cards
 
 - [x] `horse_chitu` — master approved
-- [ ] `horse_dilu`
-- [ ] `horse_zhaohuang`
-- [ ] `horse_jueying`
-- [ ] `horse_dawan`
-- [ ] `horse_zixing`
+- [x] `horse_dilu` — approved pale Dilu leaping a stream
+- [x] `horse_zhaohuang` — approved golden Zhaohuang at dawn
+- [x] `horse_jueying` — approved black Jueying shedding its shadow
+- [x] `horse_dawan` — approved chestnut Dayuan horse on the western road
+- [x] `horse_zixing` — approved purple-black steed at dusk
 
 ## Integration and validation
 
-- [ ] Generate and approve all remaining canonical card images
+- [x] Generate and approve all remaining canonical card images
 - [ ] Optimize file sizes while preserving card-display quality
-- [ ] Add the canonical artwork mapping to the client
+- [x] Add the canonical artwork mapping to the client
 - [ ] Verify crop and readability in hand, discard pile, equipment slots, dialogs, and enlarged preview
 - [ ] Test at 1280 × 630 and common desktop resolutions
-- [ ] Run client tests and production build
-- [ ] Commit only approved canonical artwork and required mapping changes
+- [x] Run client tests and production build
+- [x] Commit only approved canonical artwork and required mapping changes

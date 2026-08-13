@@ -3,6 +3,7 @@ import type { Card } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { cardDisplay, cardInfo, rankLabel, suitGlyph } from "../data/cardNames";
 import { cardMeta, type TargetRule } from "../data/cardMeta";
+import { cardArtUrl } from "../data/cardArt";
 
 const SUIT_LABEL: Record<string, string> = {
   spade: "โพดำ",
@@ -36,6 +37,7 @@ export function CardInspectModal({
   const display = cardDisplay(card.typeKey);
   const info = cardInfo(card.typeKey) ?? "ยังไม่มีคำอธิบายเพิ่มเติม";
   const meta = cardMeta(card.typeKey);
+  const artUrl = cardArtUrl(card.typeKey);
   const redSuit = card.suit === "heart" || card.suit === "diamond";
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function CardInspectModal({
         <button type="button" className="card-inspect-close" onClick={onClose} aria-label="ปิดรายละเอียดการ์ด">×</button>
         <div className="card-inspect-art-column">
           <div className="card-inspect-face">
+            {artUrl && <img className="card-inspect-art" src={artUrl} alt="" aria-hidden="true" />}
             <div className={redSuit ? "card-inspect-rank is-red" : "card-inspect-rank"}>
               <strong>{rankLabel(card.rank)}</strong>
               <span>{suitGlyph(card.suit)}</span>

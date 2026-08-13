@@ -1009,6 +1009,41 @@ a:hover {
   filter: brightness(1.08) saturate(1.08);
 }
 
+.hand-card-art,
+.card-inspect-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.hand-card-art {
+  opacity: .72;
+}
+
+.card-inspect-art {
+  opacity: .82;
+}
+
+.hand-card::after,
+.card-inspect-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(250, 241, 214, .76) 0%, rgba(250, 241, 214, .05) 30%, rgba(250, 241, 214, .08) 64%, rgba(250, 241, 214, .9) 100%);
+  pointer-events: none;
+}
+
+.hand-card > :not(.hand-card-art),
+.card-inspect-face > :not(.card-inspect-art) {
+  position: relative;
+  z-index: 1;
+}
+
 .card-inspect-trigger {
   position: absolute;
   top: 3px;
