@@ -3,6 +3,7 @@ import type { CardView } from "@tktw/shared";
 import { CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
+import { cardArtUrl } from "../../data/cardArt";
 
 const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
@@ -12,6 +13,7 @@ const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22
 function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; compact: boolean }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
+  const artUrl = cardArtUrl(card.typeKey);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startHold = () => {
     holdTimer.current = setTimeout(() => setHovered(true), 400);
@@ -23,7 +25,7 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
   };
   return (
     <div
-      className="anim-pop"
+      className="anim-pop card-art-frame"
       key={card.id}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -44,6 +46,7 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
         cursor: info ? "help" : "default",
       }}
     >
+      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
       <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
         <div style={{ fontWeight: 700, fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>

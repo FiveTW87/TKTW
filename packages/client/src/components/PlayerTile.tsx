@@ -7,6 +7,7 @@ import { roleDisplay } from "../data/roles";
 import { DelayedTrickList } from "./board/DelayedTrickCard";
 import { GeneralPortrait } from "./GeneralPortrait";
 import { FactionBadge } from "./FactionBadge";
+import { cardArtUrl } from "../data/cardArt";
 
 // A recognizable icon per equipment slot — clearer at a glance than the card's
 // Chinese glyph (and the two horse slots share 馬, so this also tells − from +).
@@ -333,11 +334,13 @@ export function PlayerTile({
 function EquipChip({ slot, card }: { slot: string; card: Card }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
+  const artUrl = cardArtUrl(card.typeKey);
   return (
     <span
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       title={cardDisplay(card.typeKey).name}
+      className="card-art-frame"
       style={{
         position: "relative",
         display: "inline-flex",
@@ -351,9 +354,11 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
         fontSize: 10,
         lineHeight: 1,
         cursor: "help",
+        overflow: "hidden",
       }}
     >
-      {SLOT_ICON[slot] ?? cardDisplay(card.typeKey).glyph}
+      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
+      <span style={{ position: "relative", zIndex: 1, textShadow: "0 1px 2px #fff" }}>{SLOT_ICON[slot] ?? cardDisplay(card.typeKey).glyph}</span>
       {hovered && info && <CardTooltip name={cardDisplay(card.typeKey).name} info={info} />}
     </span>
   );

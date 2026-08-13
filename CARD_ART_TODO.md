@@ -70,9 +70,9 @@ Before generating, approving, or integrating any card artwork, compare it with t
 ## Integration and validation
 
 - [x] Generate and approve all remaining canonical card images
-- [ ] Optimize file sizes while preserving card-display quality
+- [x] Optimize file sizes while preserving card-display quality
 - [x] Add the canonical artwork mapping to the client
-- [ ] Verify crop and readability in hand, discard pile, equipment slots, dialogs, and enlarged preview
-- [ ] Test at 1280 × 630 and common desktop resolutions
+- [x] Verify crop and readability in hand, discard pile, equipment slots, dialogs, and enlarged preview
+- [x] Test at 1280 × 630 and common desktop resolutions
 - [x] Run client tests and production build
 - [x] Commit only approved canonical artwork and required mapping changes

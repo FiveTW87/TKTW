@@ -1028,6 +1028,21 @@ a:hover {
   opacity: .82;
 }
 
+.card-art-frame .card-surface-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .72;
+  pointer-events: none;
+}
+
+.card-art-frame > :not(.card-surface-art) {
+  position: relative;
+  z-index: 1;
+}
+
 .hand-card::after,
 .card-inspect-face::after {
   content: "";

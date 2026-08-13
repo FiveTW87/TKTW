@@ -3,6 +3,7 @@ import type { CardView } from "@tktw/shared";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
 import { CardTooltip } from "../HandCard";
 import { ModalOverlay, ModalPanel } from "../Modal";
+import { cardArtUrl } from "../../data/cardArt";
 
 const CARD_BOX: React.CSSProperties = {
   width: 30,
@@ -16,6 +17,7 @@ const CARD_BOX: React.CSSProperties = {
   justifyContent: "center",
   position: "relative",
   flexShrink: 0,
+  overflow: "hidden",
 };
 
 function OrderBadge({ children }: { children: React.ReactNode }) {
@@ -48,9 +50,11 @@ function OrderBadge({ children }: { children: React.ReactNode }) {
 function SingleTrickCard({ card }: { card: CardView }) {
   const d = cardDisplay(card.typeKey);
   const info = cardInfo(card.typeKey);
+  const artUrl = cardArtUrl(card.typeKey);
   const [hovered, setHovered] = useState(false);
   return (
-    <div title={d.name} style={CARD_BOX} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div className="card-art-frame" title={d.name} style={CARD_BOX} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
       <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "var(--purple-light)" }}>{d.glyph}</span>
       <OrderBadge>1</OrderBadge>
       {hovered && info && <CardTooltip name={d.name} info={info} />}
@@ -63,7 +67,9 @@ function SingleTrickCard({ card }: { card: CardView }) {
 // precisely, so instead tap to browse the full list with descriptions.
 function TrickStack({ cards }: { cards: CardView[] }) {
   const [open, setOpen] = useState(false);
-  const topGlyph = cardDisplay(cards[cards.length - 1]!.typeKey).glyph;
+  const topCard = cards[cards.length - 1]!;
+  const topGlyph = cardDisplay(topCard.typeKey).glyph;
+  const topArtUrl = cardArtUrl(topCard.typeKey);
   return (
     <>
       <button
@@ -73,7 +79,8 @@ function TrickStack({ cards }: { cards: CardView[] }) {
       >
         <div style={{ ...CARD_BOX, position: "absolute", top: 4, left: 3, opacity: 0.5 }} />
         <div style={{ ...CARD_BOX, position: "absolute", top: 2, left: 1.5, opacity: 0.75 }} />
-        <div style={{ ...CARD_BOX, position: "absolute", top: 0, left: 0 }}>
+        <div className="card-art-frame" style={{ ...CARD_BOX, position: "absolute", top: 0, left: 0 }}>
+          {topArtUrl && <img className="card-surface-art" src={topArtUrl} alt="" aria-hidden="true" />}
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: 15, color: "var(--purple-light)" }}>{topGlyph}</span>
         </div>
         <span
