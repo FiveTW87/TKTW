@@ -2033,6 +2033,19 @@ a:hover {
   font-family: var(--font-glyph);
 }
 
+.general-detail-item-art {
+  width: 42px;
+  height: 56px;
+  flex: 0 0 42px;
+  display: block;
+  border: 1px solid rgba(230, 192, 99, .58);
+  border-radius: 5px;
+  background: #d6c49b;
+  object-fit: cover;
+  object-position: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .42);
+}
+
 .general-detail-item small,
 .general-detail-item b {
   display: block;

@@ -209,4 +209,33 @@ describe("InspectModal character art", () => {
     expect(screen.getByText("ไส้ศึก")).toBeInTheDocument();
     expect(screen.queryByText("บทบาทปกปิด")).not.toBeInTheDocument();
   });
+
+  it("shows approved card artwork for equipped items", () => {
+    render(
+      <InspectModal
+        player={{
+          id: "p0",
+          seat: 0,
+          name: "Alice",
+          generalId: "lubu",
+          faction: "qun",
+          gender: "male",
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 1 },
+          equipment: { weapon: { id: "weapon-1", typeKey: "qilin", suit: "heart", rank: 5 } },
+          judgmentZone: [],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: "ภาพการ์ด ธนูกิเลน" })).toHaveAttribute(
+      "src",
+      "/assets/cards/qilin.png",
+    );
+  });
 });

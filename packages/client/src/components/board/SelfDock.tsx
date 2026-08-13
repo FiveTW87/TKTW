@@ -12,6 +12,7 @@ import { useDeviceMode } from "../../lib/useDeviceMode";
 import { useSfxStore } from "../../store/sfxStore";
 import { GeneralPortrait } from "../GeneralPortrait";
 import { FactionBadge } from "../FactionBadge";
+import { cardArtUrl } from "../../data/cardArt";
 
 export interface CardTapState {
   tappable: boolean;
@@ -373,8 +374,11 @@ export function SfxControl({ compact, iconOnly = false }: { compact: boolean; ic
 // below — replacing the old horizontal icon+label+desc row.
 function EquipSlotCell({ label, glyph, card, compact, onInspect }: { label: string; glyph: string; card: Card | undefined; compact?: boolean; onInspect?: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const filled = !!card;
   const range = card ? cardMeta(card.typeKey).attackRange : undefined;
+  const artUrl = card ? cardArtUrl(card.typeKey) : undefined;
+  const showArt = !!card && !!artUrl && failedArtKey !== card.typeKey;
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startHold = () => {
     holdTimer.current = setTimeout(() => setHovered(true), 400);
@@ -410,9 +414,19 @@ function EquipSlotCell({ label, glyph, card, compact, onInspect }: { label: stri
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
+        {showArt ? (
+          <img
+            src={artUrl}
+            alt={`ภาพการ์ด ${cardDisplay(card.typeKey).name}`}
+            onError={() => setFailedArtKey(card.typeKey)}
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+          />
+        ) : (
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 14 : 20, color: filled ? "#2e1f08" : "#5c4a2d" }}>{glyph}</span>
+        )}
       </div>
       {!compact && (
         <div style={{ fontSize: 9, color: "var(--ink-muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

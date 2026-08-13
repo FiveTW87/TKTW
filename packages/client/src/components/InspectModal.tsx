@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { Card, PlayerView } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { generalDisplay, factionColor, factionLabel } from "../data/generalNames";
@@ -6,6 +6,7 @@ import { generalArt } from "../data/generalArt";
 import { cardDisplay } from "../data/cardNames";
 import { generalSkills } from "../data/generalSkills";
 import { roleDisplay } from "../data/roles";
+import { cardArtUrl } from "../data/cardArt";
 
 const SLOT_LABEL: Record<string, string> = {
   weapon: "อาวุธ",
@@ -79,7 +80,7 @@ export function InspectModal({ player, onClose, onInspectCard }: { player: Playe
                 <div className="general-detail-equipment">
                   {equipment.map(([slot, card]) => (
                     <button type="button" className="general-detail-item" key={slot} disabled={!onInspectCard} onClick={() => onInspectCard?.(card!)}>
-                      <span className="general-detail-item-glyph">{cardDisplay(card!.typeKey).glyph}</span>
+                      <EquipmentThumbnail card={card!} />
                       <span>
                         <small>{SLOT_LABEL[slot] ?? slot}</small>
                         <b>{cardDisplay(card!.typeKey).name}</b>
@@ -134,6 +135,25 @@ export function InspectModal({ player, onClose, onInspectCard }: { player: Playe
       </section>
     </ModalOverlay>
   );
+}
+
+function EquipmentThumbnail({ card }: { card: Card }) {
+  const artUrl = cardArtUrl(card.typeKey);
+  const [artFailed, setArtFailed] = useState(false);
+  const display = cardDisplay(card.typeKey);
+
+  if (artUrl && !artFailed) {
+    return (
+      <img
+        className="general-detail-item-art"
+        src={artUrl}
+        alt={`ภาพการ์ด ${display.name}`}
+        onError={() => setArtFailed(true)}
+      />
+    );
+  }
+
+  return <span className="general-detail-item-glyph">{display.glyph}</span>;
 }
 
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
