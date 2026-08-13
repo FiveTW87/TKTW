@@ -51,9 +51,11 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
         <div style={{ fontWeight: 700, fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
       </div>
-      <div style={{ marginTop: compact ? 9 : 20, textAlign: "center" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
-      </div>
+      {!artUrl && (
+        <div style={{ marginTop: compact ? 9 : 20, textAlign: "center" }}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
+        </div>
+      )}
       <div style={{ position: "absolute", bottom: compact ? 3 : 5, left: 0, right: 0, textAlign: "center", fontWeight: 700, fontSize: compact ? 7 : 9, color: "var(--card-ink)" }}>
         {cardDisplay(card.typeKey).name}
       </div>

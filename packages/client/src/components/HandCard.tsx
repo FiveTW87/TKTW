@@ -93,9 +93,11 @@ export function HandCard({
         <div style={{ fontWeight: 700, fontSize: compact ? 7.5 : 11, color }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 7.5 : 11, color }}>{suitGlyph(card.suit)}</div>
       </div>
-      <div style={{ marginTop: compact ? 10 : 20, textAlign: "center", position: "relative" }}>
-        <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
-      </div>
+      {!artUrl && (
+        <div style={{ marginTop: compact ? 10 : 20, textAlign: "center", position: "relative" }}>
+          <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
+        </div>
+      )}
       <div
         style={{
           position: "absolute",

@@ -65,7 +65,7 @@ export function CardInspectModal({
               <strong>{rankLabel(card.rank)}</strong>
               <span>{suitGlyph(card.suit)}</span>
             </div>
-            <span className="card-inspect-glyph">{display.glyph}</span>
+            {!artUrl && <span className="card-inspect-glyph">{display.glyph}</span>}
             <div className="card-inspect-name">{display.name}</div>
           </div>
           <div className="card-inspect-suit">{SUIT_LABEL[card.suit] ?? card.suit} · {rankLabel(card.rank)}</div>
