@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PlayerTile } from "../src/components/PlayerTile";
 import { InspectModal } from "../src/components/InspectModal";
@@ -87,6 +87,35 @@ describe("PlayerTile character art", () => {
     );
 
     expect(screen.getByTitle("ไส้ศึก")).toHaveTextContent("內");
+  });
+
+  it("uses the themed tooltip instead of a native title for equipment icons", () => {
+    render(
+      <PlayerTile
+        player={{
+          id: "p0",
+          seat: 0,
+          name: "Alice",
+          generalId: "zhaoyun",
+          faction: "shu",
+          gender: "male",
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 3 },
+          equipment: { weapon: { id: "weapon-1", typeKey: "qinglong", suit: "spade", rank: 5 } },
+          judgmentZone: [],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        isCurrentTurn={false}
+      />,
+    );
+
+    const icon = screen.getByLabelText("อาวุธ: ง้าวมังกรเขียว");
+    expect(icon).not.toHaveAttribute("title");
+    fireEvent.mouseEnter(icon);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("ง้าวมังกรเขียว");
   });
 });
 

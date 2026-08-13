@@ -17,6 +17,13 @@ const SLOT_ICON: Record<string, string> = {
   horsePlus: "🐎+",
 };
 
+const SLOT_LABEL: Record<string, string> = {
+  weapon: "อาวุธ",
+  armor: "เกราะ",
+  horseMinus: "ม้า −1",
+  horsePlus: "ม้า +1",
+};
+
 export function PlayerTile({
   player,
   isCurrentTurn,
@@ -338,7 +345,7 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
     <span
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={cardDisplay(card.typeKey).name}
+      aria-label={`${SLOT_LABEL[slot] ?? "อุปกรณ์"}: ${cardDisplay(card.typeKey).name}`}
       style={{
         position: "relative",
         display: "inline-flex",

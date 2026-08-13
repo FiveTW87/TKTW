@@ -134,12 +134,12 @@ function TooltipBody({ name, info }: { name: string; info: string }) {
 
 const TOOLTIP_BOX_STYLE: CSSProperties = {
   width: 200,
-  background: "rgba(28,22,14,.96)",
+  background: "radial-gradient(circle at 85% 10%, rgba(180,125,42,.18), transparent 34%), linear-gradient(145deg, rgba(45,31,17,.98), rgba(18,12,8,.99))",
   color: "#f0e6cc",
-  border: "1px solid var(--gold)",
+  border: "1px solid #c3913f",
   borderRadius: 8,
   padding: "9px 11px",
-  boxShadow: "0 10px 26px rgba(0,0,0,.45)",
+  boxShadow: "0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,224,154,.08)",
   pointerEvents: "none",
   textAlign: "left",
 };
@@ -150,7 +150,7 @@ const TOOLTIP_BOX_STYLE: CSSProperties = {
 // inside a scrolling container (see CardTooltipPortal below for that case).
 export function CardTooltip({ name, info }: { name: string; info: string }) {
   return (
-    <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", zIndex: 80, ...TOOLTIP_BOX_STYLE }}>
+    <div role="tooltip" style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", zIndex: 80, ...TOOLTIP_BOX_STYLE }}>
       <TooltipBody name={name} info={info} />
     </div>
   );
@@ -169,6 +169,7 @@ export function CardTooltipPortal({ anchorRef, name, info }: { anchorRef: RefObj
   if (!rect) return null;
   return createPortal(
     <div
+      role="tooltip"
       style={{
         position: "fixed",
         left: rect.left + rect.width / 2,
