@@ -1352,7 +1352,7 @@ describe("Table: delayed tricks render beside the seat tile", () => {
     ];
     await enterGame("DELAYED1", me, rest);
 
-    expect(screen.getByTitle("สุขจนลืมจ๊ก")).toBeInTheDocument(); // self's lebusishu
-    expect(screen.getByTitle("อสนีบาตเวียนค่าย")).toBeInTheDocument(); // Bob's shandian
+    expect(screen.getByLabelText(/สุขจนลืมจ๊ก/)).toBeInTheDocument(); // self's lebusishu
+    expect(screen.getByLabelText(/อสนีบาตเวียนค่าย/)).toBeInTheDocument(); // Bob's shandian
   });
 });

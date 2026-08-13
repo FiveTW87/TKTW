@@ -57,23 +57,25 @@ body,
 /* Game copy is primarily labels, not editable text: keep the arrow cursor
    instead of showing an I-beam when hovering names, stats, or descriptions. */
 #root {
-  cursor: default;
+  cursor: url("/assets/cursors/bronze-arrow.svg") 3 3, default;
 }
 
 #root button:not(:disabled),
 #root a[href],
-#root [role="button"] {
-  cursor: pointer;
+#root [role="button"]:not([aria-disabled="true"]),
+#root [style*="cursor: pointer"] {
+  cursor: url("/assets/cursors/bronze-arrow-hover.svg") 3 3, pointer !important;
 }
 
-#root button:disabled {
-  cursor: not-allowed;
+#root button:disabled,
+#root [aria-disabled="true"] {
+  cursor: url("/assets/cursors/bronze-arrow-disabled.svg") 3 3, not-allowed !important;
 }
 
 #root input,
 #root textarea,
 #root [contenteditable="true"] {
-  cursor: text;
+  cursor: text !important;
 }
 
 body {

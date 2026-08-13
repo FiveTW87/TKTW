@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="4" y1="3" x2="23" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff3b0"/><stop offset=".34" stop-color="#e3b44f"/><stop offset=".72" stop-color="#a35f1d"/><stop offset="1" stop-color="#4b270d"/>
+    </linearGradient>
+    <filter id="glow" x="-45%" y="-45%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#f5c759" flood-opacity=".85"/>
+      <feDropShadow dx="1" dy="2" stdDeviation="1" flood-color="#080503" flood-opacity=".9"/>
+    </filter>
+  </defs>
+  <!-- Hotspot: 3 3 -->
+  <g filter="url(#glow)" stroke-linejoin="round">
+    <path d="M3 2.5 25.5 13l-8.6 3.2 6.3 10.4-4.7 2.6-6.1-10.4-6.2 6.7Z" fill="#160d07" stroke="#070403" stroke-width="2"/>
+    <path d="m4.9 4.5 18.2 8.6-8.9 2.6L21 26.1l-2.1 1.2-6.3-10.8-5.2 5.8Z" fill="url(#gold)" stroke="#ffe391" stroke-width="1"/>
+    <path d="m5.5 5.3 8.1 9.8 7.9-2.1Z" fill="#fff2b0" opacity=".38"/>
+    <path d="m14.5 18.9 2.5-1.2 2.2 3.6-2.3 1.3Z" fill="#b53a27" stroke="#3d130d" stroke-width=".6"/>
+  </g>
+</svg>
