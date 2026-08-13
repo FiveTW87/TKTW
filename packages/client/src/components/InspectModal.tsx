@@ -5,6 +5,7 @@ import { generalDisplay, factionColor, factionLabel } from "../data/generalNames
 import { generalArt } from "../data/generalArt";
 import { cardDisplay } from "../data/cardNames";
 import { generalSkills } from "../data/generalSkills";
+import { roleDisplay } from "../data/roles";
 
 const SLOT_LABEL: Record<string, string> = {
   weapon: "อาวุธ",
@@ -20,6 +21,7 @@ export function InspectModal({ player, onClose, onInspectCard }: { player: Playe
   const handCount = Array.isArray(player.hand) ? player.hand.length : player.hand.count;
   const equipment = Object.entries(player.equipment).filter((entry) => entry[1]);
   const skills = player.generalId ? generalSkills(player.generalId) : [];
+  const role = roleDisplay(player.role);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -51,7 +53,7 @@ export function InspectModal({ player, onClose, onInspectCard }: { player: Playe
             <div className="general-detail-player">ผู้เล่น {player.name}</div>
           </div>
           <div className="general-detail-header-actions">
-            <span className="general-detail-role">{player.roleRevealed && player.role ? player.role : "บทบาทปกปิด"}</span>
+            <span className="general-detail-role">{role?.name ?? "บทบาทปกปิด"}</span>
             <button type="button" className="general-detail-close" onClick={onClose} aria-label="ปิดรายละเอียดขุนพล">×</button>
           </div>
         </header>

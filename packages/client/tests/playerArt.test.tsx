@@ -94,4 +94,33 @@ describe("InspectModal character art", () => {
       "/assets/generals/cao_cao.webp",
     );
   });
+
+  it("shows the viewer's own hidden identity when the projected player includes it", () => {
+    render(
+      <InspectModal
+        player={{
+          id: "p0",
+          seat: 0,
+          name: "Alice",
+          generalId: "zhaoyun",
+          faction: "shu",
+          gender: "male",
+          role: "traitor",
+          roleRevealed: false,
+          hp: 4,
+          maxHp: 4,
+          alive: true,
+          hand: { count: 3 },
+          equipment: {},
+          judgmentZone: [],
+          shaUsedThisTurn: 0,
+          skillUsedThisTurn: {},
+        }}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("ไส้ศึก")).toBeInTheDocument();
+    expect(screen.queryByText("บทบาทปกปิด")).not.toBeInTheDocument();
+  });
 });
