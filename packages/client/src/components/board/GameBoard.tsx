@@ -122,7 +122,18 @@ export function GameBoard({
           );
         })()}
 
-        <div className="table-central-anchor" style={{ position: "absolute", left: "50%", top: compact ? "58%" : "62%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: compact ? 210 : 300 }}>
+        <div
+          className="table-central-anchor"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: compact ? "50%" : "52%",
+            transform: `translate(-50%, -50%) scale(${compact ? 0.76 : 0.74})`,
+            transformOrigin: "center",
+            width: "100%",
+            maxWidth: compact ? 210 : 300,
+          }}
+        >
           <CentralZone
             drawPileCount={gameView.drawPileCount}
             pendingReveal={pendingReveal}

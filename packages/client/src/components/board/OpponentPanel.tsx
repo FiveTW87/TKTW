@@ -37,14 +37,18 @@ export function OpponentPanel({
   const { leftPct, topPct } = tableRingPosition(relSeat, playerCount);
   const { compact } = useDeviceMode();
   const fullWidth = density === "head" ? 84 : density === "compact" ? 150 : 170;
+  const tileWidth = compact ? Math.round(fullWidth * 0.7) : fullWidth;
+  const horizontalInset = Math.ceil(tileWidth / 2) + 8;
   return (
     <div
       style={{
         position: "absolute",
-        left: `${leftPct}%`,
+        // Percentages preserve the ring, while clamp guarantees the complete
+        // tile stays visible when the board is narrowed by side panels.
+        left: `clamp(${horizontalInset}px, ${leftPct}%, calc(100% - ${horizontalInset}px))`,
         top: `${topPct}%`,
         transform: "translate(-50%, -50%)",
-        width: compact ? Math.round(fullWidth * 0.7) : fullWidth,
+        width: tileWidth,
       }}
     >
       <PlayerTile
