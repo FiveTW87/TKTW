@@ -33,6 +33,8 @@ export function HandCard({
   const d = cardDisplay(card.typeKey);
   const info = cardInfo(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showArt = !!artUrl && failedArtKey !== card.typeKey;
   const color = SUIT_COLOR[card.suit] ?? "#2e2519";
   const [hovered, setHovered] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,7 +76,7 @@ export function HandCard({
         flexShrink: 0,
       }}
     >
-      {artUrl && <img className="hand-card-art" src={artUrl} alt="" aria-hidden="true" />}
+      {showArt && <img className="hand-card-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
       {onInspect && (
         <button
           type="button"
@@ -93,7 +95,7 @@ export function HandCard({
         <div style={{ fontWeight: 700, fontSize: compact ? 7.5 : 11, color }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 7.5 : 11, color }}>{suitGlyph(card.suit)}</div>
       </div>
-      {!artUrl && (
+      {!showArt && (
         <div style={{ marginTop: compact ? 10 : 20, textAlign: "center", position: "relative" }}>
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
         </div>

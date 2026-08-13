@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Card } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
 import { cardDisplay, cardInfo, rankLabel, suitGlyph } from "../data/cardNames";
@@ -38,6 +38,8 @@ export function CardInspectModal({
   const info = cardInfo(card.typeKey) ?? "ยังไม่มีคำอธิบายเพิ่มเติม";
   const meta = cardMeta(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showArt = !!artUrl && failedArtKey !== card.typeKey;
   const redSuit = card.suit === "heart" || card.suit === "diamond";
 
   useEffect(() => {
@@ -60,12 +62,12 @@ export function CardInspectModal({
         <button type="button" className="card-inspect-close" onClick={onClose} aria-label="ปิดรายละเอียดการ์ด">×</button>
         <div className="card-inspect-art-column">
           <div className="card-inspect-face">
-            {artUrl && <img className="card-inspect-art" src={artUrl} alt="" aria-hidden="true" />}
+            {showArt && <img className="card-inspect-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
             <div className={redSuit ? "card-inspect-rank is-red" : "card-inspect-rank"}>
               <strong>{rankLabel(card.rank)}</strong>
               <span>{suitGlyph(card.suit)}</span>
             </div>
-            {!artUrl && <span className="card-inspect-glyph">{display.glyph}</span>}
+            {!showArt && <span className="card-inspect-glyph">{display.glyph}</span>}
             <div className="card-inspect-name">{display.name}</div>
           </div>
           <div className="card-inspect-suit">{SUIT_LABEL[card.suit] ?? card.suit} · {rankLabel(card.rank)}</div>

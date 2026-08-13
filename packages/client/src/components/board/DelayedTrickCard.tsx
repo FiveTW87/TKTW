@@ -52,10 +52,12 @@ function SingleTrickCard({ card }: { card: CardView }) {
   const info = cardInfo(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
   const [hovered, setHovered] = useState(false);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showArt = !!artUrl && failedArtKey !== card.typeKey;
   return (
     <div className="card-art-frame" title={d.name} style={CARD_BOX} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
-      {!artUrl && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "var(--purple-light)" }}>{d.glyph}</span>}
+      {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
+      {!showArt && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 17, color: "var(--purple-light)" }}>{d.glyph}</span>}
       <OrderBadge>1</OrderBadge>
       {hovered && info && <CardTooltip name={d.name} info={info} />}
     </div>
@@ -70,6 +72,8 @@ function TrickStack({ cards }: { cards: CardView[] }) {
   const topCard = cards[cards.length - 1]!;
   const topGlyph = cardDisplay(topCard.typeKey).glyph;
   const topArtUrl = cardArtUrl(topCard.typeKey);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showTopArt = !!topArtUrl && failedArtKey !== topCard.typeKey;
   return (
     <>
       <button
@@ -80,8 +84,8 @@ function TrickStack({ cards }: { cards: CardView[] }) {
         <div style={{ ...CARD_BOX, position: "absolute", top: 4, left: 3, opacity: 0.5 }} />
         <div style={{ ...CARD_BOX, position: "absolute", top: 2, left: 1.5, opacity: 0.75 }} />
         <div className="card-art-frame" style={{ ...CARD_BOX, position: "absolute", top: 0, left: 0 }}>
-          {topArtUrl && <img className="card-surface-art" src={topArtUrl} alt="" aria-hidden="true" />}
-          {!topArtUrl && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 15, color: "var(--purple-light)" }}>{topGlyph}</span>}
+          {showTopArt && <img className="card-surface-art" src={topArtUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(topCard.typeKey)} />}
+          {!showTopArt && <span style={{ fontFamily: "var(--font-glyph)", fontSize: 15, color: "var(--purple-light)" }}>{topGlyph}</span>}
         </div>
         <span
           style={{

@@ -335,6 +335,8 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showArt = !!artUrl && failedArtKey !== card.typeKey;
   return (
     <span
       onMouseEnter={() => setHovered(true)}
@@ -357,8 +359,8 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
         overflow: "hidden",
       }}
     >
-      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
-      <span style={{ position: "relative", zIndex: 1, textShadow: "0 1px 2px #fff" }}>{SLOT_ICON[slot] ?? cardDisplay(card.typeKey).glyph}</span>
+      {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
+      <span style={{ position: "relative", zIndex: 1, textShadow: "0 1px 2px #fff" }}>{showArt ? SLOT_ICON[slot] : cardDisplay(card.typeKey).glyph}</span>
       {hovered && info && <CardTooltip name={cardDisplay(card.typeKey).name} info={info} />}
     </span>
   );

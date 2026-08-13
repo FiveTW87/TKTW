@@ -14,6 +14,8 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
   const artUrl = cardArtUrl(card.typeKey);
+  const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
+  const showArt = !!artUrl && failedArtKey !== card.typeKey;
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startHold = () => {
     holdTimer.current = setTimeout(() => setHovered(true), 400);
@@ -46,12 +48,12 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
         cursor: info ? "help" : "default",
       }}
     >
-      {artUrl && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" />}
+      {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
       <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
         <div style={{ fontWeight: 700, fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
         <div style={{ fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
       </div>
-      {!artUrl && (
+      {!showArt && (
         <div style={{ marginTop: compact ? 9 : 20, textAlign: "center" }}>
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>
         </div>
