@@ -1079,7 +1079,6 @@ a:hover {
 
 .hand-card > :not(.hand-card-art),
 .card-inspect-face > :not(.card-inspect-art) {
-  position: relative;
   z-index: 1;
 }
 
@@ -1186,10 +1185,14 @@ a:hover {
   text-align: center;
   font-weight: 800;
   font-size: 18px;
+  line-height: 1.25;
   padding: 5px 8px;
   border-radius: 6px;
   background: linear-gradient(90deg, transparent, rgba(246,237,216,.88) 18%, rgba(246,237,216,.88) 82%, transparent);
   text-shadow: 0 1px rgba(255,255,255,.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-inspect-suit {
