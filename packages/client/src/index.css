@@ -1165,24 +1165,6 @@ a:hover {
   pointer-events: none;
 }
 
-.card-inspect-rank {
-  position: absolute;
-  top: 14px;
-  left: 16px;
-  z-index: 1;
-  text-align: center;
-  line-height: 1;
-}
-
-.card-inspect-rank strong,
-.card-inspect-rank span {
-  display: block;
-}
-
-.card-inspect-rank strong { font-size: 22px; }
-.card-inspect-rank span { margin-top: 2px; font-size: 20px; }
-.card-inspect-rank.is-red { color: #9a3025; }
-
 .card-inspect-glyph {
   position: absolute;
   inset: 0;
@@ -1204,6 +1186,10 @@ a:hover {
   text-align: center;
   font-weight: 800;
   font-size: 18px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, transparent, rgba(246,237,216,.88) 18%, rgba(246,237,216,.88) 82%, transparent);
+  text-shadow: 0 1px rgba(255,255,255,.55);
 }
 
 .card-inspect-suit {
@@ -1289,9 +1275,6 @@ a:hover {
   .card-inspect-face {
     width: 128px;
   }
-  .card-inspect-rank { top: 9px; left: 10px; }
-  .card-inspect-rank strong { font-size: 14px; }
-  .card-inspect-rank span { font-size: 13px; }
   .card-inspect-glyph { font-size: 50px; }
   .card-inspect-name { bottom: 10px; font-size: 12px; }
   .card-inspect-copy h2 { font-size: 21px; margin-bottom: 6px; }

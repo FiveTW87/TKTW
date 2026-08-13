@@ -35,7 +35,6 @@ export function HandCard({
   const artUrl = cardArtUrl(card.typeKey);
   const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const showArt = !!artUrl && failedArtKey !== card.typeKey;
-  const color = SUIT_COLOR[card.suit] ?? "#2e2519";
   const [hovered, setHovered] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -91,10 +90,7 @@ export function HandCard({
           ⤢
         </button>
       )}
-      <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
-        <div style={{ fontWeight: 700, fontSize: compact ? 7.5 : 11, color }}>{rankLabel(card.rank)}</div>
-        <div style={{ fontSize: compact ? 7.5 : 11, color }}>{suitGlyph(card.suit)}</div>
-      </div>
+      <CardCornerMark rank={card.rank} suit={card.suit} size={compact ? "compact" : "regular"} />
       {!showArt && (
         <div style={{ marginTop: compact ? 10 : 20, textAlign: "center", position: "relative" }}>
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 15 : 28, color: "var(--card-ink-muted)" }}>{d.glyph}</span>
@@ -118,6 +114,37 @@ export function HandCard({
         {d.name}
       </div>
       {hovered && info && <CardTooltipPortal anchorRef={cardRef} name={d.name} info={info} />}
+    </div>
+  );
+}
+
+export function CardCornerMark({ rank, suit, size = "regular" }: { rank: number; suit: string; size?: "compact" | "regular" | "large" }) {
+  const compact = size === "compact";
+  const large = size === "large";
+  const color = SUIT_COLOR[suit] ?? "#241a11";
+  return (
+    <div
+      aria-label={`${rankLabel(rank)} ${suitGlyph(suit)}`}
+      style={{
+        position: "absolute",
+        top: large ? 12 : compact ? 3 : 4,
+        left: large ? 12 : compact ? 3 : 4,
+        zIndex: 3,
+        minWidth: large ? 38 : compact ? 18 : 23,
+        padding: large ? "4px 5px 3px" : compact ? "2px 2px 1px" : "2px 3px",
+        border: "1px solid rgba(112, 74, 28, .36)",
+        borderRadius: large ? 8 : 6,
+        background: "rgba(246, 237, 216, .9)",
+        boxShadow: "0 2px 6px rgba(45, 28, 10, .28), inset 0 0 0 1px rgba(255,255,255,.35)",
+        color,
+        lineHeight: 0.92,
+        textAlign: "center",
+        textShadow: "0 1px rgba(255,255,255,.45)",
+        pointerEvents: "none",
+      }}
+    >
+      <strong style={{ display: "block", fontFamily: "Georgia, serif", fontSize: large ? 20 : compact ? 9 : 12, fontWeight: 800 }}>{rankLabel(rank)}</strong>
+      <span style={{ display: "block", marginTop: large ? 2 : 1, fontSize: large ? 17 : compact ? 8 : 11 }}>{suitGlyph(suit)}</span>
     </div>
   );
 }

@@ -1,11 +1,9 @@
 import { useRef, useState } from "react";
 import type { CardView } from "@tktw/shared";
-import { CardTooltip } from "../HandCard";
-import { cardDisplay, cardInfo, suitGlyph, rankLabel } from "../../data/cardNames";
+import { CardCornerMark, CardTooltip } from "../HandCard";
+import { cardDisplay, cardInfo } from "../../data/cardNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { cardArtUrl } from "../../data/cardArt";
-
-const SUIT_COLOR: Record<string, string> = { heart: "#8a2f22", diamond: "#8a2f22", spade: "#2e2013", club: "#2e2013" };
 
 // A face-up card visual for the discard pile top. Cards currently resolving
 // are presented transiently by CombatEffectLayer instead of occupying a
@@ -49,10 +47,7 @@ function CardFace({ card, rotate, compact }: { card: CardView; rotate: number; c
       }}
     >
       {showArt && <img className="card-surface-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
-      <div style={{ position: "absolute", top: compact ? 3 : 4, left: compact ? 4 : 6, lineHeight: 1, textAlign: "center" }}>
-        <div style={{ fontWeight: 700, fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{rankLabel(card.rank)}</div>
-        <div style={{ fontSize: compact ? 8 : 11, color: SUIT_COLOR[card.suit] }}>{suitGlyph(card.suit)}</div>
-      </div>
+      <CardCornerMark rank={card.rank} suit={card.suit} size={compact ? "compact" : "regular"} />
       {!showArt && (
         <div style={{ marginTop: compact ? 9 : 20, textAlign: "center" }}>
           <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 16 : 30, color: "var(--card-ink-muted)" }}>{cardDisplay(card.typeKey).glyph}</span>

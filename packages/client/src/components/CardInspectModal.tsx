@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Card } from "@tktw/shared";
 import { ModalOverlay } from "./Modal";
-import { cardDisplay, cardInfo, rankLabel, suitGlyph } from "../data/cardNames";
+import { cardDisplay, cardInfo, rankLabel } from "../data/cardNames";
 import { cardMeta, type TargetRule } from "../data/cardMeta";
 import { cardArtUrl } from "../data/cardArt";
+import { CardCornerMark } from "./HandCard";
 
 const SUIT_LABEL: Record<string, string> = {
   spade: "โพดำ",
@@ -40,7 +41,6 @@ export function CardInspectModal({
   const artUrl = cardArtUrl(card.typeKey);
   const [failedArtKey, setFailedArtKey] = useState<string | null>(null);
   const showArt = !!artUrl && failedArtKey !== card.typeKey;
-  const redSuit = card.suit === "heart" || card.suit === "diamond";
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -63,10 +63,7 @@ export function CardInspectModal({
         <div className="card-inspect-art-column">
           <div className="card-inspect-face">
             {showArt && <img className="card-inspect-art" src={artUrl} alt="" aria-hidden="true" onError={() => setFailedArtKey(card.typeKey)} />}
-            <div className={redSuit ? "card-inspect-rank is-red" : "card-inspect-rank"}>
-              <strong>{rankLabel(card.rank)}</strong>
-              <span>{suitGlyph(card.suit)}</span>
-            </div>
+            <CardCornerMark rank={card.rank} suit={card.suit} size="large" />
             {!showArt && <span className="card-inspect-glyph">{display.glyph}</span>}
             <div className="card-inspect-name">{display.name}</div>
           </div>
