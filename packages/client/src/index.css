@@ -204,10 +204,41 @@ body {
     max(7px, env(safe-area-inset-left, 0px));
 }
 
+/* The shared TurnPanel may carry a long phase/action announcement. On the
+   phone board it must remain a single compact ribbon; otherwise its wrapping
+   height overlaps the opponent rail immediately below it. */
+.mobile-landscape-board .table-turn-panel {
+  width: min(390px, 46vw);
+  height: 48px;
+  max-width: min(390px, 46vw) !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+  padding: 4px 8px 4px 4px !important;
+}
+
+.mobile-landscape-board .table-turn-copy {
+  flex: 1 1 auto;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+.mobile-landscape-board .table-turn-copy > div {
+  min-width: 0;
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+
+.mobile-landscape-board .table-turn-copy span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .mobile-opponent-rail {
   position: absolute;
   z-index: 12;
-  top: calc(57px + env(safe-area-inset-top, 0px));
+  top: calc(64px + env(safe-area-inset-top, 0px));
   right: max(7px, env(safe-area-inset-right, 0px));
   left: max(7px, env(safe-area-inset-left, 0px));
   height: 55px;
@@ -235,7 +266,7 @@ body {
 .mobile-battle-arena {
   position: absolute;
   z-index: 5;
-  top: calc(115px + env(safe-area-inset-top, 0px));
+  top: calc(121px + env(safe-area-inset-top, 0px));
   right: max(8px, env(safe-area-inset-right, 0px));
   bottom: calc(98px + env(safe-area-inset-bottom, 0px));
   left: max(8px, env(safe-area-inset-left, 0px));
@@ -340,8 +371,8 @@ body {
 .mobile-command-dock .table-self-dock > :last-child { width: 116px !important; }
 
 @media (max-height: 400px) {
-  .mobile-opponent-rail { top: calc(51px + env(safe-area-inset-top, 0px)); }
-  .mobile-battle-arena { top: calc(106px + env(safe-area-inset-top, 0px)); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-opponent-rail { top: calc(58px + env(safe-area-inset-top, 0px)); }
+  .mobile-battle-arena { top: calc(113px + env(safe-area-inset-top, 0px)); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
   .mobile-command-dock { height: 84px; }
 }
 
