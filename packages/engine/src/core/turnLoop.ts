@@ -378,8 +378,14 @@ function* playCard(
     if (!armedId || !getPlayer(state, armedId).equipment.weapon) {
       throw new Error(`${playerId}: ${card.typeKey} target must have a weapon equipped`);
     }
+    if (armedId === playerId) {
+      throw new Error(`${playerId}: cannot target themselves with ${card.typeKey}`);
+    }
     if (!victimId) {
       throw new Error(`${playerId}: ${card.typeKey} needs a victim as its 2nd target`);
+    }
+    if (victimId === playerId) {
+      throw new Error(`${playerId}: cannot target themselves with ${card.typeKey}`);
     }
     if (victimId === armedId) {
       throw new Error(`${playerId}: the victim cannot be the coerced player`);

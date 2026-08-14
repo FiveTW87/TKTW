@@ -378,18 +378,34 @@ describe("C-JIEDAO — ยืมดาบฆ่าคน", () => {
     expectAtomicReject(g, play([JIEDAO], ["p1"]));
   });
 
-  it("[C-JIEDAO-04c] a non-สังหาร offered by the coerced holder is refused", () => {
+  it("[C-JIEDAO-04c] the caster cannot be the armed target", () => {
     const g = contractGame({
-      seed: SEED(257), hands: { p0: [JIEDAO], p1: [TAO], p2: [] },
+      seed: SEED(257), hands: { p0: [JIEDAO], p1: [], p2: [] },
+      after: (s) => equip(s, "p0", armWeapon),
+    });
+    expectAtomicReject(g, play([JIEDAO], ["p0", "p2"]), /cannot target themselves/);
+  });
+
+  it("[C-JIEDAO-04d] the caster cannot be the forced attack victim", () => {
+    const g = contractGame({
+      seed: SEED(258), hands: { p0: [JIEDAO], p1: [], p2: [] },
+      after: (s) => equip(s, "p1", armWeapon),
+    });
+    expectAtomicReject(g, play([JIEDAO], ["p1", "p0"]), /cannot target themselves/);
+  });
+
+  it("[C-JIEDAO-04e] a non-สังหาร offered by the coerced holder is refused", () => {
+    const g = contractGame({
+      seed: SEED(259), hands: { p0: [JIEDAO], p1: [TAO], p2: [] },
       after: (s) => equip(s, "p1", armWeapon),
     });
     playTrick(g, [JIEDAO], ["p1", "p2"]);
     expectAtomicReject(g, withCards(TAO), /does not count as sha/);
   });
 
-  it("[C-JIEDAO-04d] a ไร้ช่องโหว่ cancels it and no weapon moves", () => {
+  it("[C-JIEDAO-04f] a ไร้ช่องโหว่ cancels it and no weapon moves", () => {
     const g = contractGame({
-      seed: SEED(258), hands: { p0: [JIEDAO], p1: [WUXIE], p2: [] },
+      seed: SEED(260), hands: { p0: [JIEDAO], p1: [WUXIE], p2: [] },
       after: (s) => equip(s, "p1", armWeapon),
     });
     step(g, { kind: "mainAction" }, play([JIEDAO], ["p1", "p2"]));
