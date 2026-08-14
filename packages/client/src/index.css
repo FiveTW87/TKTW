@@ -187,6 +187,164 @@ body {
   box-shadow: 0 0 0 24px rgba(173, 124, 60, .018), 0 0 0 48px rgba(173, 124, 60, .012);
 }
 
+/* Mobile landscape production layout — selected from the approved E
+   prototype. This branch is mounted only by GameBoard when device mode is
+   compact; desktop/tablet continue through the original ring layout. */
+.mobile-landscape-board {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  padding:
+    calc(58px + env(safe-area-inset-top, 0px))
+    max(7px, env(safe-area-inset-right, 0px))
+    max(4px, env(safe-area-inset-bottom, 0px))
+    max(7px, env(safe-area-inset-left, 0px));
+}
+
+.mobile-opponent-rail {
+  position: absolute;
+  z-index: 12;
+  top: calc(57px + env(safe-area-inset-top, 0px));
+  right: max(7px, env(safe-area-inset-right, 0px));
+  left: max(7px, env(safe-area-inset-left, 0px));
+  height: 55px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mobile-opponent-seat {
+  width: min(132px, 14vw);
+  min-width: 0;
+  filter: drop-shadow(0 7px 12px rgba(0,0,0,.62));
+}
+
+.mobile-player-count-8 .mobile-opponent-rail,
+.mobile-player-count-9 .mobile-opponent-rail,
+.mobile-player-count-10 .mobile-opponent-rail { gap: 3px; }
+
+.mobile-player-count-8 .mobile-opponent-seat,
+.mobile-player-count-9 .mobile-opponent-seat,
+.mobile-player-count-10 .mobile-opponent-seat { width: min(95px, 10.4vw); }
+
+.mobile-battle-arena {
+  position: absolute;
+  z-index: 5;
+  top: calc(115px + env(safe-area-inset-top, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: calc(98px + env(safe-area-inset-bottom, 0px));
+  left: max(8px, env(safe-area-inset-left, 0px));
+  overflow: hidden;
+  border: 1px solid rgba(134, 91, 43, .68);
+  border-radius: 11px 11px 30px 30px;
+  background:
+    radial-gradient(ellipse at 25% 52%, rgba(126, 63, 30, .3), transparent 31%),
+    radial-gradient(ellipse at 59% 45%, rgba(83, 56, 27, .74), rgba(18, 12, 8, .96) 67%);
+  box-shadow: inset 0 0 58px rgba(0,0,0,.7), 0 12px 30px rgba(0,0,0,.3);
+}
+
+.mobile-battle-arena::before {
+  content: '';
+  position: absolute;
+  inset: 13% 9%;
+  pointer-events: none;
+  border: 1px solid rgba(198, 140, 52, .1);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(173, 121, 48, .05), 0 0 0 44px rgba(173, 121, 48, .03);
+}
+
+.mobile-focus-card {
+  position: absolute;
+  z-index: 3;
+  top: 7%;
+  bottom: 7%;
+  left: 6%;
+  width: 27%;
+  min-width: 165px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(194, 139, 67, .88);
+  border-radius: 11px;
+  background: #20130c;
+  color: var(--ink);
+  box-shadow: 0 12px 28px rgba(0,0,0,.7), 0 0 24px rgba(199, 122, 36, .16);
+  text-align: left;
+}
+
+.mobile-focus-card.is-selected {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 0 2px rgba(181, 115, 35, .72), 0 0 26px rgba(225, 165, 55, .4);
+}
+
+.mobile-focus-card > .general-portrait-sheen { display: none; }
+.mobile-focus-shade { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 18%, rgba(15,10,6,.82) 72%), linear-gradient(0deg, rgba(13,8,5,.9), transparent 64%); }
+.mobile-focus-info { position: absolute; z-index: 2; right: 9px; bottom: 8px; left: 43%; min-width: 0; }
+.mobile-focus-info > * { display: block; }
+.mobile-focus-info small { color: var(--gold-light); font-size: 7px; }
+.mobile-focus-info b { margin: 2px 0; overflow: hidden; font-size: 15px; white-space: nowrap; text-overflow: ellipsis; }
+.mobile-focus-info em { overflow: hidden; color: var(--ink-muted); font-size: 7px; font-style: normal; white-space: nowrap; text-overflow: ellipsis; }
+.mobile-focus-hp { display: flex !important; gap: 2px; margin-top: 4px; }
+.mobile-focus-hp i { width: 7px; height: 7px; border: 1px solid #504229; border-radius: 50%; background: #21170f; }
+.mobile-focus-hp i.on { border-color: #8ab746; background: #7ec94a; box-shadow: 0 0 4px #91dd58; }
+.mobile-focus-inspect { position: absolute; z-index: 4; top: 5px; right: 5px; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid rgba(230,192,99,.55); border-radius: 50%; background: rgba(15,10,6,.82); color: var(--gold-light); font-size: 10px; }
+
+.mobile-order-copy {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 57%;
+  width: 27%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.mobile-order-copy > * { display: block; }
+.mobile-order-copy small { color: var(--ink-faint); font-size: 7px; letter-spacing: .6px; }
+.mobile-order-copy b { margin: 3px 0; overflow: hidden; color: #f4d394; font-family: var(--font-display); font-size: 15px; white-space: nowrap; text-overflow: ellipsis; }
+.mobile-order-copy span { color: var(--ink-muted); font-size: 7px; }
+
+.mobile-central-zone {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 3.5%;
+  width: 155px;
+  transform: translateY(-50%) scale(.6);
+  transform-origin: right center;
+}
+
+.mobile-command-dock {
+  position: absolute;
+  z-index: 16;
+  right: max(7px, env(safe-area-inset-right, 0px));
+  bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  left: max(7px, env(safe-area-inset-left, 0px));
+  height: 91px;
+  padding-right: 80px;
+}
+
+.mobile-command-dock .table-self-dock {
+  width: 100% !important;
+  height: 100%;
+  max-width: none !important;
+  border-radius: 12px;
+}
+
+.mobile-command-dock .table-self-dock > :first-child { width: 150px !important; }
+.mobile-command-dock .table-self-skills { max-height: 75px !important; }
+.mobile-command-dock .table-hand-zone { flex: 1 1 auto !important; width: auto !important; }
+.mobile-command-dock .table-self-dock > :last-child { width: 116px !important; }
+
+@media (max-height: 400px) {
+  .mobile-opponent-rail { top: calc(51px + env(safe-area-inset-top, 0px)); }
+  .mobile-battle-arena { top: calc(106px + env(safe-area-inset-top, 0px)); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-command-dock { height: 84px; }
+}
+
 .table-theme .table-turn-panel {
   border-radius: 5px 5px 12px 12px !important;
   border-color: rgba(201, 153, 78, .72) !important;

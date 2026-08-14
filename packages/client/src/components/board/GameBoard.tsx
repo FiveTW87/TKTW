@@ -7,6 +7,7 @@ import { relativeSeat, densityMode, tableRingPosition } from "../../lib/seatLayo
 import { generalDisplay } from "../../data/generalNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { PlayerTile } from "../PlayerTile";
+import { GeneralPortrait } from "../GeneralPortrait";
 
 // SPEC §11.3 — the circular war-table: opponents on an arc above a central
 // zone, local player pinned as a bottom-center dock (rendered by the caller
@@ -61,6 +62,100 @@ export function GameBoard({
   const ringMinHeight = compact
     ? density === "head" ? 130 : density === "compact" ? 145 : 160
     : density === "head" ? 380 : density === "compact" ? 420 : 460;
+
+  if (compact) {
+    const focusedId = selectedTargetIds[0] ?? currentTurnPlayerId;
+    const focused = others.find((p) => p.id === focusedId) ?? others[0];
+    return (
+      <div className={`mobile-landscape-board mobile-player-count-${playerCount}`}>
+        <TurnPanel
+          turnNumber={gameView.turnNumber}
+          phaseLabel={phaseLabel}
+          currentTurnPlayerName={currentTurnPlayer?.name}
+          currentTurnPlayerSeat={currentTurnPlayer?.seat}
+          currentTurnGeneralGlyph={currentTurnPlayer ? generalDisplay(currentTurnPlayer.generalId).glyph : undefined}
+          currentTurnGeneralId={currentTurnPlayer?.generalId}
+          currentTurnFaction={currentTurnPlayer?.faction}
+          responderLabel={responderLabel}
+          actionPrompt={actionPrompt}
+          expiresAt={gameView.pendingDecision?.expiresAt}
+          serverNow={gameView.serverNow}
+        />
+
+        <div className="mobile-opponent-rail" aria-label="ผู้เล่นอื่นตามลำดับที่นั่ง">
+          {others.map((p) => {
+            const dist = attackDistanceFor(p);
+            return (
+              <div className="mobile-opponent-seat" key={p.id}>
+                <PlayerTile
+                  player={p}
+                  isCurrentTurn={currentTurnPlayerId === p.id}
+                  targetable={targetableFor(p)}
+                  selected={selectedTargetIds.includes(p.id)}
+                  distance={dist}
+                  inRange={dist <= weaponRangeSelf}
+                  density="head"
+                  compact
+                  connectionStatus={p.connectionStatus}
+                  onClick={() => onTapTarget(p.id)}
+                  onInspect={() => onInspect(p)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <section className="mobile-battle-arena">
+          {focused && (
+            <button
+              className={`mobile-focus-card ${selectedTargetIds.includes(focused.id) ? "is-selected" : ""}`}
+              data-player-anchor={focused.id}
+              onClick={() => onTapTarget(focused.id)}
+            >
+              <GeneralPortrait generalId={focused.generalId} faction={focused.faction} />
+              <span className="mobile-focus-shade" />
+              <span className="mobile-focus-info">
+                <small>{selectedTargetIds.includes(focused.id) ? "เป้าหมายที่เลือก" : currentTurnPlayerId === focused.id ? "ผู้เล่นปัจจุบัน" : "ผู้เล่น"}</small>
+                <b>{generalDisplay(focused.generalId).name}</b>
+                <em>{focused.name} · ไพ่ {Array.isArray(focused.hand) ? focused.hand.length : focused.hand.count} ใบ</em>
+                <span className="mobile-focus-hp">
+                  {Array.from({ length: focused.maxHp }, (_, i) => <i key={i} className={i < focused.hp ? "on" : ""} />)}
+                </span>
+              </span>
+              <span
+                className="mobile-focus-inspect"
+                role="button"
+                tabIndex={0}
+                aria-label={`ดูรายละเอียด ${generalDisplay(focused.generalId).name}`}
+                onClick={(event) => { event.stopPropagation(); onInspect(focused); }}
+              >⤢</span>
+            </button>
+          )}
+
+          <div className="mobile-order-copy">
+            <small>{responderLabel ? "กำลังรอการตอบโต้" : "คำสั่งปัจจุบัน"}</small>
+            <b>{actionPrompt ?? responderLabel ?? (selectedTargetIds.length ? `เลือกแล้ว ${selectedTargetIds.length} เป้าหมาย` : "เลือกการ์ดเพื่อเล่น")}</b>
+            <span>แตะผู้เล่นด้านบนเพื่อเลือกหรือดูระยะ</span>
+          </div>
+
+          <div className="mobile-central-zone">
+            <CentralZone
+              drawPileCount={gameView.drawPileCount}
+              pendingReveal={pendingReveal}
+              revealTitle={revealTitle}
+              onReveal={onReveal}
+              busy={busy}
+              discardCount={gameView.discardPile.length}
+              discardTop={gameView.discardPile.at(-1)}
+              onOpenDiscard={onOpenDiscard}
+            />
+          </div>
+        </section>
+
+        <div className="mobile-command-dock">{selfDock}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="table-game-board" style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: compact ? "38px 6px 4px" : "56px 12px 8px", position: "relative" }}>

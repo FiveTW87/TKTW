@@ -1238,6 +1238,20 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     const rest = Array.from({ length: 9 }, (_, i) => player(`p${i + 1}`, { name: `Opp${i + 1}` }));
     await enterGame(`GATE${w}x${h}`, me, rest);
     expect(screen.getByText("การ์ดในมือ · 0 ใบ")).toBeInTheDocument();
+    expect(document.querySelector(".mobile-landscape-board")).toBeInTheDocument();
+    expect(document.querySelectorAll(".mobile-opponent-seat")).toHaveLength(9);
+  });
+
+  it("keeps the original ring layout on desktop", async () => {
+    window.innerWidth = 1440;
+    window.innerHeight = 900;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = [player("p1", { name: "Bob" }), player("p2", { name: "Carol" })];
+    await enterGame("DESKTOPRING", me, rest);
+
+    expect(document.querySelector(".table-board-ring")).toBeInTheDocument();
+    expect(document.querySelector(".mobile-landscape-board")).not.toBeInTheDocument();
   });
 
   it("shows the rotate overlay when the table screen is held in portrait", async () => {
