@@ -1645,8 +1645,8 @@ a:hover {
   position: fixed;
   z-index: 149;
   width: auto;
-  height: clamp(128px, 18vw, 230px);
-  max-width: min(220px, 28vw);
+  height: clamp(160px, 23vw, 300px);
+  max-width: min(290px, 32vw);
   object-fit: contain;
   object-position: bottom center;
   pointer-events: none;
@@ -1662,22 +1662,22 @@ a:hover {
   }
 }
 .combat-character-pose-travel {
-  animation: dcCombatPoseAttack .52s ease-out forwards;
+  animation: dcCombatPoseAttack 1.45s ease-out forwards;
 }
 .combat-character-pose-hit {
-  animation: dcCombatPoseHit .72s ease-out forwards;
+  animation: dcCombatPoseHit 1.65s ease-out forwards;
 }
 .combat-character-pose-skill {
   animation: dcCombatPoseSkill .92s ease-out forwards;
 }
 @keyframes dcCombatPoseAttack {
-  0% { opacity: 0; transform: translate(-50%, -78%) scale(.78); }
-  18%, 66% { opacity: 1; transform: translate(-50%, -82%) scale(1); }
+  0% { opacity: .12; transform: translate(-50%, -78%) scale(.78); }
+  9%, 78% { opacity: 1; transform: translate(-50%, -82%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -86%) scale(1.04); }
 }
 @keyframes dcCombatPoseHit {
-  0% { opacity: 0; transform: translate(-50%, -78%) scale(.92) rotate(2deg); }
-  16%, 68% { opacity: 1; transform: translate(-54%, -82%) scale(1) rotate(-3deg); }
+  0% { opacity: .12; transform: translate(-50%, -78%) scale(.92) rotate(2deg); }
+  8%, 80% { opacity: 1; transform: translate(-54%, -82%) scale(1) rotate(-3deg); }
   100% { opacity: 0; transform: translate(-58%, -80%) scale(.98) rotate(-5deg); }
 }
 @keyframes dcCombatPoseSkill {

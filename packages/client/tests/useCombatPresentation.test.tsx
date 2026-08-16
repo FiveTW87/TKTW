@@ -72,8 +72,32 @@ describe("useCombatPresentation", () => {
     expect(result.current.some((effect) => effect.kind === "hit" && effect.amount === 2)).toBe(true);
     expect(result.current.find((effect) => effect.kind === "hit")?.poseArt).toBe("/assets/generals/cao_cao_hit-v1.png");
 
-    act(() => vi.advanceTimersByTime(900));
+    act(() => vi.advanceTimersByTime(1800));
     expect(result.current).toEqual([]);
+  });
+
+  it("clamps a desktop opponent pose into the visible battle area", () => {
+    const originalWidth = window.innerWidth;
+    const originalHeight = window.innerHeight;
+    Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1280 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: 720 });
+    document.body.replaceChildren();
+    anchor("attacker", 20, 20);
+    anchor("target", 1100, 40);
+    const { result, rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      { initialProps: { logs: [] } },
+    );
+
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1, data: { sourceId: "attacker" } })] }));
+    const attack = result.current.find((effect) => effect.kind === "travel");
+    expect(attack?.left).toBe(70);
+    expect(attack?.top).toBe(60);
+    expect(attack?.poseLeft).toBe(130);
+    expect(attack?.poseTop).toBe(260);
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: originalWidth });
+    Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: originalHeight });
   });
 
   it("lands on a distinct dodge cue instead of a hit", () => {
@@ -118,6 +142,36 @@ describe("useCombatPresentation", () => {
 
     expect(result.current.some((effect) => effect.kind === "skill" && effect.label === "พลิกภัยเป็นกล")).toBe(true);
     expect(result.current.find((effect) => effect.kind === "skill")?.poseArt).toBe("/assets/generals/cao_cao_skill-v1.png");
+  });
+
+  it("keeps full-body poses inside a short mobile landscape viewport while impact stays on the seat", () => {
+    const originalWidth = window.innerWidth;
+    const originalHeight = window.innerHeight;
+    Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 932 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: 430 });
+    document.body.replaceChildren();
+    anchor("attacker", 20, 60);
+    anchor("target", 810, 60);
+    const { result, rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      { initialProps: { logs: [] } },
+    );
+
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1, data: { sourceId: "attacker" } })] }));
+    const attack = result.current.find((effect) => effect.kind === "travel");
+    expect(attack?.left).toBe(70); // travel cue still starts at the real rail tile
+    expect(attack?.top).toBe(100);
+    expect(attack?.poseLeft).toBe(82);
+    expect(attack?.poseTop).toBeGreaterThanOrEqual(168);
+
+    act(() => vi.advanceTimersByTime(240));
+    const hit = result.current.find((effect) => effect.kind === "hit");
+    expect(hit?.left).toBe(860); // hit cue remains over the actual target
+    expect(hit?.poseLeft).toBe(850);
+    expect(hit?.poseTop).toBeGreaterThanOrEqual(168);
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: originalWidth });
+    Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: originalHeight });
   });
 
   it("keeps only the newest pose visible for a player while preserving both effect cues", () => {

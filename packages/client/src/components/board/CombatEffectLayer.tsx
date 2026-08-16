@@ -18,6 +18,7 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
               src={e.poseArt}
               alt=""
               aria-hidden="true"
+              decoding="sync"
               data-fallback-src={e.poseFallbackArt}
               onError={(event) => {
                 const image = event.currentTarget;
@@ -29,8 +30,8 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
                 image.hidden = true;
               }}
               style={{
-                left: e.left,
-                top: e.top,
+                left: e.poseLeft ?? e.left,
+                top: e.poseTop ?? e.top,
                 "--pose-scale": String(e.poseScale ?? 1),
                 "--pose-offset-x": `${e.poseOffsetX ?? 0}px`,
                 "--pose-offset-y": `${e.poseOffsetY ?? 0}px`,

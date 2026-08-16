@@ -156,7 +156,7 @@ export function GameBoard({
           </div>
         </section>
 
-        <div className="mobile-command-dock">{selfDock}</div>
+        <div className="mobile-command-dock" data-player-anchor={me.id}>{selfDock}</div>
       </div>
     );
   }

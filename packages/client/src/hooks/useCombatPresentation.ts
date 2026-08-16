@@ -16,6 +16,8 @@ interface BaseEffect {
   poseScale?: number | undefined;
   poseOffsetX?: number | undefined;
   poseOffsetY?: number | undefined;
+  poseLeft?: number | undefined;
+  poseTop?: number | undefined;
 }
 
 export interface TravelEffect extends BaseEffect {
@@ -68,6 +70,24 @@ function anchorCenter(playerId: string): { x: number; y: number } | null {
   return null;
 }
 
+function posePosition(anchor: { x: number; y: number }): { poseLeft: number; poseTop: number } {
+  // Seats can sit close to the top/side edges on both the desktop ring and
+  // mobile rail. The artwork is translated upward from its anchor, so using
+  // the raw seat centre can put most of a full-body pose outside the viewport.
+  // Keep the impact cue on the real seat while clamping only the artwork into
+  // a safe battle area.
+  if (window.innerHeight > 620) {
+    return {
+      poseLeft: Math.max(130, Math.min(window.innerWidth - 130, anchor.x)),
+      poseTop: Math.max(260, Math.min(window.innerHeight - 48, anchor.y)),
+    };
+  }
+  return {
+    poseLeft: Math.max(82, Math.min(window.innerWidth - 82, anchor.x)),
+    poseTop: Math.max(Math.min(168, window.innerHeight * 0.42), Math.min(window.innerHeight - 38, anchor.y)),
+  };
+}
+
 type CombatPlayer = Pick<PlayerView, "id" | "generalId" | "faction">;
 
 export function useCombatPresentation(
@@ -117,7 +137,7 @@ export function useCombatPresentation(
     }
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const playerById = new Map((players ?? []).map((player) => [player.id, player]));
-    const posePresentation = (playerId: string, pose: GeneralPose) => {
+    const posePresentation = (playerId: string, pose: GeneralPose, anchor: { x: number; y: number }) => {
       const player = playerById.get(playerId);
       if (!player) return {};
       const presentation = generalPosePresentation(player.generalId, player.faction, pose);
@@ -128,6 +148,7 @@ export function useCombatPresentation(
         poseScale: presentation.scale,
         poseOffsetX: presentation.offsetX,
         poseOffsetY: presentation.offsetY,
+        ...posePosition(anchor),
       };
     };
 
@@ -198,7 +219,7 @@ export function useCombatPresentation(
           left: target.x,
           top: target.y,
           angleDeg: 0,
-          ...posePresentation(entry.actorId, "skill"),
+          ...posePresentation(entry.actorId, "skill", target),
           label: entry.skillId ? skillById(entry.skillId)?.name ?? entry.skillId : "ใช้สกิล",
         }, baseDelay, reducedMotion ? 360 : 920);
         return;
@@ -229,8 +250,8 @@ export function useCombatPresentation(
           top: source.y,
           angleDeg,
           distance: Math.hypot(target.x - source.x, target.y - source.y),
-          ...posePresentation(sourceId, "attack"),
-        }, baseDelay, 520);
+          ...posePresentation(sourceId, "attack", source),
+        }, baseDelay, 1450);
       }
 
       if (entry.eventType === "damage") {
@@ -241,8 +262,8 @@ export function useCombatPresentation(
           top: target.y,
           angleDeg,
           amount: entry.amount,
-          ...posePresentation(entry.actorId, "hit"),
-        }, baseDelay + (source && !reducedMotion ? 220 : 0), reducedMotion ? 360 : 720);
+          ...posePresentation(entry.actorId, "hit", target),
+        }, baseDelay + (source && !reducedMotion ? 220 : 0), reducedMotion ? 520 : 1650);
       } else {
         schedule({
           id: `${entry.id}:dodge`,
