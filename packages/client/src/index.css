@@ -1638,6 +1638,53 @@ a:hover {
   25%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
   100% { opacity: 0; transform: translate(-50%, -58%) scale(.92); }
 }
+.combat-character-pose {
+  --pose-scale: 1;
+  --pose-offset-x: 0px;
+  --pose-offset-y: 0px;
+  position: fixed;
+  z-index: 149;
+  width: auto;
+  height: clamp(128px, 18vw, 230px);
+  max-width: min(220px, 28vw);
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+  transform-origin: bottom center;
+  scale: var(--pose-scale);
+  translate: var(--pose-offset-x) var(--pose-offset-y);
+  filter: drop-shadow(0 12px 12px rgba(0, 0, 0, .72)) drop-shadow(0 0 10px rgba(217, 165, 49, .24));
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .combat-character-pose {
+    height: clamp(112px, 15vw, 172px);
+    max-width: min(176px, 22vw);
+  }
+}
+.combat-character-pose-travel {
+  animation: dcCombatPoseAttack .52s ease-out forwards;
+}
+.combat-character-pose-hit {
+  animation: dcCombatPoseHit .72s ease-out forwards;
+}
+.combat-character-pose-skill {
+  animation: dcCombatPoseSkill .92s ease-out forwards;
+}
+@keyframes dcCombatPoseAttack {
+  0% { opacity: 0; transform: translate(-50%, -78%) scale(.78); }
+  18%, 66% { opacity: 1; transform: translate(-50%, -82%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -86%) scale(1.04); }
+}
+@keyframes dcCombatPoseHit {
+  0% { opacity: 0; transform: translate(-50%, -78%) scale(.92) rotate(2deg); }
+  16%, 68% { opacity: 1; transform: translate(-54%, -82%) scale(1) rotate(-3deg); }
+  100% { opacity: 0; transform: translate(-58%, -80%) scale(.98) rotate(-5deg); }
+}
+@keyframes dcCombatPoseSkill {
+  0% { opacity: 0; transform: translate(-50%, -76%) scale(.72); filter: brightness(1.5) drop-shadow(0 0 20px rgba(230,192,99,.7)); }
+  22%, 72% { opacity: 1; transform: translate(-50%, -82%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -86%) scale(1.03); }
+}
 .combat-effect-travel {
   height: 1px;
   transform: rotate(var(--travel-angle));
@@ -1882,6 +1929,11 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .combat-character-pose {
+    opacity: .92;
+    animation: none;
+    transform: translate(-50%, -82%);
+  }
   .combat-source-pulse,
   .combat-travel-token,
   .combat-flash,

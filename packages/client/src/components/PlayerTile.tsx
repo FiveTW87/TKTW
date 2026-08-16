@@ -71,7 +71,7 @@ export function PlayerTile({
     const headPortrait = compact ? 30 : 40;
     return (
       <div
-        className="table-player-tile table-player-tile-head"
+        className={`table-player-tile table-player-tile-head${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
         data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
@@ -103,6 +103,7 @@ export function PlayerTile({
           ))}
         </div>
         {isCurrentTurn && <div className="glow-turn" />}
+        {inRange === false && player.alive && <div className="table-range-fog" aria-label="อยู่นอกระยะ" />}
         {targetable && <div className={selected ? "glow-target-selected" : "glow-target"} />}
         {targetable && selected && (
           <div aria-label="เลือกแล้ว" style={{ position: "absolute", top: 2, right: 2, zIndex: 2, width: 12, height: 12, borderRadius: "50%", background: "var(--gold)", color: "#2e1f08", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, boxShadow: "0 1px 3px rgba(0,0,0,.5)" }}>

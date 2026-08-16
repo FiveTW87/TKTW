@@ -98,6 +98,15 @@ export function SelfDock({
             className="table-self-hero"
             data-player-anchor={me.id}
             onClick={selfTargetable ? onToggleSelfTarget : undefined}
+            onKeyDown={selfTargetable ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onToggleSelfTarget();
+              }
+            } : undefined}
+            role={selfTargetable ? "button" : undefined}
+            tabIndex={selfTargetable ? 0 : undefined}
+            aria-label={selfTargetable ? `เลือกตัวเอง ${me.name}` : undefined}
             style={{
               position: "relative",
               width: compact ? 140 : 250,
@@ -185,8 +194,10 @@ export function SelfDock({
               beside this panel, per bug list "Attach Delayed Tricks to target". */}
           <DelayedTrickList cards={me.judgmentZone} />
         </div>}
-        {/* skills */}
-        <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
+        {/* While compact target-picking shows the self portrait in this same
+            slot, temporarily replace the skill list so both controls remain
+            large enough to tap instead of stacking beyond the short dock. */}
+        {!(compact && showHero && selfTargetable) && <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -230,7 +241,7 @@ export function SelfDock({
               </div>
             );
           })}
-        </div>
+        </div>}
       </div>
 
       {/* MIDDLE: hand — capped narrower (not flex:1) in compact mode so the

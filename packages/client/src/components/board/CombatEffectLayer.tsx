@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CombatEffect } from "../../hooks/useCombatPresentation";
 
@@ -11,18 +11,43 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
   return createPortal(
     <>
       {effects.map((e) => (
-        <div
-          key={e.id}
-          className={`combat-effect-node combat-effect-${e.kind}`}
-          style={{
-            position: "fixed",
-            left: e.left,
-            top: e.top,
-            zIndex: 150,
-            pointerEvents: "none",
-            ...(e.kind === "travel" ? { width: e.distance, "--travel-angle": `${e.angleDeg}deg` } : {}),
-          } as CSSProperties}
-        >
+        <Fragment key={e.id}>
+          {e.poseArt && (
+            <img
+              className={`combat-character-pose combat-character-pose-${e.kind}`}
+              src={e.poseArt}
+              alt=""
+              aria-hidden="true"
+              data-fallback-src={e.poseFallbackArt}
+              onError={(event) => {
+                const image = event.currentTarget;
+                const fallback = image.dataset.fallbackSrc;
+                if (fallback && image.src !== new URL(fallback, window.location.href).href) {
+                  image.src = fallback;
+                  return;
+                }
+                image.hidden = true;
+              }}
+              style={{
+                left: e.left,
+                top: e.top,
+                "--pose-scale": String(e.poseScale ?? 1),
+                "--pose-offset-x": `${e.poseOffsetX ?? 0}px`,
+                "--pose-offset-y": `${e.poseOffsetY ?? 0}px`,
+              } as CSSProperties}
+            />
+          )}
+          <div
+            className={`combat-effect-node combat-effect-${e.kind}`}
+            style={{
+              position: "fixed",
+              left: e.left,
+              top: e.top,
+              zIndex: 150,
+              pointerEvents: "none",
+              ...(e.kind === "travel" ? { width: e.distance, "--travel-angle": `${e.angleDeg}deg` } : {}),
+            } as CSSProperties}
+          >
           {e.kind === "travel" ? (
             <>
               <div className="combat-source-pulse" />
@@ -65,7 +90,8 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
               <div className="combat-death-text">พ่าย</div>
             </>
           )}
-        </div>
+          </div>
+        </Fragment>
       ))}
     </>,
     document.body,

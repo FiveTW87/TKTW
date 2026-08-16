@@ -8,6 +8,16 @@ export function relativeSeat(targetSeat: number, viewerSeat: number, playerCount
   return ((targetSeat - viewerSeat) % playerCount + playerCount) % playerCount;
 }
 
+/** Stable clockwise order as seen by the viewer. This is shared by the
+ * circular desktop ring and the mobile rail, so a server snapshot arriving
+ * in a different array order can never swap the viewer's real left/right
+ * neighbours. */
+export function orderByRelativeSeat<T extends { seat: number }>(players: readonly T[], viewerSeat: number, playerCount: number): T[] {
+  return [...players].sort(
+    (a, b) => relativeSeat(a.seat, viewerSeat, playerCount) - relativeSeat(b.seat, viewerSeat, playerCount),
+  );
+}
+
 /** 3–5 players get a roomier panel, 6–8 a compact one, 9–10 a head portrait
  *  only — chosen purely from player count (desktop-first; Phase 8 covers
  *  mobile-landscape sizing on top of this). */

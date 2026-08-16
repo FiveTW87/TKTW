@@ -3,7 +3,7 @@ import type { GameView, PlayerView } from "@tktw/shared";
 import { OpponentPanel } from "./OpponentPanel";
 import { CentralZone } from "./CentralZone";
 import { TurnPanel } from "./TurnPanel";
-import { relativeSeat, densityMode, tableRingPosition } from "../../lib/seatLayout";
+import { relativeSeat, densityMode, tableRingPosition, orderByRelativeSeat } from "../../lib/seatLayout";
 import { generalDisplay } from "../../data/generalNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { PlayerTile } from "../PlayerTile";
@@ -59,13 +59,16 @@ export function GameBoard({
   const density = densityMode(playerCount);
   const currentTurnPlayer = gameView.players.find((p) => p.id === currentTurnPlayerId);
   const { compact } = useDeviceMode();
+  const orderedOthers = orderByRelativeSeat(others, me.seat, playerCount);
   const ringMinHeight = compact
     ? density === "head" ? 130 : density === "compact" ? 145 : 160
     : density === "head" ? 380 : density === "compact" ? 420 : 460;
 
   if (compact) {
     const focusedId = selectedTargetIds[0] ?? currentTurnPlayerId;
-    const focused = others.find((p) => p.id === focusedId) ?? others[0];
+    const focused = orderedOthers.find((p) => p.id === focusedId) ?? orderedOthers[0];
+    const focusedDistance = focused ? attackDistanceFor(focused) : null;
+    const focusedInRange = focusedDistance === null || focusedDistance <= weaponRangeSelf;
     return (
       <div className={`mobile-landscape-board mobile-player-count-${playerCount}`}>
         <TurnPanel
@@ -83,7 +86,7 @@ export function GameBoard({
         />
 
         <div className="mobile-opponent-rail" aria-label="ผู้เล่นอื่นตามลำดับที่นั่ง">
-          {others.map((p) => {
+          {orderedOthers.map((p) => {
             const dist = attackDistanceFor(p);
             return (
               <div className="mobile-opponent-seat" key={p.id}>
@@ -108,7 +111,7 @@ export function GameBoard({
         <section className="mobile-battle-arena">
           {focused && (
             <button
-              className={`mobile-focus-card ${selectedTargetIds.includes(focused.id) ? "is-selected" : ""}`}
+              className={`mobile-focus-card${selectedTargetIds.includes(focused.id) ? " is-selected" : ""}${!focusedInRange && focused.alive ? " table-player-out-of-range" : ""}`}
               data-player-anchor={focused.id}
               onClick={() => onTapTarget(focused.id)}
             >
@@ -129,6 +132,7 @@ export function GameBoard({
                 aria-label={`ดูรายละเอียด ${generalDisplay(focused.generalId).name}`}
                 onClick={(event) => { event.stopPropagation(); onInspect(focused); }}
               >⤢</span>
+              {!focusedInRange && focused.alive && <span className="table-range-fog" aria-label="อยู่นอกระยะ" />}
             </button>
           )}
 
@@ -178,7 +182,7 @@ export function GameBoard({
           to fill whatever vertical/horizontal space the viewport has, instead
           of a small fixed box that leaves the rest of the screen blank. */}
       <div className="panel-plain table-board-ring" style={{ position: "relative", width: "100%", maxWidth: 1400, flex: "1 1 auto", minHeight: ringMinHeight, marginBottom: compact ? 6 : 14 }}>
-        {others.map((p) => {
+        {orderedOthers.map((p) => {
           const dist = attackDistanceFor(p);
           return (
             <OpponentPanel

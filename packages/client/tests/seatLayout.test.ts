@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { relativeSeat, densityMode, arcPosition, lobbyRingPosition, tableRingPosition } from "../src/lib/seatLayout";
+import { relativeSeat, densityMode, arcPosition, lobbyRingPosition, tableRingPosition, orderByRelativeSeat } from "../src/lib/seatLayout";
 
 describe("relativeSeat (SPEC §11.3)", () => {
   it("is 0 for the viewer's own seat", () => {
@@ -36,6 +36,21 @@ describe("densityMode (SPEC §11.3)", () => {
   it("9-10 players keep the information-rich compact tile", () => {
     expect(densityMode(9)).toBe("compact");
     expect(densityMode(10)).toBe("compact");
+  });
+});
+
+describe("orderByRelativeSeat", () => {
+  it.each([3, 4, 5, 6, 7, 8, 9, 10])("keeps mobile left-to-right seats clockwise for %i players", (playerCount) => {
+    const viewerSeat = playerCount - 2;
+    const shuffled = Array.from({ length: playerCount }, (_, seat) => ({ seat, id: `p${seat}` }))
+      .filter((player) => player.seat !== viewerSeat)
+      .reverse();
+    const ordered = orderByRelativeSeat(shuffled, viewerSeat, playerCount);
+
+    expect(ordered.map((player) => relativeSeat(player.seat, viewerSeat, playerCount)))
+      .toEqual(Array.from({ length: playerCount - 1 }, (_, index) => index + 1));
+    expect(tableRingPosition(relativeSeat(ordered[0]!.seat, viewerSeat, playerCount), playerCount).leftPct).toBeLessThan(50);
+    expect(tableRingPosition(relativeSeat(ordered.at(-1)!.seat, viewerSeat, playerCount), playerCount).leftPct).toBeGreaterThan(50);
   });
 });
 

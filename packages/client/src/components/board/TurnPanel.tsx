@@ -95,8 +95,8 @@ export function TurnPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: "var(--ink-faint)", background: "rgba(0,0,0,.3)", borderRadius: 6, padding: "1px 6px" }}>รอบ {turnNumber}</span>
-          {responderLabel && <span style={{ fontSize: 11, color: "var(--target-red)" }}>{responderLabel}</span>}
-          {actionPrompt && <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>{actionPrompt}</span>}
+          {!compact && responderLabel && <span style={{ fontSize: 11, color: "var(--target-red)" }}>{responderLabel}</span>}
+          {!compact && actionPrompt && <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>{actionPrompt}</span>}
         </div>
       </div>
 

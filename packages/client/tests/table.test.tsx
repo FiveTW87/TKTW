@@ -756,7 +756,13 @@ describe("Table: card conversion + distance", () => {
   });
 
   it("jiedao picks targets one at a time: armed player first, then someone they can reach", async () => {
-    const me = player("p0", { generalId: "caocao", role: "lord", roleRevealed: true, hand: [{ id: "jd1", typeKey: "jiedao", suit: "spade", rank: 5 }] });
+    const me = player("p0", {
+      generalId: "caocao",
+      role: "lord",
+      roleRevealed: true,
+      hand: [{ id: "jd1", typeKey: "jiedao", suit: "spade", rank: 5 }],
+      equipment: { weapon: { id: "self_w", typeKey: "crossbow", suit: "club", rank: 1 } },
+    });
     const rest = [
       player("p1", { name: "Bob", equipment: { weapon: { id: "w1", typeKey: "crossbow", suit: "club", rank: 1 } } }),
       player("p2", { name: "Cid" }), // unarmed
@@ -768,6 +774,7 @@ describe("Table: card conversion + distance", () => {
     await user.click(screen.getByText("ยืมดาบฆ่าคน"));
     // step 1: only the armed player (Bob) is selectable
     await waitFor(() => expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "p0" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Bob" }));
     // step 2: the reachable victim (Cid) is now selectable
     await waitFor(() => expect(screen.getByRole("button", { name: "Cid" })).toBeInTheDocument());
@@ -1240,6 +1247,62 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     expect(screen.getByText("การ์ดในมือ · 0 ใบ")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).toBeInTheDocument();
     expect(document.querySelectorAll(".mobile-opponent-seat")).toHaveLength(9);
+  });
+
+  it("keeps a shuffled 10-player snapshot in real clockwise seat order", async () => {
+    window.innerWidth = 932;
+    window.innerHeight = 430;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p7", { name: "Self", seat: 7, generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = [8, 0, 5, 9, 2, 6, 1, 4, 3].map((seat) => player(`p${seat}`, { seat, name: `Seat${seat}` }));
+    await enterGame("SEATPROOF", me, rest);
+
+    const rail = screen.getByLabelText("ผู้เล่นอื่นตามลำดับที่นั่ง");
+    const ids = Array.from(rail.querySelectorAll("[data-player-anchor]"), (node) => node.getAttribute("data-player-anchor"));
+    expect(ids).toEqual(["p8", "p9", "p0", "p1", "p2", "p3", "p4", "p5", "p6"]);
+  });
+
+  it("shows out-of-range fog on both the rail tile and focused mobile card", async () => {
+    window.innerWidth = 932;
+    window.innerHeight = 430;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const rest = Array.from({ length: 9 }, (_, index) => player(`p${index + 1}`, { name: `Opp${index + 1}` }));
+    await enterGame("RANGEFOG", me, rest);
+    fireView(me, rest, { id: "dec_range", kind: "mainAction", playerId: "p0", data: {} }, { currentTurnPlayerId: "p5" });
+
+    await waitFor(() => expect(document.querySelector('.mobile-focus-card[data-player-anchor="p5"]')).toBeInTheDocument());
+    const focused = document.querySelector('.mobile-focus-card[data-player-anchor="p5"]');
+    expect(focused).toHaveClass("table-player-out-of-range");
+    expect(focused?.querySelector('[aria-label="อยู่นอกระยะ"]')).toBeInTheDocument();
+    expect(document.querySelectorAll('.mobile-opponent-rail [aria-label="อยู่นอกระยะ"]').length).toBeGreaterThan(0);
+  });
+
+  it("shows self as a tappable target for ท้อ while keeping the duplicate announcement out of the top ribbon", async () => {
+    window.innerWidth = 932;
+    window.innerHeight = 430;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", {
+      name: "Alice",
+      hp: 3,
+      maxHp: 4,
+      generalId: "caocao",
+      faction: "wei",
+      role: "lord",
+      roleRevealed: true,
+      hand: [{ id: "tao_mobile", typeKey: "tao", suit: "heart", rank: 3 }],
+    });
+    const rest = [player("p1", { name: "Bob", hp: 2, maxHp: 4 }), player("p2", { name: "Carol" })];
+    const user = await enterGame("MOBILESELF", me, rest);
+    fireView(me, rest, { id: "dec_tao_mobile", kind: "mainAction", playerId: "p0", data: {} });
+
+    await user.click(await screen.findByText("ท้อคืนชีพ"));
+    const selfTarget = await screen.findByRole("button", { name: "เลือกตัวเอง Alice" });
+    await user.click(selfTarget);
+    expect(screen.getByLabelText("เลือกแล้ว")).toBeInTheDocument();
+
+    fireView(me, rest, { id: "dec_wait_mobile", kind: "respondShan", playerId: "p1", data: { sourceId: "p0" } }, { currentTurnPlayerId: "p1" });
+    await waitFor(() => expect(screen.getAllByText(/^Bob:/)).toHaveLength(1));
   });
 
   it("keeps the original ring layout on desktop", async () => {

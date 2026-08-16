@@ -83,7 +83,7 @@ export function Table() {
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const debug = useGameStore((s) => s.debug);
-  const combatEffects = useCombatPresentation(gameView?.gameLogs);
+  const combatEffects = useCombatPresentation(gameView?.gameLogs, gameView?.players);
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
   const { compact } = useDeviceMode();
@@ -402,6 +402,10 @@ export function Table() {
   const armedPick = isJiedao ? gameView.players.find((p) => p.id === selectedTargetIds[0]) : undefined;
   const targetableFor = (p: PlayerView): boolean => {
     if (!targetsActive || !p.alive) return false;
+    // Self is legal only for the explicitly modelled healing actions above.
+    // This also prevents cards such as ยืมดาบฆ่าคน from exposing self as the
+    // armed first target on the desktop ring.
+    if (p.id === me.id) return selfTargetable;
     if (zhangbaMode) return attackDistance(me, p, gameView.players) <= weaponRange(me); // สังหาร range
     if (selectedIsTao) return isTaoTarget(p);
     if (isJiedao) {
@@ -701,7 +705,7 @@ export function Table() {
             }}
             onInspect={() => setInspecting(me)}
             equipSlots={equipSlotsWithCards}
-            showHero={false}
+            showHero={compact && selfTargetable}
           />
         }
       />
