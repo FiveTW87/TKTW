@@ -223,14 +223,16 @@ export function PlayerTile({
               />
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", paddingTop: 6, flexWrap: "wrap" }}>
+          <div className="table-player-status-row" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: "auto", paddingTop: 6, flexWrap: "nowrap", minWidth: 0 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--ink-muted)" }}>
               <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(var(--gold-deep),var(--gold-bronze))", display: "inline-block" }} />
               {handCount}
             </span>
-            {equipEntries.map(([slot, card]) => (
-              <EquipChip key={slot} slot={slot} card={card} />
-            ))}
+            <span className="table-player-equipment-row">
+              {equipEntries.map(([slot, card]) => (
+                <EquipChip key={slot} slot={slot} card={card} />
+              ))}
+            </span>
           </div>
         </div>
 
@@ -347,6 +349,7 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={`${SLOT_LABEL[slot] ?? "อุปกรณ์"}: ${cardDisplay(card.typeKey).name}`}
+      className="table-player-equipment-chip"
       style={{
         position: "relative",
         display: "inline-flex",

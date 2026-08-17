@@ -8,6 +8,7 @@ import { generalDisplay } from "../../data/generalNames";
 import { useDeviceMode } from "../../lib/useDeviceMode";
 import { PlayerTile } from "../PlayerTile";
 import { GeneralPortrait } from "../GeneralPortrait";
+import { useCountdown } from "../../lib/useCountdown";
 
 // SPEC §11.3 — the circular war-table: opponents on an arc above a central
 // zone, local player pinned as a bottom-center dock (rendered by the caller
@@ -59,6 +60,7 @@ export function GameBoard({
   const density = densityMode(playerCount);
   const currentTurnPlayer = gameView.players.find((p) => p.id === currentTurnPlayerId);
   const { compact } = useDeviceMode();
+  const mobileRemaining = useCountdown(gameView.pendingDecision?.expiresAt, gameView.serverNow);
   const orderedOthers = orderByRelativeSeat(others, me.seat, playerCount);
   const ringMinHeight = compact
     ? density === "head" ? 130 : density === "compact" ? 145 : 160
@@ -137,7 +139,14 @@ export function GameBoard({
           )}
 
           <div className="mobile-order-copy">
-            <small>{responderLabel ? "กำลังรอการตอบโต้" : "คำสั่งปัจจุบัน"}</small>
+            <div className="mobile-order-heading">
+              <small>{responderLabel ? "กำลังรอการตอบโต้" : "คำสั่งปัจจุบัน"}</small>
+              {mobileRemaining !== null && (
+                <span className={mobileRemaining <= 5 ? "is-urgent" : ""} aria-label={`เหลือเวลา ${mobileRemaining} วินาที`}>
+                  {mobileRemaining}
+                </span>
+              )}
+            </div>
             <b>{actionPrompt ?? responderLabel ?? (selectedTargetIds.length ? `เลือกแล้ว ${selectedTargetIds.length} เป้าหมาย` : "เลือกการ์ดเพื่อเล่น")}</b>
             <span>แตะผู้เล่นด้านบนเพื่อเลือกหรือดูระยะ</span>
           </div>
@@ -156,7 +165,7 @@ export function GameBoard({
           </div>
         </section>
 
-        <div className="mobile-command-dock" data-player-anchor={me.id}>{selfDock}</div>
+        <div className="mobile-command-dock">{selfDock}</div>
       </div>
     );
   }

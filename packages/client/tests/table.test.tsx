@@ -1244,9 +1244,39 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
     const rest = Array.from({ length: 9 }, (_, i) => player(`p${i + 1}`, { name: `Opp${i + 1}` }));
     await enterGame(`GATE${w}x${h}`, me, rest);
-    expect(screen.getByText("การ์ดในมือ · 0 ใบ")).toBeInTheDocument();
+    expect(screen.getByText("การ์ดในมือ")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).toBeInTheDocument();
     expect(document.querySelectorAll(".mobile-opponent-seat")).toHaveLength(9);
+  });
+
+  it("always shows mobile self portrait, HP, compact skill chips and four horizontal equipment slots", async () => {
+    window.innerWidth = 932;
+    window.innerHeight = 430;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", {
+      name: "Alice",
+      hp: 3,
+      maxHp: 4,
+      generalId: "caocao",
+      faction: "wei",
+      role: "lord",
+      roleRevealed: true,
+    });
+    const rest = [player("p1", { name: "Bob" }), player("p2", { name: "Carol" })];
+    const user = await enterGame("MOBILESELFINFO", me, rest);
+
+    const dock = document.querySelector(".mobile-command-dock");
+    expect(dock?.querySelector(".table-self-hero img")).toBeInTheDocument();
+    expect(dock?.querySelector('[aria-label="พลังชีวิต 3/4"]')).toBeInTheDocument();
+    expect(dock?.querySelector(".table-self-skills")).not.toBeInTheDocument();
+    expect(dock?.querySelector(".table-self-skill-chips")).toBeInTheDocument();
+    await user.click(within(dock as HTMLElement).getByRole("button", { name: "ดูสกิล พลิกภัยเป็นกล" }));
+    expect(screen.getByRole("dialog", { name: "รายละเอียดสกิล พลิกภัยเป็นกล" })).toBeInTheDocument();
+    expect(screen.getByText("เมื่อได้รับความเสียหาย สามารถนำการ์ดที่ทำร้ายตนเข้ามือ")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "ปิดรายละเอียดสกิล" }));
+    expect(screen.queryByRole("dialog", { name: "รายละเอียดสกิล พลิกภัยเป็นกล" })).not.toBeInTheDocument();
+    expect(dock?.querySelectorAll(".table-equipment-grid > *")).toHaveLength(4);
+    expect(screen.queryByText("การ์ดในมือ · 0 ใบ")).not.toBeInTheDocument();
   });
 
   it("keeps a shuffled 10-player snapshot in real clockwise seat order", async () => {
@@ -1315,6 +1345,30 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
 
     expect(document.querySelector(".table-board-ring")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).not.toBeInTheDocument();
+    expect(document.querySelector(".table-self-dock .table-self-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".table-self-dock .table-self-skills")).toBeInTheDocument();
+    expect(document.querySelector(".table-self-dock .table-self-skill-chips")).not.toBeInTheDocument();
+  });
+
+  it("keeps all equipped icons on one row inside every desktop player tile", async () => {
+    window.innerWidth = 1440;
+    window.innerHeight = 900;
+    window.dispatchEvent(new Event("resize"));
+    const me = player("p0", { generalId: "caocao", faction: "wei", role: "lord", roleRevealed: true });
+    const bob = player("p1", {
+      name: "Bob",
+      equipment: {
+        weapon: { id: "eq_w", typeKey: "crossbow", suit: "club", rank: 1 },
+        armor: { id: "eq_a", typeKey: "bagua", suit: "spade", rank: 2 },
+        horseMinus: { id: "eq_hm", typeKey: "horse_chitu", suit: "heart", rank: 5 },
+        horsePlus: { id: "eq_hp", typeKey: "horse_jueying", suit: "spade", rank: 5 },
+      },
+    });
+    await enterGame("DESKTOPEQUIPROW", me, [bob, player("p2")]);
+
+    const equipmentRow = document.querySelector('[data-player-anchor="p1"] .table-player-equipment-row');
+    expect(equipmentRow).toBeInTheDocument();
+    expect(equipmentRow?.querySelectorAll(".table-player-equipment-chip")).toHaveLength(4);
   });
 
   it("shows the rotate overlay when the table screen is held in portrait", async () => {

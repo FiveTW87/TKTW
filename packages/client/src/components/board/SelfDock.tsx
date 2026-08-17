@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Card, PlayerView } from "@tktw/shared";
 import { HandCard, CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
@@ -84,16 +85,26 @@ export function SelfDock({
 }) {
   const role = roleDisplay(me.role);
   const { compact } = useDeviceMode();
+  const [mobileSkillId, setMobileSkillId] = useState<string | null>(null);
+  const inlineMobileSkill = compact && pendingActivateMode === "inline"
+    ? skills.find((skill) => skill.id === pendingActivateId)
+    : undefined;
+  const mobileSkill = inlineMobileSkill ?? (compact ? skills.find((skill) => skill.id === mobileSkillId) : undefined);
+  const mobileSkillUsed = mobileSkill ? me.skillUsedThisTurn[mobileSkill.id] ?? 0 : 0;
+  const mobileSkillSpent = mobileSkill?.active
+    ? mobileSkillUsed >= activeSkillSpec(mobileSkill.id).maxPerTurn
+    : false;
 
   return (
+    <>
     <div className="table-self-dock" style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", gap: compact ? 6 : 14, alignItems: "stretch", width: compact ? "auto" : "100%", maxWidth: 1040 }}>
       {/* LEFT: character details (+ pending judgment cards) — also a ท้อ
           self-target when helping. Uses the same SeatTile.dc.html composition
           as opponents (portrait+badge / info / faction ribbon), sized larger
           for self, with delayed tricks as separate purple cards beside it —
           not the old faction-bar-header shape. */}
-      <div style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
-        {showHero && <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+      <div className="table-self-column" style={{ width: compact ? 175 : 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 8 }}>
+        {showHero && <div className="table-self-hero-row" style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <div
             className="table-self-hero"
             data-player-anchor={me.id}
@@ -157,7 +168,7 @@ export function SelfDock({
                   {role.name} · คุณ
                 </div>
               )}
-              <div style={{ display: "flex", gap: 3, marginTop: compact ? 3 : 6, flexWrap: "wrap" }}>
+              <div className="table-self-hp" aria-label={`พลังชีวิต ${me.hp}/${me.maxHp}`} style={{ display: "flex", gap: 3, marginTop: compact ? 3 : 6, flexWrap: "wrap" }}>
                 {Array.from({ length: me.maxHp }).map((_, i) => (
                   <span key={i} className="hp-dot" style={{ width: compact ? 8 : 11, height: compact ? 8 : 11, background: i < me.hp ? "radial-gradient(circle at 40% 35%, var(--hp-green-light), var(--hp-green))" : "transparent" }} />
                 ))}
@@ -194,10 +205,31 @@ export function SelfDock({
               beside this panel, per bug list "Attach Delayed Tricks to target". */}
           <DelayedTrickList cards={me.judgmentZone} />
         </div>}
-        {/* While compact target-picking shows the self portrait in this same
-            slot, temporarily replace the skill list so both controls remain
-            large enough to tap instead of stacking beyond the short dock. */}
-        {!(compact && showHero && selfTargetable) && <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: compact ? "4px 6px" : "9px 10px", overflowY: compact ? "auto" : undefined, maxHeight: compact ? 64 : undefined }}>
+        {compact ? (
+          <div className="table-self-skill-chips" aria-label="สกิลของตัวเอง">
+            {skills.length === 0 && <span className="table-self-skill-empty">ไม่มีสกิล</span>}
+            {skills.map((skill) => {
+              const used = me.skillUsedThisTurn[skill.id] ?? 0;
+              const pending = skill.id === pendingActivateId && pendingActivateMode === "inline";
+              const spent = skill.active && used >= activeSkillSpec(skill.id).maxPerTurn;
+              return (
+                <button
+                  type="button"
+                  key={skill.id}
+                  className={`table-self-skill-chip${pending ? " is-pending" : ""}${skillMode === skill.id ? " is-selected" : ""}`}
+                  onClick={() => setMobileSkillId(skill.id)}
+                  aria-label={`ดูสกิล ${skill.name}`}
+                  disabled={busy && !pending}
+                >
+                  <span>技</span>
+                  <b>{skill.name}</b>
+                  {spent && <i>ใช้แล้ว</i>}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+        <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: "9px 10px" }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
@@ -241,7 +273,8 @@ export function SelfDock({
               </div>
             );
           })}
-        </div>}
+        </div>
+        )}
       </div>
 
       {/* MIDDLE: hand — capped narrower (not flex:1) in compact mode so the
@@ -250,7 +283,7 @@ export function SelfDock({
           past the visible width scroll horizontally instead. */}
       <div className="table-hand-zone" style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 3 : 8 }}>
-          <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>การ์ดในมือ · {myHand.length} ใบ</span>
+          <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>{compact ? "การ์ดในมือ" : `การ์ดในมือ · ${myHand.length} ใบ`}</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
         </div>
         <div
@@ -286,10 +319,10 @@ export function SelfDock({
 
       {/* RIGHT: equipment only. Global table controls live in the top-right
           utility rail so this dock can spend its limited height on play. */}
-      <div style={{ width: compact ? 140 : 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
+      <div className="table-equipment-zone" style={{ width: compact ? 116 : 250, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
         <div>
           <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: compact ? 3 : 5, textAlign: "center" }}>ของสวมใส่</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: compact ? 3 : 6 }}>
+          <div className="table-equipment-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: compact ? 3 : 6 }}>
             {equipSlots.map(({ slot, label, glyph, card }) => (
               <EquipSlotCell
                 key={slot}
@@ -315,6 +348,50 @@ export function SelfDock({
         </div>
       </div>
     </div>
+    {compact && mobileSkill && createPortal(
+      <div className="mobile-skill-detail-layer">
+        <section className="mobile-skill-detail" role="dialog" aria-label={`รายละเอียดสกิล ${mobileSkill.name}`}>
+          <div className="mobile-skill-detail-header">
+            <span>技</span>
+            <div>
+              <small>สกิลของ {generalDisplay(me.generalId).name}</small>
+              <b>{mobileSkill.name}</b>
+            </div>
+            {!inlineMobileSkill && (
+              <button type="button" onClick={() => setMobileSkillId(null)} aria-label="ปิดรายละเอียดสกิล">×</button>
+            )}
+          </div>
+          <p>{mobileSkill.description}</p>
+          <div className="mobile-skill-detail-meta">
+            <span>{mobileSkill.active ? "สกิลกดใช้" : "สกิลติดตัว"}</span>
+            {mobileSkill.lordOnly && <span>主公</span>}
+            {mobileSkillUsed > 0 && <span>ใช้แล้ว {mobileSkillUsed}</span>}
+          </div>
+          {inlineMobileSkill ? (
+            <div className="mobile-skill-detail-actions">
+              <button onClick={() => onAnswerActivate(true)} disabled={busy} className="btn-primary">ใช้เลย</button>
+              <button onClick={() => onAnswerActivate(false)} disabled={busy} className="btn-secondary">ไม่ใช้</button>
+            </div>
+          ) : mobileSkill.active && isMyDecision && isMainAction ? (
+            <div className="mobile-skill-detail-actions">
+              <button
+                onClick={() => {
+                  if (mobileSkillSpent) return;
+                  onUseSkill(mobileSkill.id);
+                  setMobileSkillId(null);
+                }}
+                disabled={busy || mobileSkillSpent}
+                className="btn-primary"
+              >
+                {mobileSkillSpent ? "ใช้ครบแล้วเทิร์นนี้" : "ใช้สกิล"}
+              </button>
+            </div>
+          ) : null}
+        </section>
+      </div>,
+      document.body,
+    )}
+    </>
   );
 }
 

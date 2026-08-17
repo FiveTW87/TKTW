@@ -208,12 +208,7 @@ body {
    phone board it must remain a single compact ribbon; otherwise its wrapping
    height overlaps the opponent rail immediately below it. */
 .mobile-landscape-board .table-turn-panel {
-  width: min(390px, 46vw);
-  height: 48px;
-  max-width: min(390px, 46vw) !important;
-  flex-wrap: nowrap !important;
-  overflow: hidden;
-  padding: 4px 8px 4px 4px !important;
+  display: none !important;
 }
 
 .mobile-landscape-board .table-turn-copy {
@@ -268,7 +263,7 @@ body {
   z-index: 5;
   top: calc(121px + env(safe-area-inset-top, 0px));
   right: max(8px, env(safe-area-inset-right, 0px));
-  bottom: calc(98px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(116px + env(safe-area-inset-bottom, 0px));
   left: max(8px, env(safe-area-inset-left, 0px));
   overflow: hidden;
   border: 1px solid rgba(134, 91, 43, .68);
@@ -334,7 +329,20 @@ body {
   text-align: center;
 }
 .mobile-order-copy > * { display: block; }
+.mobile-order-heading { display: flex !important; align-items: center; justify-content: center; gap: 5px; }
 .mobile-order-copy small { color: var(--ink-faint); font-size: 7px; letter-spacing: .6px; }
+.mobile-order-heading > span {
+  min-width: 20px;
+  padding: 1px 5px;
+  border: 1px solid rgba(93, 173, 104, .6);
+  border-radius: 999px;
+  background: rgba(17, 42, 24, .8);
+  color: #b8efae;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+}
+.mobile-order-heading > span.is-urgent { border-color: rgba(210,75,58,.72); background: rgba(82,24,19,.84); color: #ff9b87; }
 .mobile-order-copy b { margin: 3px 0; overflow: hidden; color: #f4d394; font-family: var(--font-display); font-size: 15px; white-space: nowrap; text-overflow: ellipsis; }
 .mobile-order-copy span { color: var(--ink-muted); font-size: 7px; }
 
@@ -354,7 +362,7 @@ body {
   right: max(7px, env(safe-area-inset-right, 0px));
   bottom: max(4px, env(safe-area-inset-bottom, 0px));
   left: max(7px, env(safe-area-inset-left, 0px));
-  height: 91px;
+  height: 108px;
   padding-right: 80px;
 }
 
@@ -365,16 +373,171 @@ body {
   border-radius: 12px;
 }
 
-.mobile-command-dock .table-self-dock > :first-child { width: 150px !important; }
-.mobile-command-dock .table-self-skills { max-height: 75px !important; }
-.mobile-command-dock .table-hand-zone { flex: 1 1 auto !important; width: auto !important; }
-.mobile-command-dock .table-self-dock > :last-child { width: 116px !important; }
+.mobile-command-dock .table-self-column { width: 165px !important; }
+.mobile-command-dock .table-self-hero-row,
+.mobile-command-dock .table-self-hero { width: 100% !important; }
+.mobile-command-dock .table-hand-zone {
+  flex: 1 1 auto !important;
+  align-self: stretch !important;
+  width: auto !important;
+  height: 100%;
+}
+.mobile-command-dock .table-equipment-zone { width: 132px !important; }
+.mobile-command-dock .table-equipment-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
 
 @media (max-height: 400px) {
   .mobile-opponent-rail { top: calc(58px + env(safe-area-inset-top, 0px)); }
-  .mobile-battle-arena { top: calc(113px + env(safe-area-inset-top, 0px)); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
-  .mobile-command-dock { height: 84px; }
+  .mobile-battle-arena { top: calc(113px + env(safe-area-inset-top, 0px)); bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-command-dock { height: 96px; }
+  .mobile-command-dock .table-self-column { width: 150px !important; }
 }
+
+.table-self-skill-chips {
+  min-width: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 3px;
+  border: 1px solid rgba(164, 114, 54, .58);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(38,27,17,.96), rgba(17,12,8,.97));
+  scrollbar-width: none;
+}
+
+.table-self-skill-chips::-webkit-scrollbar { display: none; }
+
+.table-self-skill-chip {
+  min-width: 0;
+  max-width: 100%;
+  height: 26px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px 2px 4px;
+  border: 1px solid rgba(79, 158, 94, .7);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(39,91,55,.92), rgba(24,55,34,.96));
+  color: #d9f5d4;
+  cursor: pointer;
+}
+
+.table-self-skill-chip > span {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: rgba(8,25,13,.42);
+  color: #aee8a5;
+  font-family: var(--font-glyph);
+  font-size: 10px;
+}
+
+.table-self-skill-chip > b {
+  min-width: 0;
+  max-width: 108px;
+  overflow: hidden;
+  font-size: 9px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.table-self-skill-chip > i { color: #efc974; font-size: 7px; font-style: normal; white-space: nowrap; }
+.table-self-skill-chip.is-selected { border-color: var(--gold-light); box-shadow: 0 0 8px rgba(217,165,49,.5); }
+.table-self-skill-chip.is-pending { animation: mobileSkillChipPulse 1s ease-in-out infinite alternate; }
+.table-self-skill-empty { padding: 0 6px; color: var(--ink-faint); font-size: 9px; font-style: italic; }
+
+@keyframes mobileSkillChipPulse {
+  from { box-shadow: 0 0 3px rgba(217,165,49,.22); }
+  to { border-color: var(--gold-light); box-shadow: 0 0 12px rgba(217,165,49,.68); }
+}
+
+.mobile-skill-detail-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  pointer-events: none;
+}
+
+.mobile-skill-detail {
+  position: absolute;
+  top: 50%;
+  left: 56%;
+  width: min(330px, 43vw);
+  max-height: 48vh;
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  padding: 11px 12px;
+  border: 1px solid rgba(117, 181, 102, .72);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(72,137,73,.22), transparent 42%),
+    linear-gradient(155deg, rgba(34,29,18,.98), rgba(15,12,8,.98));
+  box-shadow: 0 18px 48px rgba(0,0,0,.74), inset 0 0 0 1px rgba(213,240,184,.05);
+  color: var(--ink);
+  pointer-events: auto;
+}
+
+.mobile-skill-detail-header { display: flex; align-items: center; gap: 8px; }
+.mobile-skill-detail-header > span {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #80bd73;
+  border-radius: 9px;
+  background: linear-gradient(#3b7549,#20432b);
+  color: #e5f8d7;
+  font-family: var(--font-glyph);
+  font-size: 18px;
+}
+.mobile-skill-detail-header > div { flex: 1; min-width: 0; }
+.mobile-skill-detail-header small,
+.mobile-skill-detail-header b { display: block; }
+.mobile-skill-detail-header small { color: #93bf8b; font-size: 8px; }
+.mobile-skill-detail-header b { overflow: hidden; margin-top: 1px; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
+.mobile-skill-detail-header > button {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid rgba(201,177,132,.3);
+  border-radius: 50%;
+  background: rgba(0,0,0,.24);
+  color: var(--ink-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.mobile-skill-detail > p { margin: 9px 0 8px; color: var(--ink-muted); font-size: 10px; line-height: 1.5; }
+.mobile-skill-detail-meta { display: flex; gap: 5px; flex-wrap: wrap; }
+.mobile-skill-detail-meta span { padding: 2px 7px; border-radius: 999px; background: rgba(74,119,65,.24); color: #bfe0b4; font-size: 8px; }
+.mobile-skill-detail-actions { display: flex; gap: 7px; margin-top: 10px; }
+.mobile-skill-detail-actions button { flex: 1; padding: 7px 10px; font-size: 10px; }
+
+@media (max-height: 400px) {
+  .table-self-skill-chips { height: 28px; }
+  .table-self-skill-chip { height: 22px; }
+  .table-self-skill-chip > span { width: 15px; height: 15px; font-size: 8px; }
+  .mobile-skill-detail { max-height: 56vh; padding: 8px 10px; }
+  .mobile-skill-detail-header > span { width: 29px; height: 29px; font-size: 15px; }
+  .mobile-skill-detail > p { margin: 6px 0; line-height: 1.35; }
+}
+
+.table-player-equipment-row {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+}
+
+.table-player-equipment-chip { flex: 0 0 auto; }
 
 .table-theme .table-turn-panel {
   border-radius: 5px 5px 12px 12px !important;
