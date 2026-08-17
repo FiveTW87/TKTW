@@ -36,7 +36,7 @@ export function OpponentPanel({
 }) {
   const { leftPct, topPct } = tableRingPosition(relSeat, playerCount);
   const { compact } = useDeviceMode();
-  const fullWidth = density === "head" ? 84 : density === "compact" ? 150 : 170;
+  const fullWidth = density === "head" ? 84 : density === "compact" ? 168 : 236;
   const tileWidth = compact ? Math.round(fullWidth * 0.7) : fullWidth;
   const horizontalInset = Math.ceil(tileWidth / 2) + 8;
   return (

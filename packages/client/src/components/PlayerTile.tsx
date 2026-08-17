@@ -131,14 +131,15 @@ export function PlayerTile({
   // SeatTile.dc.html composition: portrait (seat-number badge) + info column
   // + a faction ribbon on the right edge, all inside one bordered box; delayed
   // tricks render as separate purple cards BESIDE the box, not chips inside it.
-  const boxW = isCompact ? 168 : 208;
+  const boxW = isCompact ? 168 : 236;
   const portW = isCompact ? 52 : 62;
   const portH = isCompact ? 60 : 72;
 
   return (
     <div className="table-player-cluster" style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 6 }}>
       <div
-        className={`table-player-tile${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
+        className={`table-player-tile table-player-tile-${isCompact ? "compact" : "medium"}${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
+        data-density={isCompact ? "compact" : "medium"}
         data-player-anchor={player.id}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
@@ -224,13 +225,13 @@ export function PlayerTile({
             ))}
           </div>
           <div className="table-player-status-row" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: "auto", paddingTop: 6, flexWrap: "nowrap", minWidth: 0 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--ink-muted)" }}>
+            <span className="table-player-hand-count" style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--ink-muted)", flex: "0 0 auto" }}>
               <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(var(--gold-deep),var(--gold-bronze))", display: "inline-block" }} />
               {handCount}
             </span>
             <span className="table-player-equipment-row">
               {equipEntries.map(([slot, card]) => (
-                <EquipChip key={slot} slot={slot} card={card} />
+                <EquipChip key={slot} slot={slot} card={card} compact={isCompact} />
               ))}
             </span>
           </div>
@@ -341,7 +342,7 @@ export function PlayerTile({
 
 // One equipped item on an opponent's tile: a slot icon, with a hover tooltip
 // naming the actual card and what it does.
-function EquipChip({ slot, card }: { slot: string; card: Card }) {
+function EquipChip({ slot, card, compact = false }: { slot: string; card: Card; compact?: boolean }) {
   const [hovered, setHovered] = useState(false);
   const info = cardInfo(card.typeKey);
   return (
@@ -355,12 +356,13 @@ function EquipChip({ slot, card }: { slot: string; card: Card }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        height: 16,
-        padding: "0 3px",
+        height: compact ? 14 : 16,
+        minWidth: compact ? 14 : 16,
+        padding: compact ? "0 2px" : "0 3px",
         borderRadius: 3,
         background: "#2a2016",
         border: "1px solid var(--panel-border-3)",
-        fontSize: 10,
+        fontSize: compact ? 8 : 10,
         lineHeight: 1,
         cursor: "help",
       }}

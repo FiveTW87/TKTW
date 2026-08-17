@@ -18,11 +18,11 @@ export function orderByRelativeSeat<T extends { seat: number }>(players: readonl
   );
 }
 
-/** 3–5 players get a roomier panel, 6–8 a compact one, 9–10 a head portrait
- *  only — chosen purely from player count (desktop-first; Phase 8 covers
+/** 3–6 players get a roomier panel, 7–10 a compact one — chosen purely
+ *  from player count (desktop-first; Phase 8 covers
  *  mobile-landscape sizing on top of this). */
 export function densityMode(playerCount: number): DensityMode {
-  if (playerCount <= 5) return "medium";
+  if (playerCount <= 6) return "medium";
   return "compact";
 }
 

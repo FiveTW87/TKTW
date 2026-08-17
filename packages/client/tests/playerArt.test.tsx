@@ -118,6 +118,38 @@ describe("PlayerTile character art", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("ง้าวมังกรเขียว");
   });
 
+  it("widens medium tiles while keeping all four equipment icons in compact tiles", () => {
+    const equippedPlayer = {
+      id: "p-equip",
+      seat: 1,
+      name: "Equipped",
+      generalId: "simayi",
+      faction: "wei" as const,
+      gender: "male" as const,
+      hp: 3,
+      maxHp: 3,
+      alive: true,
+      hand: { count: 6 },
+      equipment: {
+        weapon: { id: "eq-w", typeKey: "crossbow", suit: "club" as const, rank: 1 },
+        armor: { id: "eq-a", typeKey: "bagua", suit: "spade" as const, rank: 2 },
+        horseMinus: { id: "eq-hm", typeKey: "horse_chitu", suit: "heart" as const, rank: 5 },
+        horsePlus: { id: "eq-hp", typeKey: "horse_jueying", suit: "spade" as const, rank: 5 },
+      },
+      judgmentZone: [],
+      shaUsedThisTurn: 0,
+      skillUsedThisTurn: {},
+    };
+    const { container, rerender } = render(<PlayerTile player={equippedPlayer} isCurrentTurn={false} density="medium" />);
+
+    expect(container.querySelector('[data-density="medium"]')).toHaveStyle({ width: "236px" });
+
+    rerender(<PlayerTile player={equippedPlayer} isCurrentTurn={false} density="compact" />);
+    const compactTile = container.querySelector('[data-density="compact"]');
+    expect(compactTile).toHaveStyle({ width: "168px" });
+    expect(compactTile?.querySelectorAll(".table-player-equipment-chip")).toHaveLength(4);
+  });
+
   it("uses the themed tooltip for delayed trick icons", () => {
     render(
       <PlayerTile

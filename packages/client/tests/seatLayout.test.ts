@@ -25,12 +25,12 @@ describe("relativeSeat (SPEC §11.3)", () => {
 });
 
 describe("densityMode (SPEC §11.3)", () => {
-  it("3-5 players -> medium", () => {
+  it("3-6 players -> medium", () => {
     expect(densityMode(3)).toBe("medium");
-    expect(densityMode(5)).toBe("medium");
+    expect(densityMode(6)).toBe("medium");
   });
-  it("6-8 players -> compact", () => {
-    expect(densityMode(6)).toBe("compact");
+  it("7-8 players -> compact", () => {
+    expect(densityMode(7)).toBe("compact");
     expect(densityMode(8)).toBe("compact");
   });
   it("9-10 players keep the information-rich compact tile", () => {

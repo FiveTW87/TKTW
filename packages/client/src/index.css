@@ -530,6 +530,7 @@ body {
 }
 
 .table-player-equipment-row {
+  flex: 0 1 auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
@@ -538,6 +539,9 @@ body {
 }
 
 .table-player-equipment-chip { flex: 0 0 auto; }
+.table-player-tile-compact .table-player-status-row { gap: 2px !important; }
+.table-player-tile-compact .table-player-equipment-row { gap: 2px; }
+.table-player-tile-compact .table-player-hand-count { gap: 2px !important; font-size: 9px !important; }
 
 .table-theme .table-turn-panel {
   border-radius: 5px 5px 12px 12px !important;
