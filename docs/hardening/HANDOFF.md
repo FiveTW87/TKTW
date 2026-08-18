@@ -16,7 +16,8 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 
 - Branch at planning start: `main`
 - Remote: `origin`
-- Last observed HEAD: `faa89ef` (`Refine responsive player tiles`)
+- Planning base: `faa89ef` (`Refine responsive player tiles`)
+- Documentation checkpoint: `8dfb57e` (`DOC-001-hardening-execution-plan`)
 - Automated tests passed: engine 1,087; server 41; client 162; total 1,290.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 

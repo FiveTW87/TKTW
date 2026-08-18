@@ -135,7 +135,7 @@ No code tests. Verify Markdown paths, Git diff, and repository status.
 ### Completion report
 
 Completed at: 2026-08-18
-Commit: documentation checkpoint created by this task; exact hash recorded in `PROGRESS.md` after Git creates it.
+Commit: `8dfb57e` (`DOC-001-hardening-execution-plan`)
 Status: completed
 
 #### Changed

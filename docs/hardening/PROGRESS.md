@@ -29,14 +29,14 @@ Overall status: Phase 0 complete; implementation has not started
 
 ## Next actions
 
-1. Push the `DOC-001` coordination checkpoint and record its hash below.
+1. Push the `DOC-001` coordination checkpoint.
 2. Run and record fresh typecheck/build baseline at the start of `TS-001`.
 3. Review Claude's initial read-only audit if available.
 4. Start `TS-001`; do not begin legal-action implementation first.
 
 ## Checkpoints
 
-- `DOC-001`: pending Git hash assignment during publication.
+- `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
 
 ## Known workspace notes
 
