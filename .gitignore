@@ -5,3 +5,5 @@ dist/
 .env
 .env.local
 .vitest-report.json
+.pnpm-store/
+.claude/settings.local.json
