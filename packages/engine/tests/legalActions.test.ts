@@ -12,8 +12,15 @@ describe("legalActionsFor", () => {
   it("mainAction: high-level choices only, no card/target enumeration", () => {
     const pd: PendingDecision = { id: "d1", kind: "mainAction", playerId: "p0", data: {} };
     expect(legalActionsFor(pd, "p0")).toEqual([
-      { kind: "mainAction", choices: ["playCard", "useSkill", "endPhase"] },
+      { kind: "playCard" },
+      { kind: "useSkill" },
+      { kind: "endPhase" },
     ]);
+  });
+
+  it("drawCard: exposes only the draw action", () => {
+    const pd: PendingDecision = { id: "d-draw", kind: "drawCard", playerId: "p0", data: {} };
+    expect(legalActionsFor(pd, "p0")).toEqual([{ kind: "draw" }]);
   });
 
   it("discardTo: surfaces min/max/exact + selectableCardIds from the decision data", () => {
@@ -25,7 +32,8 @@ describe("legalActionsFor", () => {
     };
     expect(legalActionsFor(pd, "p0")).toEqual([
       {
-        kind: "discardTo",
+        kind: "discard",
+        decisionKind: "discardTo",
         selectableCardIds: ["c1", "c2", "c3"],
         minCards: 2,
         maxCards: 2,
@@ -41,7 +49,26 @@ describe("legalActionsFor", () => {
       playerId: "p0",
       data: { options: ["caocao", "liubei"] },
     };
-    expect(legalActionsFor(pd, "p0")).toEqual([{ kind: "pickGeneral", choices: ["caocao", "liubei"] }]);
+    expect(legalActionsFor(pd, "p0")).toEqual([
+      { kind: "response", decisionKind: "pickGeneral", choices: ["caocao", "liubei"] },
+    ]);
+  });
+
+  it("response: carries only fields present for that decision", () => {
+    const pd: PendingDecision = {
+      id: "d-response",
+      kind: "respondShan",
+      playerId: "p0",
+      data: { selectableCardIds: ["shan-1"], exactCards: 1, ignoredPrivateField: "no-copy" },
+    };
+    expect(legalActionsFor(pd, "p0")).toEqual([
+      {
+        kind: "response",
+        decisionKind: "respondShan",
+        selectableCardIds: ["shan-1"],
+        exactCards: 1,
+      },
+    ]);
   });
 
   // Hidden-info safety: legalActions must never leak the ACTOR's private

@@ -8,32 +8,49 @@
 // an answer to whatever decision is actually pending right now (how many
 // cards, which ids, which targets, which high-level choices) — real,
 // server-authoritative info without reimplementing the ruleset here.
-import type { GameEvent, PendingDecision } from "../types";
+import type { DecisionKind, GameEvent, PendingDecision } from "../types";
 
-export interface LegalActionView {
-  /** Mirrors PendingDecision.kind — which decision this describes the legal
-   *  answer shape for. */
-  kind: string;
-  selectableCardIds?: string[];
-  minCards?: number;
-  maxCards?: number;
-  exactCards?: number;
-  /** Valid target ids, when the decision has a fixed candidate set (not
-   *  applicable to open-ended mainAction targeting, which stays client-derived). */
-  targetIds?: string[];
-  /** High-level named choices (e.g. mainAction's ["playCard","useSkill","endPhase"],
-   *  or a fixed option list like pickGeneral's/guandouOrder's candidates). */
-  choices?: string[];
-}
+export type ResponseDecisionKind = Exclude<
+  DecisionKind,
+  "mainAction" | "drawCard" | "discardTo" | "discardChosenBy"
+>;
+
+export type LegalActionView =
+  // LEGAL-002 and LEGAL-003 add the fine-grained card/skill candidates. These
+  // marker variants already let consumers route the action exhaustively.
+  | { kind: "playCard" }
+  | { kind: "useSkill" }
+  | { kind: "endPhase" }
+  | { kind: "draw" }
+  | {
+      kind: "discard";
+      decisionKind: "discardTo" | "discardChosenBy";
+      selectableCardIds: string[];
+      minCards: number;
+      maxCards: number;
+      exactCards?: number;
+    }
+  | {
+      kind: "response";
+      decisionKind: ResponseDecisionKind;
+      selectableCardIds?: string[];
+      targetIds?: string[];
+      choices?: string[];
+      minCards?: number;
+      maxCards?: number;
+      exactCards?: number;
+    };
 
 // mainAction is the one open-ended decision — the fine-grained "which card as
 // which type, targeting whom" affordance is intentionally left to the
 // client's own legality modules (see the file header comment).
-const MAIN_ACTION_CHOICES = ["playCard", "useSkill", "endPhase"];
-
 function numberField(data: Record<string, unknown>, key: string): number | undefined {
   const v = data[key];
   return typeof v === "number" ? v : undefined;
+}
+
+function assertNever(value: never): never {
+  throw new Error(`legalActionsFor: unhandled decision kind ${String(value)}`);
 }
 
 function stringArrayField(data: Record<string, unknown>, key: string): string[] | undefined {
@@ -56,23 +73,70 @@ export function legalActionsFor(pd: PendingDecision | undefined, viewerId: strin
   if (!pd || pd.playerId !== viewerId) return [];
   const data = pd.data as Record<string, unknown>;
 
-  if (pd.kind === "mainAction") {
-    return [{ kind: pd.kind, choices: MAIN_ACTION_CHOICES }];
-  }
-
   const selectableCardIds = stringArrayField(data, "selectableCardIds");
+  const targetIds = stringArrayField(data, "targetIds");
   const options = stringArrayField(data, "options");
   const minCards = numberField(data, "minCards");
   const maxCards = numberField(data, "maxCards");
   const exactCards = numberField(data, "exactCards");
 
-  const view: LegalActionView = { kind: pd.kind };
-  if (selectableCardIds) view.selectableCardIds = selectableCardIds;
-  if (minCards !== undefined) view.minCards = minCards;
-  if (maxCards !== undefined) view.maxCards = maxCards;
-  if (exactCards !== undefined) view.exactCards = exactCards;
-  if (options) view.choices = options;
-  return [view];
+  switch (pd.kind) {
+    case "mainAction":
+      return [{ kind: "playCard" }, { kind: "useSkill" }, { kind: "endPhase" }];
+    case "drawCard":
+      return [{ kind: "draw" }];
+    case "discardTo":
+    case "discardChosenBy":
+      return [
+        {
+          kind: "discard",
+          decisionKind: pd.kind,
+          selectableCardIds: selectableCardIds ?? [],
+          minCards: minCards ?? 0,
+          maxCards: maxCards ?? 0,
+          ...(exactCards !== undefined ? { exactCards } : {}),
+        },
+      ];
+    case "respondShan":
+    case "respondSha":
+    case "respondTao":
+    case "askWuxie":
+    case "activateSkill":
+    case "pickCardFromPlayer":
+    case "wuguPick":
+    case "judgmentReveal":
+    case "pickGeneral":
+    case "tuxiTargets":
+    case "swordIceChoice":
+    case "qilinDestroyHorse":
+    case "guanshiForce":
+    case "qinglongReplay":
+    case "swordYyChoice":
+    case "jiedaoForceSha":
+    case "jiedaoWeaponSwap":
+    case "hujiaVolunteer":
+    case "huibiRedirect":
+    case "yijiGive":
+    case "fankuiPick":
+    case "guicaiReplace":
+    case "ganglieChoice":
+    case "fanjianGuess":
+    case "guandouOrder":
+      return [
+        {
+          kind: "response",
+          decisionKind: pd.kind,
+          ...(selectableCardIds ? { selectableCardIds } : {}),
+          ...(targetIds ? { targetIds } : {}),
+          ...(options ? { choices: options } : {}),
+          ...(minCards !== undefined ? { minCards } : {}),
+          ...(maxCards !== undefined ? { maxCards } : {}),
+          ...(exactCards !== undefined ? { exactCards } : {}),
+        },
+      ];
+    default:
+      return assertNever(pd.kind);
+  }
 }
 
 export interface PlayedCardEventView {

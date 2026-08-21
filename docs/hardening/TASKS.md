@@ -35,7 +35,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | DOC-001 | Coordination foundation | completed | Codex | 1d | — |
 | TS-001 | Compiler and command foundation | completed | Codex | 0.5d | DOC-001 |
 | TS-002 | Typed IDs and exhaustive decisions | completed | Codex | 1d | TS-001 |
-| LEGAL-001 | Legal-action union and schemas | backlog | Codex | 1d | TS-002 |
+| LEGAL-001 | Legal-action union and schemas | completed | Codex | 1d | TS-002 |
 | LEGAL-002 | Card play and conversion legality | backlog | Codex | 1.5d | LEGAL-001 |
 | LEGAL-003 | Targets, range, and multi-step legality | backlog | Codex | 1.5d | LEGAL-002 |
 | LEGAL-004 | Skills, projection, and client migration | backlog | Codex | 2d | LEGAL-003 |
@@ -263,7 +263,7 @@ Verification:
 
 ## LEGAL-001 — Legal-action union and schemas
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: High
 
 ### Objective
 
@@ -284,6 +284,29 @@ Engine legal-action model, shared schemas/views, projection tests. Client consum
 - Unit/schema snapshots for every variant.
 - Hidden-information tests.
 - Engine/shared/server tests, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: pending
+Status: completed
+
+Changed:
+
+- Replaced the optional-field legal-action object with six discriminated variants: `playCard`, `useSkill`, `response`, `draw`, `discard`, and `endPhase`.
+- Split `mainAction` into three explicit action markers while deferring card/skill enumeration to `LEGAL-002`/`LEGAL-003`.
+- Kept reactive source context as a typed `decisionKind` and made engine routing exhaustive.
+- Added strict Zod schemas that reject fields belonging to another variant.
+- Preserved owner-only projection; non-owners receive an empty action array.
+
+Verification:
+
+- Targeted engine legal-action tests: 10 passed.
+- Targeted protocol-schema tests: 10 passed.
+- `pnpm typecheck`: passed for all four packages.
+- `pnpm test`: 59 files and 1,302 tests passed.
+- `pnpm build:client`: production build passed with 198 modules transformed.
+- Existing real-GameView schema and hidden-information E2E tests passed.
 
 ---
 

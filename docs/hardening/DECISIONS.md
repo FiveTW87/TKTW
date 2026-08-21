@@ -65,3 +65,9 @@ Reason: JSON catalogs, Zod schemas, network payloads, and exhaustive action hand
 Date: 2026-08-21
 Decision: Zod brands distinguish player, card, match, decision, and client-action IDs after external parsing. The engine's serializable state and wire values remain plain strings for now.
 Reason: This prevents accidental ID interchange where packages meet while avoiding a high-risk rewrite of every internal engine function and saved deterministic fixture.
+
+## DEC-012 — Legal actions are viewer capabilities, not decision copies
+
+Date: 2026-08-21
+Decision: `legalActions` is a viewer-owned discriminated union (`playCard`, `useSkill`, `response`, `draw`, `discard`, `endPhase`). The originating engine decision remains available separately as `decisionKind` only where a response needs context.
+Reason: Consumers should route by what the viewer can do, while the server keeps decision ownership and hidden-information gating authoritative.

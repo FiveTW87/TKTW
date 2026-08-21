@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 1 — TypeScript foundation
-Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
+Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-001` complete
 
 ## Next task
 
-- `LEGAL-001` — Legal-action union and schemas
+- `LEGAL-002` — Card play and conversion legality
 - Owner: Codex
 - Status: `backlog`
 
@@ -15,10 +15,12 @@ Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
 - `DOC-001` — Coordination foundation.
 - `TS-001` — Root compiler and command foundation.
 - `TS-002` — Typed IDs and exhaustive decisions.
+- `LEGAL-001` — Legal-action discriminated union and strict schemas.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
 - Exhaustive decision handling now fails typecheck when a new kind is not routed deliberately.
+- Viewer actions now use six explicit variants and remain empty for non-owners.
 - Scope confirmed: no Database/User/Score/C#/persistent match recovery.
 - Architecture ownership agreed: Codex integration owner; Claude receives bounded audit/test/content work after contracts stabilize.
 - Existing source architecture and test suites reviewed.
@@ -28,23 +30,24 @@ Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 37 | 1,087 | Passed |
-| Server | 3 | 44 | Passed |
+| Engine | 37 | 1,089 | Passed |
+| Server | 3 | 51 | Passed |
 | Client | 19 | 162 | Passed |
-| Total | 59 | 1,293 | Passed |
+| Total | 59 | 1,302 | Passed |
 
 ## Next actions
 
-1. Push the `TS-002` checkpoint.
+1. Commit and push the `LEGAL-001` checkpoint.
 2. Review Claude's initial read-only audit if available.
-3. Start `LEGAL-001` with per-variant schema/tests before client migration.
-4. Keep Zod parsing authoritative at external seams and preserve hidden-information tests.
+3. Start `LEGAL-002` by enumerating literal and converted card plays with stable unavailable reason codes.
+4. Keep client consumption deferred until `LEGAL-004`.
 
 ## Checkpoints
 
 - `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
 - `TS-001`: `e75d6d3` (`TS-001-add-root-typecheck-gate`).
 - `TS-002`: `98410dc` (`TS-002-add-typed-protocol-seams`).
+- `LEGAL-001`: pending commit.
 
 ## Known workspace notes
 
@@ -54,5 +57,5 @@ Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
 
 ## Blockers
 
-- None for `TS-002`.
+- None for `LEGAL-001`.
 - GitHub CLI is not installed, so this checkpoint is pushed with normal Git rather than a CLI-created pull request.

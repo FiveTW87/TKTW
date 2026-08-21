@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DECISION_KINDS } from "@tktw/engine";
-import { answerSchema, decisionKindSchema } from "@tktw/shared";
+import { answerSchema, decisionKindSchema, legalActionViewSchema } from "@tktw/shared";
 
 describe("typed protocol seams", () => {
   it("keeps the engine decision vocabulary and Zod runtime schema in lockstep", () => {
@@ -36,5 +36,33 @@ describe("typed protocol seams", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it.each([
+    { kind: "playCard" },
+    { kind: "useSkill" },
+    { kind: "endPhase" },
+    { kind: "draw" },
+    {
+      kind: "discard",
+      decisionKind: "discardTo",
+      selectableCardIds: ["c1"],
+      minCards: 1,
+      maxCards: 1,
+      exactCards: 1,
+    },
+    {
+      kind: "response",
+      decisionKind: "respondShan",
+      selectableCardIds: ["c1"],
+      exactCards: 1,
+    },
+  ])("parses the $kind legal-action variant", (action) => {
+    expect(legalActionViewSchema.parse(action)).toEqual(action);
+  });
+
+  it("rejects fields that do not belong to a legal-action variant", () => {
+    expect(legalActionViewSchema.safeParse({ kind: "draw", selectableCardIds: ["secret"] }).success).toBe(false);
+    expect(legalActionViewSchema.safeParse({ kind: "discard", decisionKind: "discardTo" }).success).toBe(false);
   });
 });

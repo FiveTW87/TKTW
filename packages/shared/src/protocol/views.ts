@@ -115,15 +115,48 @@ export const decisionViewSchema = z.object({
   expiresAt: z.number().optional(),
 });
 
-export const legalActionViewSchema = z.object({
-  kind: z.string(),
-  selectableCardIds: z.array(z.string()).optional(),
-  minCards: z.number().int().optional(),
-  maxCards: z.number().int().optional(),
-  exactCards: z.number().int().optional(),
-  targetIds: z.array(z.string()).optional(),
-  choices: z.array(z.string()).optional(),
-});
+const responseDecisionKindSchema = decisionKindSchema.exclude([
+  "mainAction",
+  "drawCard",
+  "discardTo",
+  "discardChosenBy",
+]);
+
+const playCardLegalActionSchema = z.object({ kind: z.literal("playCard") }).strict();
+const useSkillLegalActionSchema = z.object({ kind: z.literal("useSkill") }).strict();
+const endPhaseLegalActionSchema = z.object({ kind: z.literal("endPhase") }).strict();
+const drawLegalActionSchema = z.object({ kind: z.literal("draw") }).strict();
+const discardLegalActionSchema = z
+  .object({
+    kind: z.literal("discard"),
+    decisionKind: z.enum(["discardTo", "discardChosenBy"]),
+    selectableCardIds: z.array(z.string()),
+    minCards: z.number().int().min(0),
+    maxCards: z.number().int().min(0),
+    exactCards: z.number().int().min(0).optional(),
+  })
+  .strict();
+const responseLegalActionSchema = z
+  .object({
+    kind: z.literal("response"),
+    decisionKind: responseDecisionKindSchema,
+    selectableCardIds: z.array(z.string()).optional(),
+    targetIds: z.array(z.string()).optional(),
+    choices: z.array(z.string()).optional(),
+    minCards: z.number().int().min(0).optional(),
+    maxCards: z.number().int().min(0).optional(),
+    exactCards: z.number().int().min(0).optional(),
+  })
+  .strict();
+
+export const legalActionViewSchema = z.discriminatedUnion("kind", [
+  playCardLegalActionSchema,
+  useSkillLegalActionSchema,
+  responseLegalActionSchema,
+  drawLegalActionSchema,
+  discardLegalActionSchema,
+  endPhaseLegalActionSchema,
+]);
 
 export const playedCardViewSchema = z.object({
   eventId: z.string(),
