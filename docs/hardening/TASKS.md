@@ -43,7 +43,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TABLE-002 | Selection, dialogs, and sound controllers | completed | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
-| PRES-001 | Presentation-event model and queue | in_progress | Codex | 1.5d | LEGAL-004, ASSET-001 |
+| PRES-001 | Presentation-event model and queue | completed | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | backlog | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
@@ -796,7 +796,7 @@ Limitations and follow-up:
 
 ## PRES-001 — Presentation-event model and queue
 
-Status: in_progress | Owner: Codex | Reviewer: Claude event audit | Branch: main | Dependencies: LEGAL-004, ASSET-001 | Estimate: 1.5 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude event audit | Branch: main | Dependencies: LEGAL-004, ASSET-001 | Estimate: 1.5 days | Risk: High
 
 ### Objective
 
@@ -883,7 +883,49 @@ Translate structured game logs into typed, ordered, deduplicated presentation ev
 
 ### Completion report
 
-Pending implementation and verification.
+Changed files:
+
+- Added `packages/client/src/presentation/presentationEvents.ts`, the client-only seven-kind discriminated event model and authoritative-order mapper.
+- Added `packages/client/src/hooks/usePresentationQueue.ts`, which owns silent baseline, stable-ID dedupe, cadence, reset, disposal, and per-event error isolation.
+- Migrated `useCombatPresentation.ts` and its Table integration to queued typed events while retaining its DOM-anchor, approved-artwork, timing, pose-priority, and reduced-motion responsibilities.
+- Added `presentationEvents.test.ts` and `usePresentationQueue.test.tsx`; updated combat regressions for match-scoped semantic/visual IDs.
+- Expanded this task specification and progress record before implementation.
+
+Behavior and type results:
+
+- Supported public logs now map to `draw | skill | damage | hpLoss | dodge | heal | death` events with match-scoped IDs.
+- Queue order follows the received array, so `log_10` cannot be lexically moved before `log_9`; valid projected-ID gaps remain safe.
+- Initial history, match change, non-prefix replacement, truncation, and missing snapshots establish a silent baseline/reset rather than replaying history.
+- Overlapping snapshots and duplicate semantic IDs present once; presenter throws/rejections are reported best-effort and never stop cadence or gameplay.
+- Existing sound reconnect/discard/turn behavior remains unchanged and separately owned until SFX-001.
+
+Tests added:
+
+- 3 mapper tests covering all seven kinds, match-scoped IDs, received ordering, optional fields, unsupported events, and malformed entries.
+- 6 queue tests covering initial silence, multi-log batching, gaps, dedupe, duplicate IDs, replacement, rollback, match reset, missing snapshot, throw/reject continuation, and unmount cleanup.
+- Existing 12 combat, 3 sound, and 67 Table regressions remain green.
+
+Verification results:
+
+- Focused presentation/SFX suite: 4 files and 24 tests passed.
+- Client suite: 27 files and 201 tests passed.
+- Engine suite: 40 files and 1,114 tests passed.
+- Server suite: 3 files and 58 tests passed.
+- Total: 70 files and 1,373 tests passed.
+- `pnpm typecheck`: passed for Engine, Shared, Server, and Client.
+- Client production build: passed with 206 modules transformed.
+- `git diff --cached --check`: passed before commit.
+- No UI, DOM, CSS, artwork, gameplay, protocol, or sound behavior changed; screenshots were intentionally omitted.
+
+Commit:
+
+- `5259d14` (`PRES-001-add-presentation-event-queue`).
+
+Limitations and follow-up:
+
+- Missing DOM anchors still drop the visual cue immediately; bounded retry and reconnect/reduced-motion hardening remain PRES-002.
+- Table sound retains its proven independent reconnect baseline and raw snapshot diff until SFX-001 adopts the event model without weakening malformed-log compatibility.
+- The queue intentionally does not await presenter promises; future animation adapters must keep their own visual lifetime and cleanup local.
 
 ---
 

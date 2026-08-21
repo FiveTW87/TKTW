@@ -113,3 +113,9 @@ Reason: A generic overlay array or many tiny wrapper components would move order
 Date: 2026-08-21
 Decision: Every playable general declares portrait, full-body, attack, hit, skill, and layout metadata in one typed client manifest. Runtime resolvers remain defensive for hidden/unknown wire values, while filesystem reconciliation and unmapped-asset reporting stay test-time only.
 Reason: Filename inference and version globs can silently select the wrong approved image. One deep manifest concentrates canonical selection and fallback locality without introducing a browser-incompatible filesystem seam or coupling artwork to gameplay.
+
+## DEC-020 — Presentation events are match-scoped and array-ordered
+
+Date: 2026-08-21
+Decision: Client presentation maps supported structured logs to a discriminated event union with match-scoped semantic IDs. A non-blocking queue preserves received array order, silently baselines initial/rebuilt history, deduplicates by semantic ID, and isolates each presenter failure. Visual adapters retain DOM, artwork, phase, and lifetime policy.
+Reason: Engine log suffixes cannot be sorted lexically, projected private logs may contain valid ID gaps, and count-only consumers cannot distinguish appends from rebuilt snapshots. One typed event seam gives future combat, card-motion, and sound work leverage without allowing presentation to delay gameplay.

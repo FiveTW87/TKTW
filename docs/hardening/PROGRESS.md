@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `PRES-001` in progress; typed presentation events and a non-blocking deduplicated queue are being introduced
+Overall status: `PRES-001` complete; combat presentation now consumes typed, ordered, deduplicated events through a non-blocking queue
 
 ## Next task
 
-- `PRES-001` — Presentation-event model and queue
+- `PRES-002` — Anchor retry, reconnect, and reduced motion
 - Owner: Codex
-- Status: `in_progress`
+- Status: `backlog`
 
 ## Completed in this cycle
 
@@ -23,6 +23,7 @@ Overall status: `PRES-001` in progress; typed presentation events and a non-bloc
 - `TABLE-002` — Semantic selection transitions, transient UI lifetimes, and reconnect-safe sound routing extracted from `Table.tsx`.
 - `TABLE-003` — Typed controls/action states, ordered overlays, SFX preferences, and recovery presentation extracted from `Table.tsx`.
 - `ASSET-001` — Explicit typed artwork manifest for 25 generals, 125 selected files, and four known unmapped inventory files.
+- `PRES-001` — Typed presentation-event model, silent-baseline queue, combat adapter migration, and failure isolation.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -39,15 +40,15 @@ Overall status: `PRES-001` in progress; typed presentation events and a non-bloc
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 25 | 192 | Passed |
-| Total | 68 | 1,364 | Passed |
+| Client | 27 | 201 | Passed |
+| Total | 70 | 1,373 | Passed |
 
 ## Next actions
 
-1. Define stable typed presentation events from structured game logs.
-2. Add a silent-baseline queue with authoritative ordering, dedupe, and rollback/match reset.
-3. Migrate combat presentation without changing DOM, CSS, artwork, timing, or gameplay.
-4. Verify focused/full suites, typecheck, and production build before commit and push.
+1. Push the verified `PRES-001` code and documentation checkpoints to `origin/main`.
+2. Start `PRES-002` with bounded retry for temporarily missing desktop/mobile anchors.
+3. Preserve silent reconnect baselines and keep reduced-motion outcome cues meaningful.
+4. Retain presentation failure isolation from gameplay, answers, turns, and sockets.
 
 ## Checkpoints
 
@@ -62,6 +63,7 @@ Overall status: `PRES-001` in progress; typed presentation events and a non-bloc
 - `TABLE-002`: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
 - `TABLE-003`: `d737611` (`TABLE-003-extract-table-presentation`).
 - `ASSET-001`: `da0f7ad` (`ASSET-001-add-typed-general-art-manifest`).
+- `PRES-001`: `5259d14` (`PRES-001-add-presentation-event-queue`).
 
 ## Known workspace notes
 
@@ -71,4 +73,4 @@ Overall status: `PRES-001` in progress; typed presentation events and a non-bloc
 
 ## Blockers
 
-- None for `PRES-001`.
+- None for `PRES-002`.
