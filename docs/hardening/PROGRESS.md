@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `ASSET-001` complete; all 25 playable generals now resolve through one typed, filesystem-audited art manifest
+Overall status: `PRES-001` in progress; typed presentation events and a non-blocking deduplicated queue are being introduced
 
 ## Next task
 
 - `PRES-001` — Presentation-event model and queue
 - Owner: Codex
-- Status: `backlog`
+- Status: `in_progress`
 
 ## Completed in this cycle
 
@@ -44,10 +44,10 @@ Overall status: `ASSET-001` complete; all 25 playable generals now resolve throu
 
 ## Next actions
 
-1. Push the verified `ASSET-001` code and documentation checkpoints to `origin/main`.
-2. Start `PRES-001` by defining stable, ordered presentation events from structured game logs.
-3. Preserve initial-snapshot silence, dedupe, and non-blocking gameplay behavior.
-4. Keep presentation queue errors isolated from answers, turns, and reconnect state.
+1. Define stable typed presentation events from structured game logs.
+2. Add a silent-baseline queue with authoritative ordering, dedupe, and rollback/match reset.
+3. Migrate combat presentation without changing DOM, CSS, artwork, timing, or gameplay.
+4. Verify focused/full suites, typecheck, and production build before commit and push.
 
 ## Checkpoints
 

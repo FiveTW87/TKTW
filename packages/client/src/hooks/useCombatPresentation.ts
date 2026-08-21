@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameLogView, PlayerView } from "@tktw/shared";
 import { skillById } from "../data/generalSkills";
 import { generalPosePresentation, type GeneralPose } from "../data/generalArt";
-
-const EMPTY_LOGS: readonly GameLogView[] = [];
+import type { PresentationEvent } from "../presentation/presentationEvents";
+import { usePresentationQueue } from "./usePresentationQueue";
 
 interface BaseEffect {
   id: string;
@@ -91,12 +91,11 @@ function posePosition(anchor: { x: number; y: number }): { poseLeft: number; pos
 type CombatPlayer = Pick<PlayerView, "id" | "generalId" | "faction">;
 
 export function useCombatPresentation(
+  matchId: string | undefined,
   logs: readonly GameLogView[] | undefined,
   players: readonly CombatPlayer[] | undefined = undefined,
 ): CombatEffect[] {
-  const entries = logs ?? EMPTY_LOGS;
   const [effects, setEffects] = useState<CombatEffect[]>([]);
-  const previousCount = useRef<number | null>(null);
   const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const mounted = useRef(true);
 
@@ -125,16 +124,13 @@ export function useCombatPresentation(
     }
   }, [players]);
 
-  useEffect(() => {
-    const previous = previousCount.current;
-    previousCount.current = entries.length;
-    if (previous === null) return;
-    if (entries.length < previous) {
-      for (const timer of timers.current) clearTimeout(timer);
-      timers.current.clear();
-      setEffects([]);
-      return;
-    }
+  const clearPresentation = useCallback(() => {
+    for (const timer of timers.current) clearTimeout(timer);
+    timers.current.clear();
+    setEffects([]);
+  }, []);
+
+  const present = useCallback((event: PresentationEvent) => {
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const playerById = new Map((players ?? []).map((player) => [player.id, player]));
     const posePresentation = (playerId: string, pose: GeneralPose, anchor: { x: number; y: number }) => {
@@ -195,86 +191,90 @@ export function useCombatPresentation(
       }
     };
 
-    entries.slice(previous).forEach((entry, index) => {
-      if (!entry.actorId) return;
-      const target = anchorCenter(entry.actorId);
-      if (!target) return;
-      const baseDelay = index * 90;
+    if (event.kind === "draw" || event.kind === "hpLoss") return;
+    const targetPlayerId = event.kind === "skill" ? event.actorId : event.targetId;
+    const target = anchorCenter(targetPlayerId);
+    if (!target) return;
 
-      if (entry.eventType === "death") {
-        schedule({
-          id: `${entry.id}:death`,
-          kind: "death",
-          left: target.x,
-          top: target.y,
-          angleDeg: 0,
-        }, baseDelay, reducedMotion ? 360 : 1250);
-        return;
-      }
+    if (event.kind === "death") {
+      schedule({
+        id: event.id,
+        kind: "death",
+        left: target.x,
+        top: target.y,
+        angleDeg: 0,
+      }, 0, reducedMotion ? 360 : 1250);
+      return;
+    }
 
-      if (entry.eventType === "skillUse") {
-        schedule({
-          id: `${entry.id}:skill`,
-          kind: "skill",
-          left: target.x,
-          top: target.y,
-          angleDeg: 0,
-          ...posePresentation(entry.actorId, "skill", target),
-          label: entry.skillId ? skillById(entry.skillId)?.name ?? entry.skillId : "ใช้สกิล",
-        }, baseDelay, reducedMotion ? 360 : 920);
-        return;
-      }
+    if (event.kind === "skill") {
+      schedule({
+        id: event.id,
+        kind: "skill",
+        left: target.x,
+        top: target.y,
+        angleDeg: 0,
+        ...posePresentation(event.actorId, "skill", target),
+        label: event.skillId ? skillById(event.skillId)?.name ?? event.skillId : "ใช้สกิล",
+      }, 0, reducedMotion ? 360 : 920);
+      return;
+    }
 
-      if (entry.eventType === "heal") {
-        schedule({
-          id: `${entry.id}:heal`,
-          kind: "heal",
-          left: target.x,
-          top: target.y,
-          angleDeg: 0,
-          amount: entry.amount,
-        }, baseDelay, reducedMotion ? 360 : 900);
-        return;
-      }
+    if (event.kind === "heal") {
+      schedule({
+        id: event.id,
+        kind: "heal",
+        left: target.x,
+        top: target.y,
+        angleDeg: 0,
+        amount: event.amount,
+      }, 0, reducedMotion ? 360 : 900);
+      return;
+    }
 
-      if (entry.eventType !== "damage" && entry.eventType !== "dodge") return;
-      const sourceId = entry.data?.sourceId ? String(entry.data.sourceId) : "";
-      const source = sourceId ? anchorCenter(sourceId) : null;
-      const angleDeg = source ? (Math.atan2(target.y - source.y, target.x - source.x) * 180) / Math.PI : -35;
+    const sourceId = event.sourceId ?? "";
+    const source = sourceId ? anchorCenter(sourceId) : null;
+    const angleDeg = source ? (Math.atan2(target.y - source.y, target.x - source.x) * 180) / Math.PI : -35;
 
-      if (source && !reducedMotion) {
-        schedule({
-          id: `${entry.id}:travel`,
-          kind: "travel",
-          left: source.x,
-          top: source.y,
-          angleDeg,
-          distance: Math.hypot(target.x - source.x, target.y - source.y),
-          ...posePresentation(sourceId, "attack", source),
-        }, baseDelay, 1450);
-      }
+    if (source && !reducedMotion) {
+      schedule({
+        id: `${event.id}:travel`,
+        kind: "travel",
+        left: source.x,
+        top: source.y,
+        angleDeg,
+        distance: Math.hypot(target.x - source.x, target.y - source.y),
+        ...posePresentation(sourceId, "attack", source),
+      }, 0, 1450);
+    }
 
-      if (entry.eventType === "damage") {
-        schedule({
-          id: `${entry.id}:hit`,
-          kind: "hit",
-          left: target.x,
-          top: target.y,
-          angleDeg,
-          amount: entry.amount,
-          ...posePresentation(entry.actorId, "hit", target),
-        }, baseDelay + (source && !reducedMotion ? 220 : 0), reducedMotion ? 520 : 1650);
-      } else {
-        schedule({
-          id: `${entry.id}:dodge`,
-          kind: "dodge",
-          left: target.x,
-          top: target.y,
-          angleDeg,
-        }, baseDelay + (source && !reducedMotion ? 220 : 0), reducedMotion ? 360 : 680);
-      }
-    });
-  }, [entries, players]);
+    if (event.kind === "damage") {
+      schedule({
+        id: `${event.id}:hit`,
+        kind: "hit",
+        left: target.x,
+        top: target.y,
+        angleDeg,
+        amount: event.amount,
+        ...posePresentation(event.targetId, "hit", target),
+      }, source && !reducedMotion ? 220 : 0, reducedMotion ? 520 : 1650);
+    } else {
+      schedule({
+        id: event.id,
+        kind: "dodge",
+        left: target.x,
+        top: target.y,
+        angleDeg,
+      }, source && !reducedMotion ? 220 : 0, reducedMotion ? 360 : 680);
+    }
+  }, [players]);
+
+  usePresentationQueue({
+    matchId,
+    logs,
+    present,
+    onReset: clearPresentation,
+  });
 
   return effects;
 }

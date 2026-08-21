@@ -43,7 +43,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TABLE-002 | Selection, dialogs, and sound controllers | completed | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
-| PRES-001 | Presentation-event model and queue | backlog | Codex | 1.5d | LEGAL-004, ASSET-001 |
+| PRES-001 | Presentation-event model and queue | in_progress | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | backlog | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
@@ -796,11 +796,67 @@ Limitations and follow-up:
 
 ## PRES-001 — Presentation-event model and queue
 
-Status: backlog | Owner: Codex | Reviewer: Claude event audit | Estimate: 1.5 days | Risk: High
+Status: in_progress | Owner: Codex | Reviewer: Claude event audit | Branch: main | Dependencies: LEGAL-004, ASSET-001 | Estimate: 1.5 days | Risk: High
 
 ### Objective
 
 Translate structured game logs into typed, ordered, deduplicated presentation events managed by a non-blocking queue.
+
+### Current behavior
+
+- Combat effects and table sounds independently diff raw game-log counts.
+- Combat presentation derives semantic meaning, DOM anchors, artwork, and animation timing in one hook.
+- Count-only diffing cannot distinguish a safe append from a same-length replacement and does not deduplicate overlapping snapshots by stable event identity.
+- Initial mount is silent, while sound routing separately owns match and reconnect baselines.
+
+### Expected behavior
+
+- One pure module maps supported structured logs to a typed presentation-event union.
+- One queue hook owns silent baselines, authoritative array ordering, stable-ID dedupe, rollback/match reset, and per-event failure isolation.
+- Combat presentation consumes queued semantic events while preserving existing anchors, artwork, timing, reduced-motion behavior, and visual output.
+- Table sound keeps its existing snapshot/reconnect baseline until SFX-001; gameplay never waits for presentation work.
+
+### In scope / allowed files
+
+- `packages/client/src/presentation/presentationEvents.ts`.
+- `packages/client/src/hooks/usePresentationQueue.ts`.
+- Targeted integration edits to `packages/client/src/hooks/useCombatPresentation.ts` and `packages/client/src/screens/Table.tsx`.
+- Narrow `useTableSfx.ts` edits only if typed log-event consumption can preserve its discard, turn, and reconnect behavior exactly.
+- Focused client tests for the event model, queue, combat adapter, and existing sound baseline.
+- `docs/hardening/TASKS.md`, `docs/hardening/PROGRESS.md`, and a narrowly scoped decision record if implementation creates a durable new architectural decision.
+
+### Out of scope / forbidden files
+
+- Engine log generation, Shared schemas/protocols, Server, Zustand store, sockets, reconnect flow, answers, turns, and legal actions.
+- UI markup, CSS, DOM anchor names/placement, artwork/assets, audio synthesis/preferences, and new visual or sound effects.
+- Anchor retry and expanded reconnect/reduced-motion hardening, which remain in PRES-002.
+- `packages/client/src/App.tsx`, including its pre-existing line-ending-only worktree change.
+
+### Type or protocol changes
+
+- Add a client-only discriminated `PresentationEvent` union for `draw`, `skill`, `damage`, `hpLoss`, `dodge`, `heal`, and `death`.
+- Normalize damage/dodge recipients as `targetId` and optional scalar `data.sourceId` as `sourceId`.
+- Use match-scoped semantic IDs in the form `${matchId}:${logId}:${kind}`; visual phase IDs append their own suffixes.
+- Do not change wire schemas or import Engine runtime code into the client.
+
+### Implementation steps
+
+1. Add red tests for event mapping, stable IDs, authoritative order, unsupported logs, optional fields, and malformed data.
+2. Add red tests for initial silence, multi-log batches, overlapping snapshots, duplicate IDs, visible ID gaps, same-length replacement, rollback, match reset, per-event failures, and unmount cleanup.
+3. Implement the pure typed mapper without localized labels, artwork, DOM coordinates, or animation timing.
+4. Implement the queue lifecycle without sorting log IDs or awaiting presentation from gameplay/network paths.
+5. Migrate combat presentation to queued semantic events and retain its adapter responsibilities and existing external behavior.
+6. Run focused tests, the full client/engine/server suites, root typecheck, production build, and scoped diff review.
+
+### Edge cases
+
+- `log_10` must follow `log_9` by received array position, never lexical sorting.
+- Private-log projection may leave valid raw-ID gaps.
+- Duplicate raw IDs keep the first mapped semantic event and do not replay.
+- Same-match non-prefix replacement or truncation silently clears pending work and establishes a new baseline.
+- Rematches may reuse `log_0`; match-scoped IDs prevent cross-match collisions.
+- Unknown event types, absent optional fields, empty `sourceId`, missing actors/anchors, and presenter errors fail safely.
+- StrictMode replays, rapid snapshots, rejected presenter promises, and timer callbacks after unmount must not duplicate work or affect gameplay.
 
 ### Acceptance criteria
 
@@ -809,10 +865,25 @@ Translate structured game logs into typed, ordered, deduplicated presentation ev
 - Initial mount does not replay prior history.
 - Queue errors do not affect gameplay.
 
-### Tests and verification
+### Tests to add
 
-- Event mapping, ordering, dedupe, initial mount, and error-isolation tests.
-- Existing combat presentation tests, client suite, typecheck, and build.
+- Pure mapper coverage for all seven event kinds, unknown events, optional data, match-scoped IDs, and deterministic order.
+- Queue coverage for rich initial snapshot silence, three-or-more appended events, overlap/dedupe, ID gaps, duplicate IDs, same-length replacement, rollback, match change, error continuation, and unmount cleanup.
+- Combat adapter regression coverage for travel-to-hit, dodge, heal, skill, death, pose priority, reduced motion, rollback/reset, and visual child IDs.
+- Retain the table-SFX reconnect and snapshot-delta regression suite.
+
+### Verification commands
+
+- `pnpm --filter @tktw/client exec vitest run tests/presentationEvents.test.ts tests/usePresentationQueue.test.tsx tests/useCombatPresentation.test.tsx tests/useTableSfx.test.tsx`.
+- `pnpm --filter @tktw/client test -- --run`.
+- `pnpm --filter @tktw/engine test -- --run`.
+- `pnpm --filter @tktw/server test -- --run`.
+- `pnpm typecheck`.
+- `pnpm --filter @tktw/client build`.
+
+### Completion report
+
+Pending implementation and verification.
 
 ---
 

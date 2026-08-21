@@ -50,14 +50,14 @@ describe("useCombatPresentation", () => {
 
   it("does not replay historical effects from the initial reconnect snapshot", () => {
     const historical = log({ actorId: "target", amount: 1, data: { sourceId: "attacker", hp: 3 } });
-    const { result } = renderHook(() => useCombatPresentation([historical]));
+    const { result } = renderHook(() => useCombatPresentation("match-1", [historical]));
 
     expect(result.current).toEqual([]);
   });
 
   it("shows an attack travelling from source to target before the hit lands", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
 
@@ -85,7 +85,7 @@ describe("useCombatPresentation", () => {
     anchor("attacker", 20, 20);
     anchor("target", 1100, 40);
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
 
@@ -102,7 +102,7 @@ describe("useCombatPresentation", () => {
 
   it("lands on a distinct dodge cue instead of a hit", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
       { initialProps: { logs: [] } },
     );
 
@@ -119,7 +119,7 @@ describe("useCombatPresentation", () => {
 
   it("shows healing as a positive cue on the healed player", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
       { initialProps: { logs: [] } },
     );
 
@@ -132,7 +132,7 @@ describe("useCombatPresentation", () => {
 
   it("shows the public skill name over the player who activated it", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
 
@@ -153,7 +153,7 @@ describe("useCombatPresentation", () => {
     anchor("attacker", 20, 60);
     anchor("target", 810, 60);
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
 
@@ -176,7 +176,7 @@ describe("useCombatPresentation", () => {
 
   it("keeps only the newest pose visible for a player while preserving both effect cues", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
     const first = log({ id: "skill-1", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" });
@@ -187,14 +187,14 @@ describe("useCombatPresentation", () => {
 
     expect(result.current.filter((effect) => effect.kind === "skill")).toHaveLength(2);
     expect(result.current.filter((effect) => effect.poseArt)).toHaveLength(1);
-    expect(result.current.find((effect) => effect.id === "skill-2:skill")?.poseArt).toBe(
+    expect(result.current.find((effect) => effect.id === "match-1:skill-2:skill")?.poseArt).toBe(
       "/assets/generals/cao_cao_skill-v1.png",
     );
   });
 
   it("does not let follow-up attack travel immediately replace an active skill pose", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
     const skill = log({ id: "skill-priority", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" });
@@ -203,15 +203,17 @@ describe("useCombatPresentation", () => {
     act(() => rerender({ logs: [skill] }));
     act(() => rerender({ logs: [skill, damage] }));
 
-    expect(result.current.find((effect) => effect.id === "skill-priority:skill")?.poseArt).toBe(
+    expect(result.current.find((effect) => effect.id === "match-1:skill-priority:skill")?.poseArt).toBe(
       "/assets/generals/cao_cao_skill-v1.png",
     );
-    expect(result.current.find((effect) => effect.id === "damage-after-skill:travel")?.poseArt).toBeUndefined();
+    expect(
+      result.current.find((effect) => effect.id === "match-1:damage-after-skill:damage:travel")?.poseArt,
+    ).toBeUndefined();
   });
 
   it("clears active effects when the log stream is reset", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
       { initialProps: { logs: [] } },
     );
 
@@ -223,7 +225,7 @@ describe("useCombatPresentation", () => {
 
   it("shows a defeat cue over a player when a public death log arrives", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
       { initialProps: { logs: [] } },
     );
 
@@ -241,7 +243,7 @@ describe("useCombatPresentation", () => {
       value: vi.fn().mockReturnValue({ matches: true }),
     });
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation(logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
       { initialProps: { logs: [] } },
     );
 
