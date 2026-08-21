@@ -1,6 +1,6 @@
 import type { Card, GameView, PlayerView } from "@tktw/shared";
 import { describe, expect, it, vi } from "vitest";
-import type { InteractionAction, InteractionState } from "../src/hooks/useInteraction";
+import type { InteractionState, SelectionController } from "../src/hooks/useInteraction";
 import { createMainActionController } from "../src/hooks/mainActionController";
 
 const card: Card = { id: "sha-1", typeKey: "sha", suit: "spade", rank: 7 };
@@ -27,7 +27,6 @@ function player(id: string, overrides: Partial<PlayerView> = {}): PlayerView {
 }
 
 const idle: InteractionState = {
-  mode: "idle",
   selectedCardIds: [],
   selectedTargetIds: [],
   skillMode: null,
@@ -67,7 +66,16 @@ function makeController({
     finished: false,
     gameLogs: [],
   } as unknown as GameView;
-  const dispatched: InteractionAction[] = [];
+  const commands: SelectionController["commands"] = {
+    reset: vi.fn(),
+    setCards: vi.fn(),
+    setTargets: vi.fn(),
+    toggleIndependentTarget: vi.fn(),
+    stepDependentTarget: vi.fn(),
+    beginPlay: vi.fn(),
+    beginSkill: vi.fn(),
+    beginZhangba: vi.fn(),
+  };
   const submit = vi.fn(async () => undefined);
   const notify = vi.fn();
   const controller = createMainActionController({
@@ -77,13 +85,12 @@ function makeController({
     isMyDecision: true,
     isMainAction: true,
     isDiscardTo: false,
-    interaction,
-    dispatch: (action) => { dispatched.push(action); },
+    selection: { state: interaction, commands },
     submit,
     notify,
     requestPlayChoice: vi.fn(),
   });
-  return { controller, dispatched, submit, notify, players: gameView.players };
+  return { controller, commands, submit, notify, players: gameView.players };
 }
 
 describe("createMainActionController", () => {
@@ -112,12 +119,12 @@ describe("createMainActionController", () => {
     };
     const first = makeController({ option, interaction: { ...idle, selectedCardIds: [card.id] } });
     first.controller.targets.tap("p1");
-    expect(first.dispatched).toContainEqual({ type: "SELECT_TARGETS", ids: ["p1"] });
+    expect(first.commands.stepDependentTarget).toHaveBeenCalledWith("p1");
 
     const second = makeController({ option, interaction: { ...idle, selectedCardIds: [card.id], selectedTargetIds: ["p1"] } });
     expect(second.controller.targets.isTargetable(second.players[2]!)).toBe(true);
     second.controller.targets.tap("p2");
-    expect(second.dispatched).toContainEqual({ type: "SELECT_TARGETS", ids: ["p1", "p2"] });
+    expect(second.commands.stepDependentTarget).toHaveBeenCalledWith("p2");
   });
 
   it("submits an implicit self-target Tao immediately without a client target id", () => {

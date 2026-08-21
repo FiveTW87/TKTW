@@ -1,67 +1,67 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { useInteraction } from "../src/hooks/useInteraction";
 
-describe("useInteraction (SPEC §11.1 InteractionMode)", () => {
-  it("starts idle with empty selection", () => {
+describe("useInteraction", () => {
+  it("starts empty and exposes no reducer vocabulary", () => {
     const { result } = renderHook(() => useInteraction("dec_1"));
-    const [state] = result.current;
-    expect(state.mode).toBe("idle");
-    expect(state.selectedCardIds).toEqual([]);
-    expect(state.selectedTargetIds).toEqual([]);
-    expect(state.skillMode).toBeNull();
-    expect(state.zhangbaMode).toBe(false);
-  });
-
-  it("SELECT_CARDS / SELECT_TARGETS / SET_SKILL_MODE update state", () => {
-    const { result } = renderHook(() => useInteraction("dec_1"));
-    act(() => result.current[1]({ type: "SELECT_CARDS", ids: ["c1"] }));
-    act(() => result.current[1]({ type: "SELECT_TARGETS", ids: ["p1"] }));
-    act(() => result.current[1]({ type: "SET_SKILL_MODE", skillId: "s1" }));
-    const [state] = result.current;
-    expect(state.selectedCardIds).toEqual(["c1"]);
-    expect(state.selectedTargetIds).toEqual(["p1"]);
-    expect(state.skillMode).toBe("s1");
-  });
-
-  it("resets all selection when the decision key changes (SPEC §6.3 — no restoring stale selection)", () => {
-    const { result, rerender } = renderHook(({ key }) => useInteraction(key), { initialProps: { key: "dec_1" } });
-    act(() => result.current[1]({ type: "SELECT_CARDS", ids: ["c1"] }));
-    act(() => result.current[1]({ type: "SELECT_TARGETS", ids: ["p1"] }));
-    expect(result.current[0].selectedCardIds).toEqual(["c1"]);
-
-    rerender({ key: "dec_2" });
-
-    expect(result.current[0].selectedCardIds).toEqual([]);
-    expect(result.current[0].selectedTargetIds).toEqual([]);
-  });
-
-  it("does NOT reset when re-rendered with the same decision key", () => {
-    const { result, rerender } = renderHook(({ key }) => useInteraction(key), { initialProps: { key: "dec_1" } });
-    act(() => result.current[1]({ type: "SELECT_CARDS", ids: ["c1"] }));
-    rerender({ key: "dec_1" });
-    expect(result.current[0].selectedCardIds).toEqual(["c1"]);
-  });
-
-  it("TOGGLE_TARGET respects the max cap by dropping the oldest pick", () => {
-    const { result } = renderHook(() => useInteraction("dec_1"));
-    act(() => result.current[1]({ type: "TOGGLE_TARGET", id: "p1", max: 1 }));
-    expect(result.current[0].selectedTargetIds).toEqual(["p1"]);
-    act(() => result.current[1]({ type: "TOGGLE_TARGET", id: "p2", max: 1 }));
-    expect(result.current[0].selectedTargetIds).toEqual(["p2"]); // p1 replaced, not stacked
-  });
-
-  it("RESET clears every field including skill/zhangba/asType modes", () => {
-    const { result } = renderHook(() => useInteraction("dec_1"));
-    act(() => {
-      result.current[1]({ type: "SELECT_CARDS", ids: ["c1"] });
-      result.current[1]({ type: "SET_ZHANGBA_MODE", on: true });
-      result.current[1]({ type: "SET_AS_TYPE", asType: "sha" });
+    expect(result.current.state).toEqual({
+      selectedCardIds: [], selectedTargetIds: [], skillMode: null, zhangbaMode: false, selectedAsType: null,
     });
-    act(() => result.current[1]({ type: "RESET" }));
-    const [state] = result.current;
-    expect(state.selectedCardIds).toEqual([]);
-    expect(state.zhangbaMode).toBe(false);
-    expect(state.selectedAsType).toBeNull();
+  });
+
+  it("exposes an empty selection immediately when the decision changes", () => {
+    const { result, rerender } = renderHook(({ key }) => useInteraction(key), { initialProps: { key: "dec_1" } });
+    act(() => result.current.commands.beginPlay(["c1"], "sha", ["p1"]));
+    expect(result.current.state.selectedCardIds).toEqual(["c1"]);
+    rerender({ key: "dec_2" });
+    expect(result.current.state.selectedCardIds).toEqual([]);
+    expect(result.current.state.selectedTargetIds).toEqual([]);
+    expect(result.current.state.selectedAsType).toBeNull();
+  });
+
+  it("preserves selection across same-key rerenders", () => {
+    const { result, rerender } = renderHook(({ key }) => useInteraction(key), { initialProps: { key: "dec_1" } });
+    act(() => result.current.commands.setCards(["c1"]));
+    rerender({ key: "dec_1" });
+    expect(result.current.state.selectedCardIds).toEqual(["c1"]);
+  });
+
+  it("beginPlay, beginSkill, and beginZhangba atomically clear incompatible modes", () => {
+    const { result } = renderHook(() => useInteraction("dec_1"));
+    act(() => result.current.commands.beginPlay(["c1"], "sha", ["p1"]));
+    expect(result.current.state).toMatchObject({ selectedCardIds: ["c1"], selectedTargetIds: ["p1"], selectedAsType: "sha", skillMode: null, zhangbaMode: false });
+    act(() => result.current.commands.beginSkill("lijian"));
+    expect(result.current.state).toMatchObject({ selectedCardIds: [], selectedTargetIds: [], selectedAsType: null, skillMode: "lijian", zhangbaMode: false });
+    act(() => result.current.commands.beginZhangba());
+    expect(result.current.state).toMatchObject({ selectedCardIds: [], selectedTargetIds: [], selectedAsType: null, skillMode: null, zhangbaMode: true });
+  });
+
+  it("independent targets drop the oldest selection at the cap", () => {
+    const { result } = renderHook(() => useInteraction("dec_1"));
+    act(() => result.current.commands.toggleIndependentTarget("p1", 2));
+    act(() => result.current.commands.toggleIndependentTarget("p2", 2));
+    act(() => result.current.commands.toggleIndependentTarget("p3", 2));
+    expect(result.current.state.selectedTargetIds).toEqual(["p2", "p3"]);
+  });
+
+  it("dependent targets preserve first→second ordering and support reset/replacement", () => {
+    const { result } = renderHook(() => useInteraction("dec_1"));
+    act(() => result.current.commands.stepDependentTarget("p1"));
+    act(() => result.current.commands.stepDependentTarget("p2"));
+    expect(result.current.state.selectedTargetIds).toEqual(["p1", "p2"]);
+    act(() => result.current.commands.stepDependentTarget("p3"));
+    expect(result.current.state.selectedTargetIds).toEqual(["p1", "p3"]);
+    act(() => result.current.commands.stepDependentTarget("p3"));
+    expect(result.current.state.selectedTargetIds).toEqual(["p1"]);
+    act(() => result.current.commands.stepDependentTarget("p1"));
+    expect(result.current.state.selectedTargetIds).toEqual([]);
+  });
+
+  it("reset clears cards, targets, and every mode", () => {
+    const { result } = renderHook(() => useInteraction("dec_1"));
+    act(() => result.current.commands.beginPlay(["c1"], "sha", ["p1"]));
+    act(() => result.current.commands.reset());
+    expect(result.current.state).toMatchObject({ selectedCardIds: [], selectedTargetIds: [], skillMode: null, zhangbaMode: false, selectedAsType: null });
   });
 });

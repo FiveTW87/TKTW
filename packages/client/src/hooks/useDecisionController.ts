@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameView, PlayerAnswer, PlayerView } from "@tktw/shared";
-import type { ToastData } from "../components/SkillToast";
 import { skillById } from "../data/generalSkills";
 import { generalDisplay } from "../data/generalNames";
 import { skillInteraction, sameFactionTeammateAlive } from "../data/skillInteraction";
@@ -26,19 +25,19 @@ export function useDecisionController({
   gameView,
   me,
   answer,
+  onAutoToast,
 }: {
   gameView: GameView | null;
   me: PlayerView | undefined;
   answer: (fields: AnswerFields) => Promise<void>;
+  onAutoToast: (data: { glyph: string; name: string; owner: string }) => void;
 }) {
   const pending = gameView?.pendingDecision;
   const isMyDecision = !!pending && pending.playerId === gameView?.viewerPlayerId;
   const isMainAction = pending?.kind === "mainAction";
   const isDiscardTo = pending?.kind === "discardTo";
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<ToastData | null>(null);
   const autoHandledRef = useRef<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pendingActivateId =
     pending?.kind === "activateSkill" && isMyDecision
@@ -89,10 +88,6 @@ export function useDecisionController({
   } else if (showDecisionModal) route = { kind: "modal" };
   else route = { kind: "autoPending" };
 
-  useEffect(() => () => {
-    if (toastTimer.current !== null) clearTimeout(toastTimer.current);
-  }, []);
-
   useEffect(() => {
     if (!gameView || !me || !pending || !isMyDecision) return;
     if (autoHandledRef.current === pending.id) return;
@@ -114,13 +109,11 @@ export function useDecisionController({
     const mode = skillInteraction(skillId);
     if (mode === "autoToast") {
       const skill = skillById(skillId);
-      setToast({
+      onAutoToast({
         glyph: generalDisplay(me.generalId).glyph,
         name: skill?.name ?? skillId,
         owner: generalDisplay(me.generalId).name,
       });
-      if (toastTimer.current !== null) clearTimeout(toastTimer.current);
-      toastTimer.current = setTimeout(() => setToast(null), 1600);
       accept();
     } else if (mode === "autoSilent") accept();
     else if (mode === "hujia" && !sameFactionTeammateAlive(gameView, me)) pass();
@@ -150,7 +143,6 @@ export function useDecisionController({
     pendingActivateId,
     pendingActivateMode,
     busy,
-    toast,
     runAnswer,
     answerActivate,
   };

@@ -1,6 +1,5 @@
-import type { Dispatch } from "react";
 import type { Card, GameView, LegalActionView, PlayerAnswer, PlayerView } from "@tktw/shared";
-import type { InteractionAction, InteractionState } from "./useInteraction";
+import type { SelectionController } from "./useInteraction";
 import { cardDisplay } from "../data/cardNames";
 import { cardMeta, type EquipSlot } from "../data/cardMeta";
 import { generalSkills } from "../data/generalSkills";
@@ -21,8 +20,7 @@ export function createMainActionController({
   isMyDecision,
   isMainAction,
   isDiscardTo,
-  interaction,
-  dispatch,
+  selection,
   submit,
   notify,
   requestPlayChoice,
@@ -33,13 +31,13 @@ export function createMainActionController({
   isMyDecision: boolean;
   isMainAction: boolean;
   isDiscardTo: boolean;
-  interaction: InteractionState;
-  dispatch: Dispatch<InteractionAction>;
+  selection: SelectionController;
   submit: (fields: AnswerFields) => Promise<void>;
   notify: (message: string) => void;
   requestPlayChoice: (choice: PlayChoice | null) => void;
 }) {
-  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode, selectedAsType } = interaction;
+  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode, selectedAsType } = selection.state;
+  const commands = selection.commands;
   const myHand = Array.isArray(me.hand) ? me.hand : [];
   const legalActions = gameView.legalActions ?? [];
   const playCardOptions = legalActions.find((action) => action.kind === "playCard")?.options ?? [];
@@ -78,15 +76,9 @@ export function createMainActionController({
     : false;
   const confirmOk = targetCountOk && cardCountOk && selectedOption?.available === true;
 
-  const reset = () => dispatch({ type: "RESET" });
-  const selectTargets = (ids: string[]) => dispatch({ type: "SELECT_TARGETS", ids });
+  const reset = commands.reset;
   const toggleTarget = (playerId: string) => {
-    const previous = selectedTargetIds;
-    selectTargets(previous.includes(playerId)
-      ? previous.filter((id) => id !== playerId)
-      : previous.length < targetRange.max
-        ? [...previous, playerId]
-        : [...previous.slice(1), playerId]);
+    commands.toggleIndependentTarget(playerId, targetRange.max);
   };
   const isTargetable = (player: PlayerView) => {
     if (!targetsActive || !targeting) return false;
@@ -102,13 +94,7 @@ export function createMainActionController({
   };
   const tapTarget = (playerId: string) => {
     if (targeting?.kind !== "dependent") return toggleTarget(playerId);
-    const previous = selectedTargetIds;
-    selectTargets(
-      previous[0] === playerId ? []
-      : previous[1] === playerId ? [previous[0]!]
-      : previous.length === 0 ? [playerId]
-      : [previous[0]!, playerId],
-    );
+    commands.stepDependentTarget(playerId);
   };
 
   const proceedPlay = (card: Card, option: PlayCardOption) => {
@@ -138,9 +124,7 @@ export function createMainActionController({
         return;
       }
     }
-    dispatch({ type: "SELECT_CARDS", ids: [card.id] });
-    dispatch({ type: "SET_AS_TYPE", asType });
-    selectTargets(option.targeting.kind === "independent" && option.targeting.eligibleTargetIds.length === 1
+    commands.beginPlay([card.id], asType, option.targeting.kind === "independent" && option.targeting.eligibleTargetIds.length === 1
       ? option.targeting.eligibleTargetIds
       : []);
   };
@@ -150,14 +134,14 @@ export function createMainActionController({
     if (skillMode || isDiscardTo || zhangbaMode) {
       const selectable = (pending.data as { selectableCardIds?: string[] }).selectableCardIds;
       if (selectedCardIds.includes(card.id)) {
-        dispatch({ type: "SELECT_CARDS", ids: selectedCardIds.filter((id) => id !== card.id) });
+        commands.setCards(selectedCardIds.filter((id) => id !== card.id));
         return;
       }
       if (skillMode && !selectedSkillOption?.selectableCardIds.includes(card.id)) return;
       if (zhangbaMode && !selectedPlayOption?.selectableCardIds.includes(card.id)) return;
       if (isDiscardTo && selectable && !selectable.includes(card.id)) return;
       if (isDiscardTo && mustDiscard > 0 && selectedCardIds.length >= mustDiscard) return;
-      dispatch({ type: "SELECT_CARDS", ids: [...selectedCardIds, card.id] });
+      commands.setCards([...selectedCardIds, card.id]);
       return;
     }
     if (!isMainAction) return;
@@ -226,8 +210,7 @@ export function createMainActionController({
       notify(zhangbaOption?.unavailableReason === "insufficient_cards" ? "ต้องมีการ์ดอย่างน้อย 2 ใบ" : "ตอนนี้ยังใช้ทวนงูเลื้อยไม่ได้");
       return;
     }
-    reset();
-    dispatch({ type: "SET_ZHANGBA_MODE", on: true });
+    commands.beginZhangba();
   };
 
   return {

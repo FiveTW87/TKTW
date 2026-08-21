@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Card, PlayerView } from "@tktw/shared";
+import type { Card } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
 import { SelfDock, SfxControl } from "../components/board/SelfDock";
@@ -19,10 +19,11 @@ import { useIsNarrow } from "../lib/useIsNarrow";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
 import { useDecisionController } from "../hooks/useDecisionController";
-import { createMainActionController, type PlayChoice } from "../hooks/mainActionController";
+import { createMainActionController } from "../hooks/mainActionController";
+import { useTableTransientUi } from "../hooks/useTableTransientUi";
+import { useTableSfx } from "../hooks/useTableSfx";
 import { HandCard } from "../components/HandCard";
 import { CombatEffectLayer } from "../components/board/CombatEffectLayer";
-import { playSfx } from "../lib/sfx";
 import { CardInspectModal } from "../components/CardInspectModal";
 import { useCombatPresentation } from "../hooks/useCombatPresentation";
 
@@ -66,6 +67,8 @@ const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
 
 export function Table() {
   const gameView = useGameStore((s) => s.gameView);
+  const connected = useGameStore((s) => s.connected);
+  const storeMatchId = useGameStore((s) => s.matchId);
   const answer = useGameStore((s) => s.answer);
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
@@ -88,33 +91,14 @@ export function Table() {
 
   // SPEC §11.1 — card/target/skill selection lives in a dedicated interaction
   // reducer, reset whenever the authoritative decision changes.
-  const [interaction, dispatch] = useInteraction(decisionKey);
-  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode } = interaction;
-
-  // Dialog / animation state stays local (SPEC §11.1's 4-way split) — never
-  // reset by the decision-change effect above.
-  const [inspecting, setInspecting] = useState<PlayerView | null>(null);
-  const [inspectingCard, setInspectingCard] = useState<{ card: Card; canChoose: boolean } | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [showDiscard, setShowDiscard] = useState(false);
-  const [playChoices, setPlayChoices] = useState<PlayChoice | null>(null);
-  const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
-  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const selection = useInteraction(decisionKey);
+  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode } = selection.state;
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
   const prevHandIdsRef = useRef<Set<string>>(new Set());
-  const prevDiscardTopIdRef = useRef<string | null | undefined>(undefined);
-  const prevLogCountRef = useRef<number | null>(null);
-  const prevTurnPlayerIdRef = useRef<string | null | undefined>(undefined);
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showNotice = (msg: string) => {
-    setNotice(msg);
-    if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNotice(null), 1900);
-  };
 
   const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
-  const decision = useDecisionController({ gameView, me, answer });
+  const transient = useTableTransientUi({ decisionKey, matchId: gameView?.matchId ?? storeMatchId ?? undefined, viewerAlive: me?.alive });
+  const decision = useDecisionController({ gameView, me, answer, onAutoToast: transient.toast.show });
   const {
     isMyDecision,
     isMainAction,
@@ -123,20 +107,12 @@ export function Table() {
     pendingActivateId,
     pendingActivateMode,
     busy,
-    toast,
     runAnswer,
     answerActivate,
   } = decision;
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    setInspectingCard(null);
-  }, [decisionKey]);
+  const { notice, toast, inspectingPlayer: inspecting, inspectingCard, playChoice: playChoices, discardOpen: showDiscard, leaveConfirmOpen: confirmingLeave, showDeathDialog } = transient.state;
+  const showNotice = transient.notice.show;
+  useTableSfx({ connected, gameView, viewerPlayerId: me?.id });
 
   // ── Draw feel: flash the flip-in animation on cards that just entered the
   // hand. Diff current hand ids against last render's; animate only the newly
@@ -154,44 +130,6 @@ export function Table() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handKey]);
-
-  // ── Sound effects: card play, skill use, draw, damage, turn start ─────
-  // Each diffs the current snapshot against the previous one and skips the
-  // very first snapshot (mount / reconnect), same shape as the hand-draw
-  // effect above — otherwise rejoining a match replays every past event.
-  const discardTopId = gameView?.discardPileTop?.id ?? null;
-  useEffect(() => {
-    const prev = prevDiscardTopIdRef.current;
-    prevDiscardTopIdRef.current = discardTopId;
-    if (prev === undefined) return; // skip first snapshot
-    if (discardTopId && discardTopId !== prev) playSfx("cardPlay");
-  }, [discardTopId]);
-
-  const logCount = gameView?.gameLogs.length ?? 0;
-  useEffect(() => {
-    const prev = prevLogCountRef.current;
-    const logs = gameView?.gameLogs ?? [];
-    prevLogCountRef.current = logCount;
-    if (prev === null) return; // skip first snapshot
-    for (const entry of logs.slice(prev)) {
-      if (entry.eventType === "skillUse") playSfx("skillUse");
-      else if (entry.eventType === "draw" && entry.actorId === me?.id) playSfx("draw");
-      else if (entry.eventType === "damage" || entry.eventType === "hpLoss") playSfx("damage");
-      else if (entry.eventType === "dodge") playSfx("dodge");
-      else if (entry.eventType === "heal") playSfx("heal");
-      else if (entry.eventType === "death") playSfx("death");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logCount]);
-
-  useEffect(() => {
-    const prev = prevTurnPlayerIdRef.current;
-    prevTurnPlayerIdRef.current = gameView?.currentTurnPlayerId ?? null;
-    if (prev === undefined) return; // skip first snapshot
-    if (gameView?.currentTurnPlayerId && gameView.currentTurnPlayerId !== prev && gameView.currentTurnPlayerId === me?.id) {
-      playSfx("turnStart");
-    }
-  }, [gameView?.currentTurnPlayerId, me?.id]);
 
   if (!gameView) return null;
 
@@ -243,8 +181,8 @@ export function Table() {
   const drawActionPrompt = route.kind === "pile" && route.action === "draw" ? route.prompt ?? null : null;
 
   const mainAction = createMainActionController({
-    gameView, me, pending, isMyDecision, isMainAction, isDiscardTo, interaction, dispatch,
-    submit: runAnswer, notify: showNotice, requestPlayChoice: setPlayChoices,
+    gameView, me, pending, isMyDecision, isMainAction, isDiscardTo, selection,
+    submit: runAnswer, notify: showNotice, requestPlayChoice: transient.playChoice.open,
   });
   const { activeSkill: activeSkillOptions } = mainAction.options;
   const { selecting, showConfirmBar, confirmOk, confirmText, mustDiscard, selfTargetable } = mainAction.selection;
@@ -266,8 +204,6 @@ export function Table() {
   const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
   const zhangbaAvailable = mainAction.zhangba.available;
 
-  const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
-
   return (
     <div className="war-table-bg table-theme" style={{ position: "relative" }}>
       <div className="war-table-rays" />
@@ -276,7 +212,7 @@ export function Table() {
           <RulesButton label="วิธีเล่น & กติกา" iconOnly style={{ width: 44, height: 44, padding: 0, fontSize: 17 }} />
         </div>
         <SfxControl compact iconOnly />
-        <button className="table-utility-leave" onClick={() => setConfirmingLeave(true)} aria-label="ออกจากเกม" title="ออกจากเกม">
+        <button className="table-utility-leave" onClick={transient.leaveConfirm.open} aria-label="ออกจากเกม" title="ออกจากเกม">
           退
         </button>
       </nav>
@@ -302,7 +238,7 @@ export function Table() {
         targetableFor={targetableFor}
         selectedTargetIds={selectedTargetIds}
         onTapTarget={onTapTarget}
-        onInspect={setInspecting}
+        onInspect={transient.inspection.openPlayer}
         attackDistanceFor={(p) => attackDistance(me, p, gameView.players)}
         weaponRangeSelf={weaponRange(me)}
         phaseLabel={phaseLabel}
@@ -316,7 +252,7 @@ export function Table() {
           else void runAnswer({ decisionId: pending.id, choice: "reveal" });
         }}
         busy={busy}
-        onOpenDiscard={() => setShowDiscard(true)}
+        onOpenDiscard={transient.discard.open}
         selfDock={
           <SelfDock
             me={me}
@@ -329,7 +265,7 @@ export function Table() {
             getCardState={getCardState}
             selectedCardIds={selectedCardIds}
             onTapCard={onTapCard}
-            onInspectCard={(card, canChoose) => setInspectingCard({ card, canChoose })}
+            onInspectCard={transient.inspection.openCard}
             selfTargetable={selfTargetable}
             selfTargetSelected={selectedTargetIds.includes(me.id)}
             onToggleSelfTarget={mainAction.targets.toggleSelf}
@@ -339,8 +275,7 @@ export function Table() {
             activeSkillOptions={activeSkillOptions}
             busy={busy}
             onUseSkill={(skillId) => {
-              resetSelection();
-              dispatch({ type: "SET_SKILL_MODE", skillId });
+              selection.commands.beginSkill(skillId);
             }}
             onAnswerActivate={answerActivate}
             isMyDecision={isMyDecision}
@@ -348,7 +283,7 @@ export function Table() {
             zhangbaAvailable={!!zhangbaAvailable}
             zhangbaMode={zhangbaMode}
             onToggleZhangba={mainAction.zhangba.toggle}
-            onInspect={() => setInspecting(me)}
+            onInspect={() => transient.inspection.openPlayer(me)}
             equipSlots={equipSlotsWithCards}
             showHero={compact}
           />
@@ -483,18 +418,18 @@ export function Table() {
       {inspecting && (
         <InspectModal
           player={inspecting}
-          onClose={() => setInspecting(null)}
-          onInspectCard={(card) => setInspectingCard({ card, canChoose: false })}
+          onClose={transient.inspection.closePlayer}
+          onInspectCard={(card) => transient.inspection.openCard(card)}
         />
       )}
       {inspectingCard && (
         <CardInspectModal
           card={inspectingCard.card}
-          onClose={() => setInspectingCard(null)}
+          onClose={transient.inspection.closeCard}
           {...(inspectingCard.canChoose ? {
             onChoose: () => {
               const card = inspectingCard.card;
-              setInspectingCard(null);
+              transient.inspection.closeCard();
               onTapCard(card);
             },
           } : {})}
@@ -503,18 +438,18 @@ export function Table() {
       {showDeathDialog && (
         <DeathDialog
           role={me.role}
-          onSpectate={() => setDeathDialogDismissedFor(gameView.matchId)}
+          onSpectate={transient.death.dismiss}
           onLeave={() => void leaveRoom()}
         />
       )}
       {confirmingLeave && (
         <LeaveGameConfirmDialog
-          onConfirm={() => { setConfirmingLeave(false); void leaveRoom(); }}
-          onCancel={() => setConfirmingLeave(false)}
+          onConfirm={() => { transient.leaveConfirm.close(); void leaveRoom(); }}
+          onCancel={transient.leaveConfirm.close}
         />
       )}
       {playChoices && (
-        <ModalOverlay onClose={() => setPlayChoices(null)}>
+        <ModalOverlay onClose={transient.playChoice.close}>
           <ModalPanel width={360}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
               เล่น "{cardDisplay(playChoices.card.typeKey).name}" เป็น?
@@ -528,7 +463,7 @@ export function Table() {
                   style={{ padding: "10px 18px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}
                   onClick={() => {
                     const card = playChoices.card;
-                    setPlayChoices(null);
+                    transient.playChoice.close();
                     proceedPlay(card, opt);
                   }}
                 >
@@ -538,23 +473,23 @@ export function Table() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setPlayChoices(null)} className="btn-secondary" style={{ marginTop: 16, padding: "8px 16px", fontSize: 13 }}>
+            <button onClick={transient.playChoice.close} className="btn-secondary" style={{ marginTop: 16, padding: "8px 16px", fontSize: 13 }}>
               ยกเลิก
             </button>
           </ModalPanel>
         </ModalOverlay>
       )}
       {showDiscard && (
-        <ModalOverlay onClose={() => setShowDiscard(false)}>
+        <ModalOverlay onClose={transient.discard.close}>
           <ModalPanel width={560}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>กองทิ้ง · {gameView.discardPile.length} ใบ</span>
-              <button onClick={() => setShowDiscard(false)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }}>ปิด</button>
+              <button onClick={transient.discard.close} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }}>ปิด</button>
             </div>
             <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10, textAlign: "left" }}>ใหม่สุดอยู่บนซ้าย · เอาเมาส์ชี้เพื่อดูรายละเอียด</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-start", maxHeight: "60vh", overflowY: "auto", paddingTop: 40 }}>
               {[...gameView.discardPile].reverse().map((c, i) => (
-                <HandCard key={`${c.id}-${i}`} card={c} selected={false} onInspect={() => setInspectingCard({ card: c, canChoose: false })} />
+                <HandCard key={`${c.id}-${i}`} card={c} selected={false} onInspect={() => transient.inspection.openCard(c)} />
               ))}
             </div>
           </ModalPanel>

@@ -1,47 +1,45 @@
 import { useEffect, useReducer } from "react";
 
-// SPEC §11.1 — client-local interaction state, kept separate from server
-// state (gameStore) and from dialog/animation state (plain useState in
-// Table.tsx). Reset whenever the authoritative decision changes (a fresh
-// game:view means any in-progress local selection is stale — SPEC §6.3
-// "ห้าม restore selected card/target").
-export type InteractionMode =
-  | "idle"
-  | "selectingCard"
-  | "selectingTargets"
-  | "selectingDiscard"
-  | "orderingCards"
-  | "responding"
-  | "viewingDetails";
-
 export interface InteractionState {
-  mode: InteractionMode;
   selectedCardIds: string[];
   selectedTargetIds: string[];
-  /** Active skill id, when the player is mid-skill-selection. */
   skillMode: string | null;
-  /** ทวนงูจั้งปา (zhangba): 2 hand cards substitute for a สังหาร play. */
   zhangbaMode: boolean;
-  /** Conversion play type (e.g. Guan Yu red→สังหาร), null = literal play. */
   selectedAsType: string | null;
 }
 
-export type InteractionAction =
-  | { type: "RESET" }
-  | { type: "SELECT_CARDS"; ids: string[] }
-  | { type: "TOGGLE_CARD"; id: string }
-  | { type: "SELECT_TARGETS"; ids: string[] }
-  | { type: "TOGGLE_TARGET"; id: string; max: number }
-  | { type: "SET_SKILL_MODE"; skillId: string | null }
-  | { type: "SET_ZHANGBA_MODE"; on: boolean }
-  | { type: "SET_AS_TYPE"; asType: string | null };
-
-function assertNever(value: never): never {
-  throw new Error(`interaction reducer received an unhandled action: ${JSON.stringify(value)}`);
+export interface SelectionCommands {
+  reset(): void;
+  setCards(ids: string[]): void;
+  setTargets(ids: string[]): void;
+  toggleIndependentTarget(id: string, max: number): void;
+  stepDependentTarget(id: string): void;
+  beginPlay(cardIds: string[], asType: string | null, initialTargetIds?: string[]): void;
+  beginSkill(skillId: string): void;
+  beginZhangba(): void;
 }
 
-const initialState: InteractionState = {
-  mode: "idle",
+export interface SelectionController {
+  state: Readonly<InteractionState>;
+  commands: SelectionCommands;
+}
+
+interface StoredState extends InteractionState {
+  decisionKey: string | null;
+}
+
+type Action =
+  | { type: "SYNC_DECISION"; decisionKey: string | null }
+  | { type: "RESET" }
+  | { type: "SET_CARDS"; ids: string[] }
+  | { type: "SET_TARGETS"; ids: string[] }
+  | { type: "TOGGLE_INDEPENDENT_TARGET"; id: string; max: number }
+  | { type: "STEP_DEPENDENT_TARGET"; id: string }
+  | { type: "BEGIN_PLAY"; cardIds: string[]; asType: string | null; initialTargetIds: string[] }
+  | { type: "BEGIN_SKILL"; skillId: string }
+  | { type: "BEGIN_ZHANGBA" };
+
+const emptySelection: InteractionState = {
   selectedCardIds: [],
   selectedTargetIds: [],
   skillMode: null,
@@ -49,42 +47,84 @@ const initialState: InteractionState = {
   selectedAsType: null,
 };
 
-function reducer(state: InteractionState, action: InteractionAction): InteractionState {
+function fresh(decisionKey: string | null): StoredState {
+  return { ...emptySelection, decisionKey };
+}
+
+function assertNever(value: never): never {
+  throw new Error(`interaction reducer received an unhandled action: ${JSON.stringify(value)}`);
+}
+
+function reducer(state: StoredState, action: Action): StoredState {
   switch (action.type) {
+    case "SYNC_DECISION":
+      return state.decisionKey === action.decisionKey ? state : fresh(action.decisionKey);
     case "RESET":
-      return initialState;
-    case "SELECT_CARDS":
+      return fresh(state.decisionKey);
+    case "SET_CARDS":
       return { ...state, selectedCardIds: action.ids };
-    case "TOGGLE_CARD": {
-      const has = state.selectedCardIds.includes(action.id);
-      return { ...state, selectedCardIds: has ? state.selectedCardIds.filter((id) => id !== action.id) : [...state.selectedCardIds, action.id] };
-    }
-    case "SELECT_TARGETS":
+    case "SET_TARGETS":
       return { ...state, selectedTargetIds: action.ids };
-    case "TOGGLE_TARGET": {
-      const prev = state.selectedTargetIds;
-      if (prev.includes(action.id)) return { ...state, selectedTargetIds: prev.filter((id) => id !== action.id) };
-      if (prev.length < action.max) return { ...state, selectedTargetIds: [...prev, action.id] };
-      return { ...state, selectedTargetIds: [...prev.slice(1), action.id] }; // at cap → drop oldest
+    case "TOGGLE_INDEPENDENT_TARGET": {
+      const previous = state.selectedTargetIds;
+      const selectedTargetIds = previous.includes(action.id)
+        ? previous.filter((id) => id !== action.id)
+        : previous.length < action.max
+          ? [...previous, action.id]
+          : [...previous.slice(1), action.id];
+      return { ...state, selectedTargetIds };
     }
-    case "SET_SKILL_MODE":
-      return { ...state, skillMode: action.skillId };
-    case "SET_ZHANGBA_MODE":
-      return { ...state, zhangbaMode: action.on };
-    case "SET_AS_TYPE":
-      return { ...state, selectedAsType: action.asType };
+    case "STEP_DEPENDENT_TARGET": {
+      const previous = state.selectedTargetIds;
+      const selectedTargetIds = previous[0] === action.id
+        ? []
+        : previous[1] === action.id
+          ? [previous[0]!]
+          : previous.length === 0
+            ? [action.id]
+            : [previous[0]!, action.id];
+      return { ...state, selectedTargetIds };
+    }
+    case "BEGIN_PLAY":
+      return { ...state, selectedCardIds: action.cardIds, selectedTargetIds: action.initialTargetIds, skillMode: null, zhangbaMode: false, selectedAsType: action.asType };
+    case "BEGIN_SKILL":
+      return { ...fresh(state.decisionKey), skillMode: action.skillId };
+    case "BEGIN_ZHANGBA":
+      return { ...fresh(state.decisionKey), zhangbaMode: true };
     default:
       return assertNever(action);
   }
 }
 
-/** Resets to idle whenever `decisionKey` changes (the pending decision's id
- *  advancing, or going null→something on a fresh game:view). */
-export function useInteraction(decisionKey: string | null) {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+/** Owns all local card/target/mode transitions. A new authoritative decision
+ * exposes an empty selection immediately, before the synchronizing effect,
+ * so stale ids can never be interpreted against the next legalActions view. */
+export function useInteraction(decisionKey: string | null): SelectionController {
+  const [stored, dispatch] = useReducer(reducer, decisionKey, fresh);
+  const current = stored.decisionKey === decisionKey ? stored : fresh(decisionKey);
+  const state: InteractionState = {
+    selectedCardIds: current.selectedCardIds,
+    selectedTargetIds: current.selectedTargetIds,
+    skillMode: current.skillMode,
+    zhangbaMode: current.zhangbaMode,
+    selectedAsType: current.selectedAsType,
+  };
+
   useEffect(() => {
-    dispatch({ type: "RESET" });
+    dispatch({ type: "SYNC_DECISION", decisionKey });
   }, [decisionKey]);
-  return [state, dispatch] as const;
+
+  return {
+    state,
+    commands: {
+      reset: () => dispatch({ type: "RESET" }),
+      setCards: (ids) => dispatch({ type: "SET_CARDS", ids }),
+      setTargets: (ids) => dispatch({ type: "SET_TARGETS", ids }),
+      toggleIndependentTarget: (id, max) => dispatch({ type: "TOGGLE_INDEPENDENT_TARGET", id, max }),
+      stepDependentTarget: (id) => dispatch({ type: "STEP_DEPENDENT_TARGET", id }),
+      beginPlay: (cardIds, asType, initialTargetIds = []) => dispatch({ type: "BEGIN_PLAY", cardIds, asType, initialTargetIds }),
+      beginSkill: (skillId) => dispatch({ type: "BEGIN_SKILL", skillId }),
+      beginZhangba: () => dispatch({ type: "BEGIN_ZHANGBA" }),
+    },
+  };
 }

@@ -19,11 +19,14 @@ function view(me: PlayerView, pendingDecision: GameView["pendingDecision"], over
 }
 
 describe("useDecisionController", () => {
+  const controller = (gameView: GameView, me: PlayerView, answer = vi.fn()) =>
+    useDecisionController({ gameView, me, answer, onAutoToast: vi.fn() });
+
   it("auto-passes askWuxie once when no matching card exists", async () => {
     const me = player();
     const gameView = view(me, { id: "d1", kind: "askWuxie", playerId: me.id, data: {} });
     const answer = vi.fn().mockResolvedValue(undefined);
-    const { rerender } = renderHook(() => useDecisionController({ gameView, me, answer }));
+    const { rerender } = renderHook(() => controller(gameView, me, answer));
     await waitFor(() => expect(answer).toHaveBeenCalledWith({ decisionId: "d1", pass: true }));
     rerender();
     expect(answer).toHaveBeenCalledTimes(1);
@@ -32,14 +35,14 @@ describe("useDecisionController", () => {
   it("keeps a legal reactive response in the dialog route", () => {
     const me = player({ hand: [{ id: "w1", typeKey: "wuxie", suit: "spade", rank: 1 }] });
     const gameView = view(me, { id: "d2", kind: "askWuxie", playerId: me.id, data: {} });
-    const { result } = renderHook(() => useDecisionController({ gameView, me, answer: vi.fn() }));
+    const { result } = renderHook(() => controller(gameView, me));
     expect(result.current.route).toEqual({ kind: "modal" });
   });
 
   it("routes inline activateSkill without opening a modal", () => {
     const me = player({ generalId: "caoren" });
     const gameView = view(me, { id: "d3", kind: "activateSkill", playerId: me.id, data: { skillId: "caoren_tuoyi" } });
-    const { result } = renderHook(() => useDecisionController({ gameView, me, answer: vi.fn() }));
+    const { result } = renderHook(() => controller(gameView, me));
     expect(result.current.pendingActivateMode).toBe("inline");
     expect(result.current.route).toEqual({ kind: "inlineSkill", skillId: "caoren_tuoyi" });
   });
@@ -48,7 +51,7 @@ describe("useDecisionController", () => {
     const me = player();
     const gameView = view(me, { id: "d4", kind: "mainAction", playerId: me.id, data: {} });
     const answer = vi.fn().mockRejectedValue(new Error("network"));
-    const { result } = renderHook(() => useDecisionController({ gameView, me, answer }));
+    const { result } = renderHook(() => controller(gameView, me, answer));
     await act(async () => {
       await expect(result.current.runAnswer({ decisionId: "d4", choice: "endPhase" })).rejects.toThrow("network");
     });
