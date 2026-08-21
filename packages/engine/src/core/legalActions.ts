@@ -1,8 +1,8 @@
 // Phase 5 (SPEC §9.2/§9.3) — decision-scoped legal actions and in-flight
 // card views, derived from data the engine already computes/tracks. This is
-// LEGAL-002 adds server-authoritative card and conversion candidates for an
-// open mainAction. LEGAL-003 will add their target candidates; until then the
-// server still re-validates every submitted target atomically.
+// LEGAL-002/003/004 add server-authoritative card, conversion, target, and
+// active-skill candidates for an open mainAction. The server still validates
+// every submitted selection atomically against the live state.
 import type { DecisionKind, GameEvent, GameState, PendingDecision } from "../types";
 import { CARD_TYPES } from "./cardData";
 import {
@@ -16,6 +16,7 @@ import {
   hasLegalTargetSelection,
   type CardTargetingView,
 } from "./cardTargets";
+import { activeSkillDefsFor, activeSkillTargetIds } from "./activeSkill";
 
 export type ResponseDecisionKind = Exclude<
   DecisionKind,
@@ -37,9 +38,25 @@ export type CardPlayOptionView = {
   targeting: CardTargetingView;
 } & CardPlayAvailability;
 
+export type ActiveSkillUnavailableReason = "usage_limit" | "insufficient_cards" | "no_legal_target";
+type ActiveSkillAvailability =
+  | { available: true }
+  | { available: false; unavailableReason: ActiveSkillUnavailableReason };
+
+export type ActiveSkillOptionView = {
+  skillId: string;
+  selectableCardIds: string[];
+  minCards: number;
+  maxCards: number;
+  exactCards?: number;
+  usesThisTurn: number;
+  maxUsesPerTurn?: number;
+  targeting: CardTargetingView;
+} & ActiveSkillAvailability;
+
 export type LegalActionView =
   | { kind: "playCard"; options: CardPlayOptionView[] }
-  | { kind: "useSkill" }
+  | { kind: "useSkill"; options: ActiveSkillOptionView[] }
   | { kind: "endPhase" }
   | { kind: "draw" }
   | {
@@ -61,9 +78,6 @@ export type LegalActionView =
       exactCards?: number;
     };
 
-// mainAction is the one open-ended decision — the fine-grained "which card as
-// which type, targeting whom" affordance is intentionally left to the
-// client's own legality modules (see the file header comment).
 function numberField(data: Record<string, unknown>, key: string): number | undefined {
   const v = data[key];
   return typeof v === "number" ? v : undefined;
@@ -159,6 +173,50 @@ export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlay
   return options;
 }
 
+export function activeSkillOptionsFor(state: GameState, playerId: string): ActiveSkillOptionView[] {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return [];
+  return activeSkillDefsFor(state, playerId).map((skill) => {
+    const spec = skill.activeSpec;
+    if (!spec) throw new Error(`active skill "${skill.id}" has no selection spec`);
+    const maxCards = spec.maxCards === "hand" ? player.hand.length : spec.maxCards;
+    const targetIds = activeSkillTargetIds(state, playerId, skill);
+    const targetCount = spec.targetRule === "none" ? 0 : spec.targetRule === "twoMaleOthers" ? 2 : 1;
+    const targeting: CardTargetingView =
+      targetCount === 0
+        ? { kind: "none", minTargets: 0, maxTargets: 0 }
+        : {
+            kind: "independent",
+            minTargets: targetCount,
+            maxTargets: targetCount,
+            eligibleTargetIds: targetIds,
+          };
+    const usesThisTurn = player.skillUsedThisTurn[skill.id] ?? 0;
+    const maxUsesPerTurn = skill.maxPerTurn;
+    const unavailableReason: ActiveSkillUnavailableReason | undefined =
+      maxUsesPerTurn !== undefined && usesThisTurn >= maxUsesPerTurn
+        ? "usage_limit"
+        : player.hand.length < spec.minCards
+          ? "insufficient_cards"
+          : !hasLegalTargetSelection(targeting)
+            ? "no_legal_target"
+            : undefined;
+    const base = {
+      skillId: skill.id,
+      selectableCardIds: player.hand.map((card) => card.id),
+      minCards: spec.minCards,
+      maxCards,
+      ...(spec.minCards === maxCards ? { exactCards: spec.minCards } : {}),
+      usesThisTurn,
+      ...(maxUsesPerTurn !== undefined ? { maxUsesPerTurn } : {}),
+      targeting,
+    };
+    return unavailableReason
+      ? { ...base, available: false, unavailableReason }
+      : { ...base, available: true };
+  });
+}
+
 function stringArrayField(data: Record<string, unknown>, key: string): string[] | undefined {
   const v = data[key];
   return Array.isArray(v) && v.every((x) => typeof x === "string") ? (v as string[]) : undefined;
@@ -194,7 +252,7 @@ export function legalActionsFor(
     case "mainAction":
       return [
         { kind: "playCard", options: state ? cardPlayOptionsFor(state, viewerId) : [] },
-        { kind: "useSkill" },
+        { kind: "useSkill", options: state ? activeSkillOptionsFor(state, viewerId) : [] },
         { kind: "endPhase" },
       ];
     case "drawCard":

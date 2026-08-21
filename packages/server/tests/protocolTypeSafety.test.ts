@@ -40,7 +40,7 @@ describe("typed protocol seams", () => {
 
   it.each([
     { kind: "playCard", options: [] },
-    { kind: "useSkill" },
+    { kind: "useSkill", options: [] },
     { kind: "endPhase" },
     { kind: "draw" },
     {
@@ -177,5 +177,41 @@ describe("typed protocol seams", () => {
       ],
     };
     expect(legalActionViewSchema.safeParse(malformed).success).toBe(false);
+  });
+
+  it("parses strict available and unavailable active-skill options", () => {
+    const available = {
+      skillId: "diaochan_lijian",
+      selectableCardIds: ["heart_1_2"],
+      minCards: 1,
+      maxCards: 1,
+      exactCards: 1,
+      usesThisTurn: 0,
+      maxUsesPerTurn: 1,
+      targeting: {
+        kind: "independent",
+        minTargets: 2,
+        maxTargets: 2,
+        eligibleTargetIds: ["p1", "p2"],
+      },
+      available: true,
+    } as const;
+    const unavailable = {
+      ...available,
+      available: false,
+      unavailableReason: "usage_limit",
+      usesThisTurn: 1,
+    } as const;
+
+    expect(legalActionViewSchema.parse({ kind: "useSkill", options: [available, unavailable] })).toEqual({
+      kind: "useSkill",
+      options: [available, unavailable],
+    });
+    expect(
+      legalActionViewSchema.safeParse({
+        kind: "useSkill",
+        options: [{ ...available, unavailableReason: "usage_limit" }],
+      }).success,
+    ).toBe(false);
   });
 });

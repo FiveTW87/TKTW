@@ -15,6 +15,7 @@ registerGeneral({
     {
       id: "sunquan_zhiheng",
       maxPerTurn: 1,
+      activeSpec: { minCards: 1, maxCards: "hand", targetRule: "none" },
       active: function* (ctx) {
         const { state, rng, ownerId, cardIds } = ctx;
         discardCardsFromHand(state, ownerId, cardIds);

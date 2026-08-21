@@ -6,6 +6,110 @@ const { fakeSocket, sentEvents, respondTo, clearSent } = vi.hoisted(() => {
   type Handler = (...args: unknown[]) => void;
   const handlers: Record<string, Handler[]> = {};
   const sentEvents: Array<{ event: string; payload: unknown; ack?: (res: unknown) => void }> = [];
+  function withLegalActions(payload: unknown): unknown {
+    if (!payload || typeof payload !== "object") return payload;
+    const view = payload as Record<string, any>;
+    if (Array.isArray(view.legalActions) || view.pendingDecision?.kind !== "mainAction") return payload;
+    const me = view.players?.find((candidate: any) => candidate.id === view.viewerPlayerId);
+    if (!me) return { ...view, legalActions: [] };
+    const players: any[] = view.players ?? [];
+    const aliveOthers = players.filter((candidate) => candidate.alive && candidate.id !== me.id);
+    const independent = (ids: string[], minTargets = 1, maxTargets = 1, implicitTargetId?: string) => ({
+      kind: "independent",
+      minTargets,
+      maxTargets,
+      eligibleTargetIds: ids,
+      ...(implicitTargetId ? { implicitTargetId } : {}),
+    });
+    const targetingFor = (typeKey: string) => {
+      if (typeKey === "sha") return independent(aliveOthers.map((p) => p.id));
+      if (typeKey === "tao") {
+        const injured = players.filter((p) => p.alive && p.hp < p.maxHp).map((p) => p.id);
+        return independent(injured, 0, 1, injured.includes(me.id) ? me.id : undefined);
+      }
+      if (typeKey === "jiedao") {
+        const armed = aliveOthers.filter((p) => p.equipment?.weapon).map((p) => p.id);
+        return {
+          kind: "dependent",
+          minTargets: 2,
+          maxTargets: 2,
+          firstTargetIds: armed,
+          secondTargetIdsByFirst: Object.fromEntries(armed.map((id) => [id, aliveOthers.filter((p) => p.id !== id).map((p) => p.id)])),
+        };
+      }
+      if (["guohe", "shunshou", "juedou", "lebu", "bingliang"].includes(typeKey)) {
+        return independent(aliveOthers.map((p) => p.id));
+      }
+      return { kind: "none", minTargets: 0, maxTargets: 0 };
+    };
+    const literalOptions = (Array.isArray(me.hand) ? me.hand : []).map((card: any) => {
+      const targeting = targetingFor(card.typeKey);
+      const noTarget = targeting.kind === "independent" && targeting.eligibleTargetIds.length === 0;
+      const shaSpent = card.typeKey === "sha" && me.shaUsedThisTurn >= 1 && me.equipment?.weapon?.typeKey !== "crossbow";
+      const responseOnly = card.typeKey === "shan" || card.typeKey === "wuxie";
+      return {
+        source: "literal",
+        typeKey: card.typeKey,
+        selectableCardIds: [card.id],
+        minCards: 1,
+        maxCards: 1,
+        exactCards: 1,
+        targeting,
+        ...(responseOnly
+          ? { available: false, unavailableReason: "response_only" }
+          : shaSpent
+          ? { available: false, unavailableReason: "sha_usage_limit" }
+          : noTarget
+            ? { available: false, unavailableReason: "no_legal_target" }
+            : { available: true }),
+      };
+    });
+    if (me.generalId === "guanyu") {
+      for (const card of Array.isArray(me.hand) ? me.hand : []) {
+        if (card.suit !== "heart" && card.suit !== "diamond") continue;
+        literalOptions.push({
+          source: "conversion",
+          typeKey: "sha",
+          asType: "sha",
+          selectableCardIds: [card.id],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+          targeting: targetingFor("sha"),
+          available: true,
+        });
+      }
+    }
+    if (me.equipment?.weapon?.typeKey === "zhangba") {
+      literalOptions.push({
+        source: "zhangba",
+        typeKey: "sha",
+        selectableCardIds: (Array.isArray(me.hand) ? me.hand : []).map((card: any) => card.id),
+        minCards: 2,
+        maxCards: 2,
+        exactCards: 2,
+        targeting: targetingFor("sha"),
+        available: true,
+      });
+    }
+    const skillByGeneral: Record<string, { id: string; minCards: number; maxCards: number; targets: string[] }> = {
+      liubei: { id: "liubei_rende", minCards: 1, maxCards: 1, targets: aliveOthers.map((p) => p.id) },
+      sunquan: { id: "sunquan_zhiheng", minCards: 1, maxCards: Array.isArray(me.hand) ? me.hand.length : 0, targets: [] },
+      diaochan: { id: "diaochan_lijian", minCards: 1, maxCards: 1, targets: aliveOthers.filter((p) => p.gender === "male").map((p) => p.id) },
+    };
+    const skill = skillByGeneral[me.generalId];
+    const skillOptions = skill ? [{
+      skillId: skill.id,
+      selectableCardIds: (Array.isArray(me.hand) ? me.hand : []).map((card: any) => card.id),
+      minCards: skill.minCards,
+      maxCards: skill.maxCards,
+      usesThisTurn: me.skillUsedThisTurn?.[skill.id] ?? 0,
+      maxUsesPerTurn: 1,
+      targeting: skill.targets.length ? independent(skill.targets, skill.id === "diaochan_lijian" ? 2 : 1, skill.id === "diaochan_lijian" ? 2 : 1) : { kind: "none", minTargets: 0, maxTargets: 0 },
+      ...((me.skillUsedThisTurn?.[skill.id] ?? 0) >= 1 ? { available: false, unavailableReason: "usage_limit" } : { available: true }),
+    }] : [];
+    return { ...view, legalActions: [{ kind: "playCard", options: literalOptions }, { kind: "useSkill", options: skillOptions }, { kind: "endPhase" }] };
+  }
   const fakeSocket = {
     connected: false,
     on(event: string, handler: Handler) {
@@ -15,7 +119,8 @@ const { fakeSocket, sentEvents, respondTo, clearSent } = vi.hoisted(() => {
       sentEvents.push({ event, payload, ack });
     },
     fire(event: string, ...args: unknown[]) {
-      (handlers[event] ?? []).forEach((h) => h(...args));
+      const normalized = event === "game:view" ? [withLegalActions(args[0]), ...args.slice(1)] : args;
+      (handlers[event] ?? []).forEach((h) => h(...normalized));
     },
   };
   function respondTo(event: string, response: unknown) {
@@ -235,6 +340,41 @@ describe("Table: main action card play", () => {
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
     expect(call.payload).toEqual({ roomCode: "ENDPH1", matchId: "test-match", decisionId: "dec_end", choice: "endPhase", clientActionId: expect.any(String) });
+  });
+
+  it("uses the server target contract instead of deriving targets from visible players", async () => {
+    const user = await enterRoom("LEGALUI");
+    const card = { id: "spade_1_1", typeKey: "sha", suit: "spade", rank: 1 };
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [player("p0", { hand: [card] }), player("p1", { name: "Bob" }), player("p2", { name: "Carol" })],
+      currentTurnPlayerId: "p0",
+      turnNumber: 1,
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
+      eventStack: [],
+      pendingDecision: { id: "dec_legal_ui", kind: "mainAction", playerId: "p0", data: {} },
+      legalActions: [
+        {
+          kind: "playCard",
+          options: [{
+            source: "literal", typeKey: "sha", selectableCardIds: [card.id], minCards: 1, maxCards: 1, exactCards: 1,
+            targeting: { kind: "independent", minTargets: 1, maxTargets: 1, eligibleTargetIds: ["p2"] },
+            available: true,
+          }],
+        },
+        { kind: "useSkill", options: [] },
+        { kind: "endPhase" },
+      ],
+      finished: false,
+      gameLogs: [],
+    });
+
+    await user.click(await screen.findByText("จู่โจม"));
+    expect(screen.queryByRole("button", { name: "Bob" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Carol" })).toBeInTheDocument();
   });
 
   it("a reactive decision that isn't mine shows a waiting banner, not a confirm bar", async () => {
@@ -469,6 +609,32 @@ describe("Table: character skills + use-skill", () => {
     expect(btn).toBeDisabled();
     await user.click(btn); // clicking does nothing
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
+  });
+
+  it("disables an active skill when the server reports no legal target", async () => {
+    const me = player("p0", {
+      generalId: "liubei",
+      faction: "shu",
+      hand: [{ id: "spade_5_1", typeKey: "sha", suit: "spade", rank: 5 }],
+    });
+    await enterRoom("SKLEGAL");
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0", viewerSeatIndex: 0, players: [me, player("p1")], currentTurnPlayerId: "p0",
+      turnNumber: 1, currentPhase: "play", drawPileCount: 80, discardPile: [], discardPileCount: 0, eventStack: [],
+      pendingDecision: { id: "dec_skill_legal", kind: "mainAction", playerId: "p0", data: {} },
+      legalActions: [
+        { kind: "playCard", options: [] },
+        { kind: "useSkill", options: [{
+          skillId: "liubei_rende", selectableCardIds: ["spade_5_1"], minCards: 1, maxCards: 1, exactCards: 1,
+          usesThisTurn: 0, targeting: { kind: "independent", minTargets: 1, maxTargets: 1, eligibleTargetIds: [] },
+          available: false, unavailableReason: "no_legal_target",
+        }] },
+        { kind: "endPhase" },
+      ],
+      finished: false, gameLogs: [],
+    });
+
+    expect(await screen.findByRole("button", { name: /ยังใช้ไม่ได้/ })).toBeDisabled();
   });
 });
 

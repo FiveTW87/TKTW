@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Card, PlayerView } from "@tktw/shared";
+import type { Card, LegalActionView, PlayerView } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
 import { SelfDock, SfxControl, type CardTapState } from "../components/board/SelfDock";
@@ -14,9 +14,9 @@ import { describeDecision } from "../data/decisionCopy";
 import { cardDisplay } from "../data/cardNames";
 import { generalDisplay } from "../data/generalNames";
 import { generalSkills, skillById } from "../data/generalSkills";
-import { cardMeta, needsManualTarget, targetCount, type EquipSlot } from "../data/cardMeta";
-import { skillInteraction, sameFactionTeammateAlive, activeSkillSpec } from "../data/skillInteraction";
-import { mainActionPlays, clientCountsAs, type MainActionPlay } from "../data/conversions";
+import { cardMeta, type EquipSlot } from "../data/cardMeta";
+import { skillInteraction, sameFactionTeammateAlive } from "../data/skillInteraction";
+import { clientCountsAs } from "../data/conversions";
 import { attackDistance, weaponRange } from "../data/distance";
 import { useCountdown } from "../lib/useCountdown";
 import { useIsNarrow } from "../lib/useIsNarrow";
@@ -59,16 +59,8 @@ function LeaveGameConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void
   );
 }
 
-// Cards the engine rejects targeting yourself with (turnLoop.ts's
-// NO_SELF_TARGET), and the subset of those whose whole effect is taking a
-// card off the target — a target with nothing at all (hand count + public
-// equipment) is not a legal target for them either (NEEDS_A_TAKEABLE_CARD).
-const NO_SELF_TARGET_TYPES = new Set(["sha", "guohe", "shunshou"]);
-const NEEDS_A_TAKEABLE_CARD_TYPES = new Set(["guohe", "shunshou"]);
-function holdsSomething(p: PlayerView): boolean {
-  const handCount = Array.isArray(p.hand) ? p.hand.length : p.hand.count;
-  return handCount > 0 || Object.values(p.equipment).some(Boolean);
-}
+type PlayCardOption = Extract<LegalActionView, { kind: "playCard" }>["options"][number];
+type ActiveSkillOption = Extract<LegalActionView, { kind: "useSkill" }>["options"][number];
 
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
@@ -112,7 +104,7 @@ export function Table() {
   const [toast, setToast] = useState<ToastData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
-  const [playChoices, setPlayChoices] = useState<{ card: Card; options: MainActionPlay[] } | null>(null);
+  const [playChoices, setPlayChoices] = useState<{ card: Card; options: PlayCardOption[] } | null>(null);
   const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
@@ -334,55 +326,52 @@ export function Table() {
   const drawActionPrompt = pendingDraw ? `เฟสจั่ว — จั่ว ${drawCount} ใบ` + (drawSkillNames.length ? ` ⚡ ${drawSkillNames.join(", ")}` : "") : null;
 
   const selecting = isMyDecision && (isMainAction || isDiscardTo);
+  const legalActions = gameView.legalActions ?? [];
+  const playCardAction = legalActions.find((action) => action.kind === "playCard");
+  const useSkillAction = legalActions.find((action) => action.kind === "useSkill");
+  const playCardOptions = playCardAction?.options ?? [];
+  const activeSkillOptions = useSkillAction?.options ?? [];
   const selectedPlayCard = !skillMode ? myHand.find((c) => c.id === selectedCardIds[0]) : undefined;
-  // The type the selected card is being played AS (conversion or its own type).
-  const selectedEffType = selectedPlayCard ? selectedAsType ?? selectedPlayCard.typeKey : undefined;
-  const selectedNeedsTarget = selectedEffType ? needsManualTarget(selectedEffType) : false;
-  const skillSpec = skillMode ? activeSkillSpec(skillMode) : null;
-
-  // ท้อ can now be played on anyone who's injured (self or another — "help a
-  // hurt ally"). It needs a target picker, but unlike สังหาร the eligible set
-  // depends on live HP, so it's decided here rather than in cardMeta.
-  const injuredPlayers = gameView.players.filter((p) => p.alive && p.hp < p.maxHp);
-  const someoneInjured = injuredPlayers.length > 0;
-  const selectedIsTao = selectedEffType === "tao";
-  const isJiedao = selectedEffType === "jiedao";
-  // Active skills that need per-target eligibility (mirror the engine's rules
-  // so the UI can't submit an invalid pick that the engine silently no-ops).
-  const isLijian = skillMode === "diaochan_lijian"; // 2 male targets, they duel
-  const isJieyuan = skillMode === "sunshangxiang_jieyuan"; // 1 injured other player
-  const isQingnang = skillMode === "huatuo_qingnang"; // 1 injured target (incl self)
-  const isTaoTarget = (p: PlayerView) => p.alive && p.hp < p.maxHp;
-
-  // Target range for the current action: from the active skill's spec while in
-  // skill mode, otherwise from the selected card's EFFECTIVE type (so a red
-  // card played as สังหาร gets สังหาร targeting).
-  const targetRange = skillSpec
-    ? { min: skillSpec.minTargets, max: skillSpec.maxTargets }
-    : zhangbaMode
-    ? { min: 1, max: 1 }
-    : selectedEffType
-    ? targetCount(selectedEffType, { weaponIsFangtian: me.equipment.weapon?.typeKey === "fangtian", isLastCard: myHand.length === 1 })
+  const selectedPlayOption = zhangbaMode
+    ? playCardOptions.find((option) => option.source === "zhangba")
+    : selectedPlayCard
+      ? playCardOptions.find(
+          (option) =>
+            option.source !== "zhangba" &&
+            option.selectableCardIds.includes(selectedPlayCard.id) &&
+            (option.asType ?? null) === selectedAsType,
+        )
+      : undefined;
+  const selectedSkillOption = skillMode
+    ? activeSkillOptions.find((option) => option.skillId === skillMode)
+    : undefined;
+  const selectedOption = selectedSkillOption ?? selectedPlayOption;
+  const targeting = selectedOption?.targeting;
+  const targetRange = targeting
+    ? { min: targeting.minTargets, max: targeting.maxTargets }
     : { min: 0, max: 0 };
 
   // Card-first: in skill mode, targets only light up once the required discard
   // cards are chosen (so you pick the card to spend, THEN the targets).
-  const skillCardsReady = zhangbaMode ? selectedCardIds.length >= 2 : !skillSpec || selectedCardIds.length >= skillSpec.minCards;
-  const targetsActive = isMyDecision && isMainAction && targetRange.max > 0 && skillCardsReady && (skillMode !== null || selectedNeedsTarget || selectedIsTao || zhangbaMode);
-  // Your own character card (not an opponent panel) can be a target too — for
-  // ท้อ (help self) and for หัวโต๋'s ถุงยาเขียว (heal self).
-  const selfTaoTargetable = !!targetsActive && selectedIsTao && isTaoTarget(me);
-  const selfTargetable = selfTaoTargetable || (!!targetsActive && isQingnang && isTaoTarget(me));
+  const skillCardsReady = !selectedOption || selectedCardIds.length >= selectedOption.minCards;
+  const targetsActive =
+    isMyDecision &&
+    isMainAction &&
+    targetRange.max > 0 &&
+    skillCardsReady &&
+    (targeting?.kind === "independent" || targeting?.kind === "dependent");
+  const selfTargetable =
+    !!targetsActive &&
+    targeting?.kind === "independent" &&
+    targeting.eligibleTargetIds.includes(me.id);
   const showConfirmBar = isMyDecision && isMainAction && (skillMode !== null || zhangbaMode || selectedCardIds.length > 0);
   const mustDiscard = isDiscardTo ? Number((pending!.data as { mustDiscard?: number }).mustDiscard ?? 0) : 0;
 
   const targetCountOk = selectedTargetIds.length >= targetRange.min && selectedTargetIds.length <= targetRange.max;
-  const cardCountOk = skillSpec
-    ? selectedCardIds.length >= skillSpec.minCards && selectedCardIds.length <= skillSpec.maxCards
-    : zhangbaMode
-    ? selectedCardIds.length === 2
-    : true;
-  const confirmOk = targetCountOk && cardCountOk;
+  const cardCountOk = selectedOption
+    ? selectedCardIds.length >= selectedOption.minCards && selectedCardIds.length <= selectedOption.maxCards
+    : false;
+  const confirmOk = targetCountOk && cardCountOk && selectedOption?.available === true;
 
   // Tapping a target respects the max: at the cap, a new tap replaces the
   // oldest pick (so a single-target action always ends with exactly one).
@@ -396,41 +385,20 @@ export function Table() {
     dispatch({ type: "SELECT_TARGETS", ids: next });
   };
 
-  // ยืมดาบฆ่าคน (jiedao) is picked one target at a time: [0] = an armed player,
-  // [1] = someone that armed player can actually reach. Whether each opponent
-  // lights up depends on which step we're on.
-  const armedPick = isJiedao ? gameView.players.find((p) => p.id === selectedTargetIds[0]) : undefined;
   const targetableFor = (p: PlayerView): boolean => {
-    if (!targetsActive || !p.alive) return false;
-    // Self is legal only for the explicitly modelled healing actions above.
-    // This also prevents cards such as ยืมดาบฆ่าคน from exposing self as the
-    // armed first target on the desktop ring.
-    if (p.id === me.id) return selfTargetable;
-    if (zhangbaMode) return attackDistance(me, p, gameView.players) <= weaponRange(me); // สังหาร range
-    if (selectedIsTao) return isTaoTarget(p);
-    if (isJiedao) {
-      if (selectedTargetIds.includes(p.id)) return true; // keep current picks visible/deselectable
-      if (selectedTargetIds.length === 0) return !!p.equipment.weapon; // step 1: armed only
-      if (!armedPick) return false;
-      // step 2: only someone the chosen armed player can actually reach
-      return p.id !== armedPick.id && attackDistance(armedPick, p, gameView.players) <= weaponRange(armedPick);
+    if (!targetsActive || !targeting) return false;
+    if (selectedTargetIds.includes(p.id)) return true;
+    if (targeting.kind === "independent") return targeting.eligibleTargetIds.includes(p.id);
+    if (targeting.kind === "dependent") {
+      const first = selectedTargetIds[0];
+      return first
+        ? (targeting.secondTargetIdsByFirst[first] ?? []).includes(p.id)
+        : targeting.firstTargetIds.includes(p.id);
     }
-    // ยุแยง (lijian): two MALE players (they duel — no range needed). Picks stay
-    // visible; tapping a 2nd male appends, tapping a pick again deselects.
-    if (isLijian) {
-      if (selectedTargetIds.includes(p.id)) return true;
-      return p.gender === "male";
-    }
-    // ผูกสัมพันธ์ (jieyuan): one injured OTHER player. ถุงยาเขียว (qingnang): one
-    // injured player (self handled via the character card).
-    if (isJieyuan) return p.hp < p.maxHp && p.id !== me.id;
-    if (isQingnang) return p.hp < p.maxHp;
-    if (selectedEffType && NO_SELF_TARGET_TYPES.has(selectedEffType) && p.id === me.id) return false;
-    if (selectedEffType && NEEDS_A_TAKEABLE_CARD_TYPES.has(selectedEffType) && !holdsSomething(p)) return false;
-    return true;
+    return false;
   };
   const onTapTarget = (pid: string) => {
-    if (isJiedao) {
+    if (targeting?.kind === "dependent") {
       const prev = selectedTargetIds;
       const next =
         prev[0] === pid ? [] // re-tap the armed player → reset both steps
@@ -455,59 +423,54 @@ export function Table() {
   };
   const resetSelection = () => dispatch({ type: "RESET" });
 
-  // A สังหาร past its once-a-turn limit would just bounce off the server and
-  // leave the player stuck re-erroring — block it up front with a hint. (The
-  // client can't see every skill's bonus, so this is conservative: crossbow
-  // and เตียวหุย's คำรามสิงห์ both lift the cap.)
-  const shaOverLimit = (typeKey: string) =>
-    typeKey === "sha" &&
-    me.shaUsedThisTurn >= 1 &&
-    me.equipment.weapon?.typeKey !== "crossbow" &&
-    me.generalId !== "zhangfei";
-
   // Resolve a tap into an actual play, given the chosen effective type. `asType`
   // is set only for conversion plays (Guan Yu red→สังหาร etc.).
-  const proceedPlay = (card: Card, opt: MainActionPlay) => {
+  const proceedPlay = (card: Card, opt: PlayCardOption) => {
     if (!pending) return;
-    const effType = opt.typeKey;
     const asType = opt.asType ?? null;
-    if (shaOverLimit(effType)) {
-      showNotice(`ลง "${cardDisplay("sha").name}" ได้ครั้งเดียวต่อเทิร์น (ยกเว้นมี${cardDisplay("crossbow").name})`);
+    if (!opt.available) {
+      const message = opt.unavailableReason === "no_legal_target"
+        ? "ตอนนี้ไม่มีเป้าหมายที่ถูกกติกา"
+        : opt.unavailableReason === "sha_usage_limit"
+          ? `ลง "${cardDisplay(opt.typeKey).name}" ได้ครั้งเดียวต่อเทิร์น`
+          : "ตอนนี้ยังใช้การ์ดนี้ไม่ได้";
+      showNotice(message);
       return;
     }
-    if (effType === "tao") {
-      if (injuredPlayers.length === 0) {
-        showNotice("ตอนนี้ไม่มีใครบาดเจ็บให้ช่วย");
+    if (
+      opt.targeting.kind === "independent" &&
+      opt.targeting.implicitTargetId === me.id &&
+      opt.targeting.eligibleTargetIds.length === 1
+    ) {
+      void runAnswer({
+        decisionId: pending.id,
+        choice: "playCard",
+        cardIds: [card.id],
+        targetIds: [],
+        ...(asType ? { asType } : {}),
+      });
+      return;
+    }
+    if (opt.targeting.kind === "none" || opt.targeting.kind === "fixed") {
+      const meta = cardMeta(card.typeKey);
+      const replacing = !asType && meta.targetRule === "equipment" && meta.slot && !!me.equipment[meta.slot as EquipSlot];
+      if (!replacing) {
+        void runAnswer({
+          decisionId: pending.id,
+          choice: "playCard",
+          cardIds: [card.id],
+          targetIds: [],
+          ...(asType ? { asType } : {}),
+        });
         return;
       }
-      // Only you are hurt → keep the classic one-tap self-heal. Otherwise open
-      // the target picker (pre-selecting when there's a single candidate).
-      if (injuredPlayers.length === 1 && injuredPlayers[0]!.id === me.id) {
-        void runAnswer({ decisionId: pending.id, choice: "playCard", cardIds: [card.id], targetIds: [] });
-        return;
-      }
-      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
-      dispatch({ type: "SET_AS_TYPE", asType: null });
-      dispatch({ type: "SELECT_TARGETS", ids: injuredPlayers.length === 1 ? [injuredPlayers[0]!.id] : [] });
-      return;
     }
-    if (needsManualTarget(effType)) {
-      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
-      dispatch({ type: "SET_AS_TYPE", asType });
-      dispatch({ type: "SELECT_TARGETS", ids: [] });
-      return;
-    }
-    // no manual target: equipment replacing an occupied slot asks to confirm
-    // (equipment is always a literal play); everything else plays now.
-    const meta = cardMeta(card.typeKey);
-    const replacing = !asType && meta.targetRule === "equipment" && meta.slot && !!me.equipment[meta.slot as EquipSlot];
-    if (replacing) {
-      dispatch({ type: "SELECT_CARDS", ids: [card.id] });
-      dispatch({ type: "SET_AS_TYPE", asType: null });
-      dispatch({ type: "SELECT_TARGETS", ids: [] });
-      return;
-    }
-    void runAnswer({ decisionId: pending.id, choice: "playCard", cardIds: [card.id], targetIds: [], ...(asType ? { asType } : {}) });
+    dispatch({ type: "SELECT_CARDS", ids: [card.id] });
+    dispatch({ type: "SET_AS_TYPE", asType });
+    const soleTarget = opt.targeting.kind === "independent" && opt.targeting.eligibleTargetIds.length === 1
+      ? opt.targeting.eligibleTargetIds
+      : [];
+    dispatch({ type: "SELECT_TARGETS", ids: soleTarget });
   };
 
   // Tap a hand card. Skill-mode / discard toggle multi-select; otherwise figure
@@ -523,6 +486,8 @@ export function Table() {
         dispatch({ type: "SELECT_CARDS", ids: prev.filter((id) => id !== card.id) });
         return;
       }
+      if (skillMode && !selectedSkillOption?.selectableCardIds.includes(card.id)) return;
+      if (zhangbaMode && !selectedPlayOption?.selectableCardIds.includes(card.id)) return;
       if (isDiscardTo && selectable && !selectable.includes(card.id)) return; // not discardable
       if (isDiscardTo && mustDiscard > 0 && prev.length >= mustDiscard) return; // at the cap
       dispatch({ type: "SELECT_CARDS", ids: [...prev, card.id] });
@@ -533,24 +498,35 @@ export function Table() {
       resetSelection();
       return;
     }
-    const opts = mainActionPlays(card, me.generalId);
+    const opts = playCardOptions.filter(
+      (option) => option.source !== "zhangba" && option.selectableCardIds.includes(card.id),
+    );
     if (opts.length === 0) {
       showNotice("การ์ดนี้ใช้ตอนถูกกระทำเท่านั้น");
       return;
     }
-    if (opts.length === 1) {
+    const availableOpts = opts.filter((option) => option.available);
+    if (availableOpts.length === 0) {
       proceedPlay(card, opts[0]!);
       return;
     }
-    setPlayChoices({ card, options: opts }); // "play as?" chooser
+    if (availableOpts.length === 1) {
+      proceedPlay(card, availableOpts[0]!);
+      return;
+    }
+    setPlayChoices({ card, options: availableOpts }); // "play as?" chooser
   };
 
   const getCardState = (c: Card): CardTapState => {
     const inSelectMode = skillMode !== null || zhangbaMode;
-    const canPlay = isMainAction && mainActionPlays(c, me.generalId).length > 0;
-    const taoBlocked = c.typeKey === "tao" && isMainAction && !someoneInjured && !inSelectMode;
-    const tappable = selecting && (inSelectMode || !isMainAction || canPlay) && !taoBlocked;
-    const dimmed = isMainAction && !inSelectMode && (!canPlay || taoBlocked);
+    const skillSelectable = selectedSkillOption?.selectableCardIds.includes(c.id) ?? false;
+    const zhangbaSelectable = selectedPlayOption?.selectableCardIds.includes(c.id) ?? false;
+    const hasPlayOption = playCardOptions.some(
+      (option) => option.source !== "zhangba" && option.selectableCardIds.includes(c.id),
+    );
+    const canSelect = skillMode ? skillSelectable : zhangbaMode ? zhangbaSelectable : hasPlayOption;
+    const tappable = selecting && (!isMainAction || canSelect);
+    const dimmed = isMainAction && (inSelectMode || playCardOptions.length > 0) && !canSelect;
     return { tappable, dimmed };
   };
 
@@ -584,21 +560,19 @@ export function Table() {
   if (skillMode) {
     const sk = skills.find((s) => s.id === skillMode);
     const hints: string[] = [];
-    if (skillSpec && !cardCountOk) {
-      hints.push(skillSpec.minCards === skillSpec.maxCards ? `เลือกการ์ด ${skillSpec.minCards} ใบ` : `เลือกการ์ด ${skillSpec.minCards}+ ใบ`);
+    if (selectedSkillOption && !cardCountOk) {
+      hints.push(selectedSkillOption.minCards === selectedSkillOption.maxCards ? `เลือกการ์ด ${selectedSkillOption.minCards} ใบ` : `เลือกการ์ด ${selectedSkillOption.minCards}+ ใบ`);
     }
-    if (skillSpec && skillSpec.maxTargets > 0 && !targetCountOk) {
+    if (selectedSkillOption && selectedSkillOption.targeting.maxTargets > 0 && !targetCountOk) {
       if (!skillCardsReady) hints.push("เลือกการ์ดทิ้งก่อน");
-      else if (isLijian) hints.push("เลือกผู้ชาย 2 คน (ให้ดวลกัน)");
-      else if (isJieyuan || isQingnang) hints.push("เลือกคนที่บาดเจ็บ");
-      else hints.push(`เลือกเป้าหมาย ${skillSpec.minTargets}${skillSpec.minTargets !== skillSpec.maxTargets ? `-${skillSpec.maxTargets}` : ""} คน`);
+      else hints.push(`เลือกเป้าหมาย ${targetRange.min}${targetRange.min !== targetRange.max ? `-${targetRange.max}` : ""} คน`);
     }
     confirmText =
       `ใช้สกิล "${sk?.name ?? skillMode}"` +
       (chosenCardNames.length ? ` · การ์ด: ${chosenCardNames.join(", ")}` : "") +
       (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "") +
       (hints.length ? ` — ${hints.join(", ")}` : "");
-  } else if (isJiedao) {
+  } else if (selectedPlayOption?.targeting.kind === "dependent") {
     // step-aware hint: pick an armed player, then who they must attack
     const step = selectedTargetIds.length === 0 ? "เลือกคนที่มีอาวุธ" : selectedTargetIds.length === 1 ? "เลือกเป้าที่คนนั้นตีถึง" : "พร้อมยืนยัน";
     confirmText = `${cardDisplay("jiedao").name} — ${step}` + (chosenTargetNames.length ? ` (${chosenTargetNames.join(" → ")})` : "");
@@ -606,7 +580,7 @@ export function Table() {
     const step = selectedCardIds.length < 2 ? `เลือกการ์ด 2 ใบ (เลือกแล้ว ${selectedCardIds.length})` : !targetCountOk ? "เลือกเป้าในระยะ" : "พร้อมยืนยัน";
     confirmText = `${cardDisplay("zhangba").name} (2 ใบ = ${cardDisplay("sha").name}) — ${step}` + (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "");
   } else {
-    const needMore = selectedNeedsTarget && !targetCountOk;
+    const needMore = targetRange.max > 0 && !targetCountOk;
     const needLabel = targetRange.min === targetRange.max ? `เลือกเป้าหมาย ${targetRange.min} คน` : `เลือกเป้าหมาย ${targetRange.min}-${targetRange.max} คน`;
     confirmText = `ลง "${chosenCardNames.join(", ")}"` + (needMore ? ` — ${needLabel} (เลือกแล้ว ${selectedTargetIds.length})` : chosenTargetNames.length ? ` ใส่ ${chosenTargetNames.join(", ")}` : "");
   }
@@ -615,7 +589,8 @@ export function Table() {
   const phaseLabel = (gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase ?? "";
   const isMyTurn = gameView.currentTurnPlayerId === me.id;
   const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
-  const zhangbaAvailable = me.equipment.weapon?.typeKey === "zhangba" && isMyDecision && isMainAction;
+  const zhangbaOption = playCardOptions.find((option) => option.source === "zhangba");
+  const zhangbaAvailable = zhangbaOption?.available === true;
 
   const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
 
@@ -687,6 +662,7 @@ export function Table() {
             pendingActivateId={pendingActivateId}
             pendingActivateMode={pendingActivateMode}
             skillMode={skillMode}
+            activeSkillOptions={activeSkillOptions}
             busy={busy}
             onUseSkill={(skillId) => {
               resetSelection();
@@ -699,7 +675,10 @@ export function Table() {
             zhangbaMode={zhangbaMode}
             onToggleZhangba={() => {
               if (zhangbaMode) { resetSelection(); return; }
-              if (shaOverLimit("sha")) { showNotice(`ลง "${cardDisplay("sha").name}" ได้ครั้งเดียวต่อเทิร์น`); return; }
+              if (!zhangbaOption?.available) {
+                showNotice(zhangbaOption?.unavailableReason === "insufficient_cards" ? "ต้องมีการ์ดอย่างน้อย 2 ใบ" : "ตอนนี้ยังใช้ทวนงูเลื้อยไม่ได้");
+                return;
+              }
               resetSelection();
               dispatch({ type: "SET_ZHANGBA_MODE", on: true });
             }}

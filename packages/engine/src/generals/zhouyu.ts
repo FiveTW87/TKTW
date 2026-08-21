@@ -31,6 +31,7 @@ registerGeneral({
     {
       id: "zhouyu_fanjian",
       maxPerTurn: 1,
+      activeSpec: { minCards: 1, maxCards: 1, targetRule: "oneOther" },
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];

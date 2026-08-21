@@ -48,11 +48,11 @@ describe("G-SUNQUAN ซุนกวน — ชั่งดุลใต้หล�
     expectSkillUsed(g.state, "sunquan_zhiheng", 1);
   });
 
-  it("[G-SUNQUAN-02a] discarding nothing changes nothing", () => {
+  it("[G-SUNQUAN-02a] discarding nothing is refused without consuming the skill", () => {
     const g = contractGame({
       seed: SEED(1202), assigns: [["p0", "sunquan"]], hands: { p0: [SHA] },
     });
-    step(g, { kind: "mainAction" }, useSkill("sunquan_zhiheng", []));
+    expectAtomicReject(g, useSkill("sunquan_zhiheng", []), /needs 1-1 card/);
     expectHandSize(g.state, "p0", 1);
     expectNoLog(g.state, { eventType: "skillUse", skillId: "sunquan_zhiheng" });
   });

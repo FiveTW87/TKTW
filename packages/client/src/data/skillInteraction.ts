@@ -55,29 +55,3 @@ export function skillInteraction(skillId: string): SkillInteraction | undefined 
 export function sameFactionTeammateAlive(gameView: GameView, me: PlayerView): boolean {
   return gameView.players.some((p) => p.id !== me.id && p.alive && p.faction === me.faction);
 }
-
-// Per active skill (the ones with a "ใช้สกิล" button): how many times it can
-// be used per turn, and how many cards / targets its use needs — so the UI
-// only asks for a target when the skill actually takes one, and greys the
-// button out once the limit is spent (mirrors the engine's own rules).
-export interface ActiveSkillSpec {
-  maxPerTurn: number;
-  minCards: number;
-  maxCards: number;
-  minTargets: number;
-  maxTargets: number;
-}
-
-const ACTIVE_SKILL_SPEC: Record<string, ActiveSkillSpec> = {
-  liubei_rende: { maxPerTurn: Infinity, minCards: 1, maxCards: 1, minTargets: 1, maxTargets: 1 },
-  sunquan_zhiheng: { maxPerTurn: 1, minCards: 1, maxCards: 99, minTargets: 0, maxTargets: 0 },
-  zhouyu_fanjian: { maxPerTurn: 1, minCards: 1, maxCards: 1, minTargets: 1, maxTargets: 1 },
-  huanggai_kurou: { maxPerTurn: Infinity, minCards: 0, maxCards: 0, minTargets: 0, maxTargets: 0 },
-  sunshangxiang_jieyuan: { maxPerTurn: 1, minCards: 2, maxCards: 2, minTargets: 1, maxTargets: 1 },
-  diaochan_lijian: { maxPerTurn: 1, minCards: 1, maxCards: 1, minTargets: 2, maxTargets: 2 },
-  huatuo_qingnang: { maxPerTurn: 1, minCards: 1, maxCards: 1, minTargets: 1, maxTargets: 1 },
-};
-
-export function activeSkillSpec(skillId: string): ActiveSkillSpec {
-  return ACTIVE_SKILL_SPEC[skillId] ?? { maxPerTurn: Infinity, minCards: 0, maxCards: 99, minTargets: 0, maxTargets: 1 };
-}

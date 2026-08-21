@@ -11,6 +11,16 @@ export interface SkillDef {
   /** Player-initiated skill offered as a "useSkill" mainAction choice
    *  (e.g. "PlayPhase 1/เทิร์น" skills) rather than a reactive trigger. */
   active?: ActiveSkillHandler;
+  activeSpec?: {
+    minCards: number;
+    maxCards: number | "hand";
+    targetRule:
+      | "none"
+      | "oneOther"
+      | "oneInjured"
+      | "oneInjuredOther"
+      | "twoMaleOthers";
+  };
   maxPerTurn?: number; // default: unlimited
 }
 

@@ -13,7 +13,7 @@ describe("legalActionsFor", () => {
     const pd: PendingDecision = { id: "d1", kind: "mainAction", playerId: "p0", data: {} };
     expect(legalActionsFor(pd, "p0")).toEqual([
       { kind: "playCard", options: [] },
-      { kind: "useSkill" },
+      { kind: "useSkill", options: [] },
       { kind: "endPhase" },
     ]);
   });

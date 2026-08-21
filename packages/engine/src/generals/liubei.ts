@@ -17,6 +17,7 @@ registerGeneral({
   skills: [
     {
       id: "liubei_rende",
+      activeSpec: { minCards: 1, maxCards: 1, targetRule: "oneOther" },
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];

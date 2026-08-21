@@ -12,6 +12,7 @@ registerGeneral({
   skills: [
     {
       id: "huanggai_kurou",
+      activeSpec: { minCards: 0, maxCards: 0, targetRule: "none" },
       active: function* (ctx) {
         const { state, rng, ownerId } = ctx;
         yield* loseHp(ctx, ownerId, 1);

@@ -1,11 +1,10 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Card, PlayerView } from "@tktw/shared";
+import type { Card, LegalActionView, PlayerView } from "@tktw/shared";
 import { HandCard, CardTooltip } from "../HandCard";
 import { cardDisplay, cardInfo } from "../../data/cardNames";
 import { generalDisplay, factionColor } from "../../data/generalNames";
 import { roleDisplay } from "../../data/roles";
-import { activeSkillSpec } from "../../data/skillInteraction";
 import { cardMeta } from "../../data/cardMeta";
 import type { SkillDisplay } from "../../data/generalSkills";
 import { DelayedTrickList } from "./DelayedTrickCard";
@@ -42,6 +41,7 @@ export function SelfDock({
   pendingActivateId,
   pendingActivateMode,
   skillMode,
+  activeSkillOptions,
   busy,
   onUseSkill,
   onAnswerActivate,
@@ -71,6 +71,7 @@ export function SelfDock({
   pendingActivateId: string | null;
   pendingActivateMode: string | undefined;
   skillMode: string | null;
+  activeSkillOptions: ActiveSkillOption[];
   busy: boolean;
   onUseSkill: (skillId: string) => void;
   onAnswerActivate: (accept: boolean) => void;
@@ -91,9 +92,11 @@ export function SelfDock({
     : undefined;
   const mobileSkill = inlineMobileSkill ?? (compact ? skills.find((skill) => skill.id === mobileSkillId) : undefined);
   const mobileSkillUsed = mobileSkill ? me.skillUsedThisTurn[mobileSkill.id] ?? 0 : 0;
-  const mobileSkillSpent = mobileSkill?.active
-    ? mobileSkillUsed >= activeSkillSpec(mobileSkill.id).maxPerTurn
-    : false;
+  const mobileSkillOption = mobileSkill
+    ? activeSkillOptions.find((option) => option.skillId === mobileSkill.id)
+    : undefined;
+  const mobileSkillUnavailable = mobileSkill?.active && mobileSkillOption?.available !== true;
+  const mobileSkillSpent = mobileSkillOption?.available === false && mobileSkillOption.unavailableReason === "usage_limit";
 
   return (
     <>
@@ -209,9 +212,9 @@ export function SelfDock({
           <div className="table-self-skill-chips" aria-label="สกิลของตัวเอง">
             {skills.length === 0 && <span className="table-self-skill-empty">ไม่มีสกิล</span>}
             {skills.map((skill) => {
-              const used = me.skillUsedThisTurn[skill.id] ?? 0;
               const pending = skill.id === pendingActivateId && pendingActivateMode === "inline";
-              const spent = skill.active && used >= activeSkillSpec(skill.id).maxPerTurn;
+              const option = activeSkillOptions.find((candidate) => candidate.skillId === skill.id);
+              const spent = option?.available === false && option.unavailableReason === "usage_limit";
               return (
                 <button
                   type="button"
@@ -234,7 +237,9 @@ export function SelfDock({
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;
             const inlinePending = s.id === pendingActivateId && pendingActivateMode === "inline";
-            const spentForTurn = s.active && used >= activeSkillSpec(s.id).maxPerTurn;
+            const option = activeSkillOptions.find((candidate) => candidate.skillId === s.id);
+            const unavailable = s.active && option?.available !== true;
+            const spentForTurn = option?.available === false && option.unavailableReason === "usage_limit";
             return (
               <div
                 key={s.id}
@@ -261,13 +266,13 @@ export function SelfDock({
                 )}
                 {!inlinePending && s.active && isMyDecision && isMainAction && (
                   <button
-                    onClick={() => { if (!spentForTurn) onUseSkill(s.id); }}
-                    disabled={busy || spentForTurn}
+                    onClick={() => { if (!unavailable) onUseSkill(s.id); }}
+                    disabled={busy || unavailable}
                     className="btn-primary"
                     style={{ marginTop: 5, width: "100%", padding: 6, fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 5, opacity: skillMode === s.id ? 1 : 0.92, boxShadow: skillMode === s.id ? "0 0 10px rgba(217,165,49,.6)" : undefined }}
                   >
                     <span style={{ fontFamily: "var(--font-glyph)", fontSize: 13 }}>技</span>
-                    {spentForTurn ? "ใช้ครบแล้วเทิร์นนี้" : skillMode === s.id ? "กำลังใช้..." : "ใช้สกิล"}
+                    {spentForTurn ? "ใช้ครบแล้วเทิร์นนี้" : unavailable ? "ยังใช้ไม่ได้" : skillMode === s.id ? "กำลังใช้..." : "ใช้สกิล"}
                   </button>
                 )}
               </div>
@@ -376,14 +381,14 @@ export function SelfDock({
             <div className="mobile-skill-detail-actions">
               <button
                 onClick={() => {
-                  if (mobileSkillSpent) return;
+                  if (mobileSkillUnavailable) return;
                   onUseSkill(mobileSkill.id);
                   setMobileSkillId(null);
                 }}
-                disabled={busy || mobileSkillSpent}
+                disabled={busy || mobileSkillUnavailable}
                 className="btn-primary"
               >
-                {mobileSkillSpent ? "ใช้ครบแล้วเทิร์นนี้" : "ใช้สกิล"}
+                {mobileSkillSpent ? "ใช้ครบแล้วเทิร์นนี้" : mobileSkillUnavailable ? "ยังใช้ไม่ได้" : "ใช้สกิล"}
               </button>
             </div>
           ) : null}
@@ -394,6 +399,8 @@ export function SelfDock({
     </>
   );
 }
+
+type ActiveSkillOption = Extract<LegalActionView, { kind: "useSkill" }>["options"][number];
 
 // Mute toggle + volume slider for the synthesized sound effects (Web Audio,
 // see lib/sfx.ts) — the app's only local UI preference, so it lives in its

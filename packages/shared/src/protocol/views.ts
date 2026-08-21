@@ -178,7 +178,26 @@ const cardPlayOptionSchema = z.discriminatedUnion("available", [
 const playCardLegalActionSchema = z
   .object({ kind: z.literal("playCard"), options: z.array(cardPlayOptionSchema) })
   .strict();
-const useSkillLegalActionSchema = z.object({ kind: z.literal("useSkill") }).strict();
+const activeSkillUnavailableReasonSchema = z.enum(["usage_limit", "insufficient_cards", "no_legal_target"]);
+const activeSkillOptionBaseSchema = z.object({
+  skillId: z.string(),
+  selectableCardIds: z.array(z.string()),
+  minCards: z.number().int().min(0),
+  maxCards: z.number().int().min(0),
+  exactCards: z.number().int().min(0).optional(),
+  usesThisTurn: z.number().int().min(0),
+  maxUsesPerTurn: z.number().int().positive().optional(),
+  targeting: cardTargetingSchema,
+});
+const activeSkillOptionSchema = z.discriminatedUnion("available", [
+  activeSkillOptionBaseSchema.extend({ available: z.literal(true) }).strict(),
+  activeSkillOptionBaseSchema
+    .extend({ available: z.literal(false), unavailableReason: activeSkillUnavailableReasonSchema })
+    .strict(),
+]);
+const useSkillLegalActionSchema = z
+  .object({ kind: z.literal("useSkill"), options: z.array(activeSkillOptionSchema) })
+  .strict();
 const endPhaseLegalActionSchema = z.object({ kind: z.literal("endPhase") }).strict();
 const drawLegalActionSchema = z.object({ kind: z.literal("draw") }).strict();
 const discardLegalActionSchema = z

@@ -13,6 +13,7 @@ registerGeneral({
     {
       id: "sunshangxiang_jieyuan",
       maxPerTurn: 1,
+      activeSpec: { minCards: 2, maxCards: 2, targetRule: "oneInjuredOther" },
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const targetId = targetIds[0];

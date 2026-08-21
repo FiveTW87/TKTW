@@ -14,6 +14,7 @@ registerGeneral({
     {
       id: "diaochan_lijian",
       maxPerTurn: 1,
+      activeSpec: { minCards: 1, maxCards: 1, targetRule: "twoMaleOthers" },
       active: function* (ctx) {
         const { state, ownerId, cardIds, targetIds } = ctx;
         const [a, b] = targetIds;
