@@ -5,7 +5,7 @@ import type { Card, PlayerAnswer } from "../types";
 import type { Decision } from "./decisions";
 import type { Ctx } from "./ctx";
 import { fireTrigger } from "./triggers";
-import { popCard } from "./state";
+import { log, popCard } from "./state";
 
 export type JudgmentGenerator = Generator<Decision, Card, PlayerAnswer>;
 
@@ -39,6 +39,16 @@ export function* runJudgment(ctx: Ctx, playerId: string, opts?: JudgmentOptions)
     yield { kind: "judgmentReveal", playerId, data: { reason: opts.reason ?? "" } };
   }
   const judgment: JudgmentBox = { card: drawOneForJudgment(ctx) };
+  log(ctx.state, "judgmentReveal", {
+    actorId: playerId,
+    cardId: judgment.card.id,
+    cardType: judgment.card.typeKey,
+    data: {
+      suit: judgment.card.suit,
+      rank: judgment.card.rank,
+      ...(opts?.reason ? { reason: opts.reason } : {}),
+    },
+  });
   yield* fireTrigger(ctx, "OnJudgeCardRevealed", { playerId, judgment });
   yield* fireTrigger(ctx, "BeforeJudgeEffect", { playerId, judgment });
   yield* fireTrigger(ctx, "OnJudgeResult", { playerId, judgment });

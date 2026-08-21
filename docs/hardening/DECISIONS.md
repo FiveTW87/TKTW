@@ -137,3 +137,9 @@ Reason: Snapshot guesses cannot explain remote movement reliably and can leak pr
 Date: 2026-08-21
 Decision: Combat and skill events use one bounded client timeline with a deliberate cadence, per-player pose arbitration, and a maximum active-effect count. Damage, dodge, heal, skill, and death sounds fire when their visible outcome phase appears; the snapshot SFX owner retains only draw/discard/turn cues.
 Reason: Playing all appended log sounds immediately made multi-target actions noisy and visually disconnected. Keeping outcome sound beside the visual scheduler preserves received order, prevents duplicate audio, and still cannot delay gameplay because both adapters are best-effort.
+
+## DEC-024 — Table-state feedback uses public logs plus authoritative snapshot transitions
+
+Date: 2026-08-21
+Decision: Judgment and Wuxie feedback derives from ordered public structured logs, while new-turn and phase feedback derives from authoritative GameView snapshot transitions. One reconnect-safe lifecycle owner silently baselines initial/rebuilt history, caps and expires cues, suppresses a redundant prepare-phase cue on a new turn, and feeds one pointer-transparent central layer. Countdown urgency remains in TurnPanel and exposes explicit visible/accessibility semantics.
+Reason: Judgment replacement and Wuxie parity need durable event order, but turn and phase already exist authoritatively in every snapshot and do not need synthetic engine logs. Keeping both inputs behind one presentation owner prevents replay after reconnect and avoids allowing optional feedback to affect decisions, rules, or timers.

@@ -54,6 +54,14 @@ describe("TC-1: nested wuxie cancellation (SPEC 15)", () => {
       expect(p.hand.some((c) => c.typeKey === "wuxie")).toBe(false);
     }
     expect(state.discardPile.filter((c) => c.typeKey === "wuxie")).toHaveLength(3);
+    expect(state.log.filter((entry) => entry.eventType === "wuxie").map((entry) => entry.data?.depth)).toEqual([1, 2, 3]);
+    expect(state.log.filter((entry) => entry.eventType === "wuxieResult")).toEqual([
+      expect.objectContaining({
+        actorId: "p0",
+        cardType: "juedou",
+        data: expect.objectContaining({ targetType: "juedou", effective: false }),
+      }),
+    ]);
   });
 
   it("an even number of stacked wuxie lets the original resolve", () => {
@@ -87,5 +95,22 @@ describe("TC-1: nested wuxie cancellation (SPEC 15)", () => {
 
     expect(result.value).toBe(true); // 2 wuxie stacked = even = original resolves
     expect(event.cancelled).toBe(false);
+    expect(state.log.filter((entry) => entry.eventType === "wuxie").map((entry) => entry.data?.depth)).toEqual([1, 2]);
+    expect(state.log.filter((entry) => entry.eventType === "wuxieResult")).toEqual([
+      expect.objectContaining({ data: expect.objectContaining({ targetType: "juedou", effective: true }) }),
+    ]);
+  });
+
+  it("does not publish a final counter result when nobody played wuxie", () => {
+    const rng = createRng(3);
+    const state = createInitialState({ playerCount: 3, seed: 3 }, rng);
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    const event = makeEvent(state, "juedou", "p0", ["p1"]);
+    const gen = resolveWithWuxieWindow(ctx, event);
+    let result = gen.next();
+    while (!result.done) {
+      result = gen.next({ decisionId: "n/a", playerId: result.value.playerId, pass: true });
+    }
+    expect(state.log.some((entry) => entry.eventType === "wuxieResult")).toBe(false);
   });
 });

@@ -48,6 +48,54 @@ export interface DeathPresentationEvent extends PresentationEventBase {
   targetId: string;
 }
 
+export interface JudgmentRevealPresentationEvent extends PresentationEventBase {
+  kind: "judgmentReveal";
+  playerId: string;
+  cardId?: string;
+  cardType?: string;
+  suit?: string;
+  rank?: number;
+  reason?: string;
+}
+
+export interface JudgmentReplacePresentationEvent extends PresentationEventBase {
+  kind: "judgmentReplace";
+  actorId: string;
+  playerId: string;
+  cardId?: string;
+  cardType?: string;
+  previousCardId?: string;
+  previousCardType?: string;
+  previousSuit?: string;
+  previousRank?: number;
+  suit?: string;
+  rank?: number;
+}
+
+export interface JudgmentResultPresentationEvent extends PresentationEventBase {
+  kind: "judgmentResult";
+  playerId: string;
+  cardType?: string;
+  suit?: string;
+  rank?: number;
+  outcome?: string;
+  amount?: number;
+}
+
+export interface WuxieCounterPresentationEvent extends PresentationEventBase {
+  kind: "wuxieCounter";
+  actorId: string;
+  targetType?: string;
+  depth: number;
+}
+
+export interface WuxieResultPresentationEvent extends PresentationEventBase {
+  kind: "wuxieResult";
+  actorId: string;
+  targetType?: string;
+  effective: boolean;
+}
+
 export type CardMotionZone =
   | { kind: "player"; playerId: string; zone: "hand" | "equipment" | "judgment" }
   | { kind: "pile"; zone: "draw" | "discard" | "table" | "wugu" };
@@ -73,7 +121,20 @@ export type PresentationEvent =
   | DodgePresentationEvent
   | HealPresentationEvent
   | DeathPresentationEvent
+  | JudgmentRevealPresentationEvent
+  | JudgmentReplacePresentationEvent
+  | JudgmentResultPresentationEvent
+  | WuxieCounterPresentationEvent
+  | WuxieResultPresentationEvent
   | CardMotionPresentationEvent;
+
+function optionalString(value: unknown, key: string): Record<string, string> {
+  return typeof value === "string" && value.length > 0 ? { [key]: value } : {};
+}
+
+function optionalNumber(value: unknown, key: string): Record<string, number> {
+  return typeof value === "number" && Number.isFinite(value) ? { [key]: value } : {};
+}
 
 function optionalAmount(amount: number | undefined): { amount?: number } {
   return amount === undefined ? {} : { amount };
@@ -151,6 +212,39 @@ export function mapGameLogToPresentationEvents(matchId: string, entry: GameLogVi
       }];
     case "death":
       return [{ ...base, id: `${matchId}:${entry.id}:death`, kind: "death", targetId: entry.actorId }];
+    case "judgmentReveal":
+      return [{
+        ...base, id: `${matchId}:${entry.id}:judgmentReveal`, kind: "judgmentReveal", playerId: entry.actorId,
+        ...publicCard(entry), ...optionalString(entry.data?.suit, "suit"), ...optionalNumber(entry.data?.rank, "rank"),
+        ...optionalString(entry.data?.reason, "reason"),
+      }];
+    case "judgmentReplace": {
+      const playerId = entry.targetIds?.[0];
+      if (!playerId) return [];
+      return [{
+        ...base, id: `${matchId}:${entry.id}:judgmentReplace`, kind: "judgmentReplace", actorId: entry.actorId, playerId,
+        ...publicCard(entry), ...optionalString(entry.data?.previousCardId, "previousCardId"),
+        ...optionalString(entry.data?.previousCardType, "previousCardType"), ...optionalString(entry.data?.previousSuit, "previousSuit"),
+        ...optionalNumber(entry.data?.previousRank, "previousRank"), ...optionalString(entry.data?.suit, "suit"),
+        ...optionalNumber(entry.data?.rank, "rank"),
+      }];
+    }
+    case "judgment":
+      return [{
+        ...base, id: `${matchId}:${entry.id}:judgmentResult`, kind: "judgmentResult", playerId: entry.actorId,
+        ...(entry.cardType ? { cardType: entry.cardType } : {}), ...optionalString(entry.data?.suit, "suit"),
+        ...optionalNumber(entry.data?.rank, "rank"), ...optionalString(entry.data?.outcome, "outcome"), ...optionalAmount(entry.amount),
+      }];
+    case "wuxie":
+      return [{
+        ...base, id: `${matchId}:${entry.id}:wuxieCounter`, kind: "wuxieCounter", actorId: entry.actorId,
+        ...optionalString(entry.data?.targetType, "targetType"), depth: typeof entry.data?.depth === "number" ? entry.data.depth : 1,
+      }];
+    case "wuxieResult":
+      return [{
+        ...base, id: `${matchId}:${entry.id}:wuxieResult`, kind: "wuxieResult", actorId: entry.actorId,
+        ...optionalString(entry.data?.targetType, "targetType"), effective: entry.data?.effective === true,
+      }];
     case "cardPlay":
       return [movement(matchId, entry, "play", "play", player(entry.actorId, "hand"), pile("table"), publicCard(entry))];
     case "discard":

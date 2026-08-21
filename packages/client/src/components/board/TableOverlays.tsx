@@ -9,9 +9,11 @@ import { SkillToast, type ToastData } from "../SkillToast";
 import { cardDisplay } from "../../data/cardNames";
 import type { CombatEffect } from "../../hooks/useCombatPresentation";
 import type { CardMotionEffect } from "../../hooks/useCardMotionPresentation";
+import type { TableFeedbackCue } from "../../hooks/useTableFeedbackPresentation";
 import type { PlayCardOption, PlayChoice } from "../../hooks/mainActionController";
 import { CombatEffectLayer } from "./CombatEffectLayer";
 import { CardMotionLayer } from "./CardMotionLayer";
+import { TableFeedbackLayer } from "./TableFeedbackLayer";
 
 type AnswerFields = Omit<PlayerAnswer, "playerId">;
 
@@ -19,6 +21,7 @@ export interface TableOverlayViewModel {
   toast: ToastData | null;
   cardMotionEffects: CardMotionEffect[];
   combatEffects: CombatEffect[];
+  feedbackCues: TableFeedbackCue[];
   generalPick: { playerName: string; remainingSeconds: number | null } | null;
   notice: string | null;
   decision: {
@@ -122,6 +125,7 @@ export function TableOverlays({ model }: { model: TableOverlayViewModel }) {
     toast,
     cardMotionEffects,
     combatEffects,
+    feedbackCues,
     generalPick,
     notice,
     decision,
@@ -139,6 +143,7 @@ export function TableOverlays({ model }: { model: TableOverlayViewModel }) {
       {toast && <SkillToast toast={toast} />}
       <CardMotionLayer effects={cardMotionEffects} />
       <CombatEffectLayer effects={combatEffects} />
+      <TableFeedbackLayer cues={feedbackCues} />
       {generalPick && (
         <div
           className="anim-rise"

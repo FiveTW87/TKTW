@@ -330,6 +330,17 @@ describe("G-SIMAYI สุมาอี้ — ชิงคืนหลังศ�
     step(g, { kind: "guicaiReplace", playerId: "p1" }, withCards(HEART_JUDGE));
     expect(g.state.skipPlayPhase).toBeUndefined(); // the heart decided it
     expectSkillUsed(g.state, "simayi_guicai", 1);
+    expect([...g.state.log].reverse().find((entry) => entry.eventType === "judgmentReplace")).toMatchObject({
+      actorId: "p1",
+      targetIds: ["p0"],
+      cardId: HEART_JUDGE,
+      data: {
+        previousCardId: SPADE_JUDGE,
+        previousSuit: "spade",
+        previousRank: 7,
+        suit: "heart",
+      },
+    });
   });
 
   it("[G-SIMAYI-04b] he can also replace his own judgment", () => {

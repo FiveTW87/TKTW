@@ -48,9 +48,24 @@ registerGeneral({
           if (answer.pass || !answer.cardIds?.length) return;
           const cid = answer.cardIds[0]!;
           const card = removeFromHand(state, ownerId, cid);
-          state.discardPile.push(judgment.card);
+          const previousCard = judgment.card;
+          state.discardPile.push(previousCard);
           judgment.card = card;
           log(state, "skillUse", { actorId: ownerId, skillId: "simayi_guicai", targetIds: [playerId], cardType: card.typeKey });
+          log(state, "judgmentReplace", {
+            actorId: ownerId,
+            targetIds: [playerId],
+            cardId: card.id,
+            cardType: card.typeKey,
+            data: {
+              previousCardId: previousCard.id,
+              previousCardType: previousCard.typeKey,
+              previousSuit: previousCard.suit,
+              previousRank: previousCard.rank,
+              suit: card.suit,
+              rank: card.rank,
+            },
+          });
         },
       },
     },

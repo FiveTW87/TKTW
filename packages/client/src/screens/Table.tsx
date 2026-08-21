@@ -17,6 +17,7 @@ import { useTableTransientUi } from "../hooks/useTableTransientUi";
 import { useTableSfx } from "../hooks/useTableSfx";
 import { useCombatPresentation } from "../hooks/useCombatPresentation";
 import { useCardMotionPresentation } from "../hooks/useCardMotionPresentation";
+import { useTableFeedbackPresentation } from "../hooks/useTableFeedbackPresentation";
 import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../components/board/TableControls";
 import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from "../components/board/TableOverlays";
 
@@ -54,6 +55,15 @@ export function Table() {
     connected,
     matchId: gameView?.matchId,
     logs: gameView?.gameLogs,
+  });
+  const currentTurnPlayerName = gameView?.players.find((player) => player.id === gameView.currentTurnPlayerId)?.name;
+  const feedbackCues = useTableFeedbackPresentation({
+    connected,
+    matchId: gameView?.matchId,
+    logs: gameView?.gameLogs,
+    turnNumber: gameView?.turnNumber,
+    phase: gameView?.currentPhase,
+    currentTurnPlayerName,
   });
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
@@ -203,6 +213,7 @@ export function Table() {
     toast,
     cardMotionEffects,
     combatEffects,
+    feedbackCues,
     generalPick: generalPickPending && generalPickWaitingName
       ? { playerName: generalPickWaitingName, remainingSeconds: generalPickRemaining }
       : null,

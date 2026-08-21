@@ -7,6 +7,7 @@ function overlayModel(overrides: Partial<TableOverlayViewModel> = {}): TableOver
     toast: null,
     cardMotionEffects: [],
     combatEffects: [],
+    feedbackCues: [],
     generalPick: null,
     notice: null,
     decision: null,

@@ -37,6 +37,22 @@ describe("presentationEvents", () => {
     expect(result.map((event) => event.logId)).toEqual(["log_9", "log_10", "log_2", "log_2"]);
   });
 
+  it("maps judgment and wuxie feedback as typed ordered events", () => {
+    expect(mapGameLogsToPresentationEvents("match-feedback", [
+      log("j0", "judgmentReveal", { actorId: "p1", cardId: "heart_8", cardType: "tao", data: { suit: "heart", rank: 8, reason: "bagua" } }),
+      log("j1", "judgmentReplace", { actorId: "p2", targetIds: ["p1"], cardId: "spade_7", cardType: "sha", data: { previousCardId: "heart_8", previousCardType: "tao", previousSuit: "heart", previousRank: 8, suit: "spade", rank: 7 } }),
+      log("j2", "judgment", { actorId: "p1", cardType: "bagua", data: { suit: "spade", rank: 7, outcome: "fail" } }),
+      log("w0", "wuxie", { actorId: "p3", data: { targetType: "juedou", depth: 2 } }),
+      log("w1", "wuxieResult", { actorId: "p0", cardType: "juedou", data: { targetType: "juedou", effective: false } }),
+    ])).toEqual([
+      { id: "match-feedback:j0:judgmentReveal", logId: "j0", kind: "judgmentReveal", playerId: "p1", cardId: "heart_8", cardType: "tao", suit: "heart", rank: 8, reason: "bagua" },
+      { id: "match-feedback:j1:judgmentReplace", logId: "j1", kind: "judgmentReplace", actorId: "p2", playerId: "p1", cardId: "spade_7", cardType: "sha", previousCardId: "heart_8", previousCardType: "tao", previousSuit: "heart", previousRank: 8, suit: "spade", rank: 7 },
+      { id: "match-feedback:j2:judgmentResult", logId: "j2", kind: "judgmentResult", playerId: "p1", cardType: "bagua", suit: "spade", rank: 7, outcome: "fail" },
+      { id: "match-feedback:w0:wuxieCounter", logId: "w0", kind: "wuxieCounter", actorId: "p3", targetType: "juedou", depth: 2 },
+      { id: "match-feedback:w1:wuxieResult", logId: "w1", kind: "wuxieResult", actorId: "p0", targetType: "juedou", effective: false },
+    ]);
+  });
+
   it("omits absent optional fields and ignores unsupported or malformed entries", () => {
     expect(mapGameLogsToPresentationEvents("m", [
       log("ok", "damage", { actorId: "target", data: { sourceId: "" } }),

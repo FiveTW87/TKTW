@@ -48,7 +48,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | SFX-001 | Audio manager and preferences | completed | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | completed | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | completed | Codex | 2.5d | FX-001, SFX-001 |
-| FX-003 | Judgment, Wuxie, turn, and timer feedback | backlog | Codex | 2d | FX-002 |
+| FX-003 | Judgment, Wuxie, turn, and timer feedback | complete | Codex | 2d | FX-002 |
 | ROOM-001 | Typed room settings and presets | backlog | Codex | 1.5d | LEGAL-001 |
 | ROOM-002 | Create/lobby UI and lifecycle preservation | backlog | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | backlog | Codex | 2d | TABLE-003, ROOM-002 |
@@ -1329,11 +1329,57 @@ Present attack, response, hit, dodge, heal, skill, death, and multi-target actio
 
 ## FX-003 — Judgment, Wuxie, turn, and timer feedback
 
-Status: backlog | Owner: Codex | Reviewer: Claude scenario review | Estimate: 2 days | Risk: Medium
+Status: complete | Owner: Codex | Reviewer: Claude scenario review | Branch: main | Dependencies: FX-002 | Estimate: 2 days | Risk: Medium
 
 ### Objective
 
 Give judgment replacement, nested Wuxie, turn start, phase change, and urgent timer states distinct feedback.
+
+### Current behavior
+
+- The TurnPanel continuously shows turn/phase and changes the ring to red at five seconds, but turn/phase transitions have no bounded cue and urgency has no explicit class/live text contract.
+- Judgment logs record only the final outcome; the initial revealed card and Sima Yi replacement are not durable public events, so presentation cannot distinguish them.
+- Each Wuxie use is logged without nesting depth, and the outer chain has no explicit final effective/cancelled event.
+- Combat/card presentation already provides silent baselines, bounded timers, reconnect safety, reduced motion, and pointer-transparent portal layers.
+
+### Expected behavior
+
+- Initial judgment reveal, replacement, and final result are distinct ordered cues using only public card information.
+- Nested Wuxie shows increasing depth and one final effective/cancelled state for the original trick.
+- Turn start and later phase changes show short non-modal cues once per actual snapshot transition; initial/reconnect/rebuild snapshots remain silent.
+- The final five seconds expose a visible/accessible urgent state without blocking controls or restarting on rerender.
+
+### In scope / allowed files
+
+- Narrow Engine public structured-log metadata for judgment reveal/replacement and Wuxie depth/final result, with engine contract tests.
+- Client typed presentation events, one deep table-feedback lifecycle hook, one pointer-transparent layer, TurnPanel urgency semantics, Table overlay wiring, focused CSS/tests, and hardening docs.
+
+### Out of scope / forbidden files
+
+- Judgment/Wuxie rules, trigger order, timeout duration/default answers, legal actions, server decision scheduling, room settings, gameplay sound vocabulary/assets, Table seat/control redesign, tutorial/assistance, and `packages/client/src/App.tsx`.
+- Blocking decisions behind feedback, exposing private hands/roles, replaying history after reconnect, or adding a generic universal animation bus.
+
+### Type or protocol changes
+
+- Add client-only discriminated judgment/Wuxie presentation events and table feedback cues.
+- Reuse optional scalar fields in the existing structured-log schema; no answer/action protocol change.
+- Snapshot turn/phase feedback derives from authoritative `GameView`; received log array order remains authoritative.
+
+### Implementation steps
+
+1. Red→Green: log/map/render judgment reveal, then replacement, then final result.
+2. Red→Green: add Wuxie depth and one outer final-result event for odd/even chains.
+3. Red→Green: add reconnect-safe turn/phase transient cues with bounded timers and overlap.
+4. Red→Green: expose urgent timer class/live copy with fake-clock tests and reduced-motion behavior.
+5. Refactor only after Green, then run focused/full verification and changed-state visual QA.
+
+### Edge cases
+
+- Judgment without replacement, replacement declined, replacement artwork missing, repeated judgments, and result arriving after replacement.
+- Zero/one/many Wuxie counters, odd/even final parity, converted Wuxie, nested recursion, and no-counter chains (no final banner).
+- Initial mount, match change, rollback, reconnect stale/fresh view, simultaneous turn+prepare transition, rapid phase snapshots, unmount timers, and StrictMode.
+- Missing/duplicate compact anchors are irrelevant to the central portal; all feedback remains pointer-transparent and bounded.
+- Timer deadline absent/changed/expired, server clock skew, rerender at the same second, and reduced motion.
 
 ### Acceptance criteria
 
@@ -1344,6 +1390,16 @@ Give judgment replacement, nested Wuxie, turn start, phase change, and urgent ti
 ### Tests and verification
 
 - Judgment/Wuxie depth tests, timer fake-clock tests, reduced-motion and mobile layering tests.
+- Full client/engine/server suites, root typecheck, production build, diff check, and changed-state screenshots when browser runtime is available.
+
+### Completion report
+
+- Engine now emits public structured events for the revealed judgment card, Sima Yi replacement, each nested Wuxie depth, and one outer effective/cancelled result without changing trigger or parity rules.
+- Client presentation maps those logs to typed events and one reconnect-safe lifecycle owner. Initial/rebuilt/reconnected history remains silent; active cues are timer-bounded, capped, pointer-transparent, and reduced-motion aware.
+- The central table layer distinguishes reveal, replacement, result, Wuxie depth/final state, new turn, and later phase changes. A simultaneous new-turn/prepare snapshot produces only the turn cue.
+- TurnPanel exposes `.is-urgent`, a visible assertive `ด่วน` label, and the existing red countdown at five seconds without replacing or restarting the authoritative deadline.
+- Verification passed: client 31 files / 236 tests (including the 67-case Table integration suite), engine 40 / 1,116, server 3 / 58, root typecheck, client production build (210 modules), and diff check.
+- Changed-state screenshot capture was attempted, but the in-app browser plugin rejected its own trusted service before connecting to the local page; no screenshot was fabricated. Component, mobile Table, portal, pointer-event, reduced-motion, and fake-clock tests passed.
 
 ---
 

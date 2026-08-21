@@ -180,4 +180,25 @@ describe("P6: interactive judgment reveal", () => {
       expect((first2.value as { kind: string }).kind).not.toBe("judgmentReveal");
     }
   });
+
+  it("publishes the revealed card before replacement/result triggers run", () => {
+    const rng = createRng(6);
+    const state = createInitialState({ playerCount: 3, seed: 6 }, rng);
+    const ctx = makeCtx(state, rng, { checkGameEnd: lastAliveWins });
+    const revealed: Card = { id: "judge-public", typeKey: "shan", suit: "heart", rank: 8 };
+    state.drawPile.push(revealed);
+    for (const player of state.players) player.hand = [];
+    const gen = runJudgment(ctx, "p0", { interactive: true, reason: "bagua" });
+    const decision = gen.next();
+
+    gen.next({ decisionId: "reveal", playerId: "p0", choice: "reveal" });
+
+    expect(decision.done).toBe(false);
+    expect(state.log.find((entry) => entry.eventType === "judgmentReveal")).toMatchObject({
+      actorId: "p0",
+      cardId: "judge-public",
+      cardType: "shan",
+      data: { suit: "heart", rank: 8, reason: "bagua" },
+    });
+  });
 });

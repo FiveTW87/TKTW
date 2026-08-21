@@ -25,7 +25,15 @@ function* pollForWuxie(state: GameState, event: GameEvent): PollGenerator {
         throw new Error(`askWuxie: ${cardId} does not count as wuxie`);
       }
       discardFromHand(state, pid, cardId);
-      log(state, "wuxie", { actorId: pid, cardType: "wuxie", data: { targetType: event.type } });
+      log(state, "wuxie", {
+        actorId: pid,
+        cardType: "wuxie",
+        data: {
+          targetType: event.type,
+          targetEventId: event.id,
+          depth: state.eventStack.length,
+        },
+      });
       return pid;
     }
   }
@@ -41,6 +49,7 @@ function* pollForWuxie(state: GameState, event: GameEvent): PollGenerator {
  */
 export function* resolveWithWuxieWindow(ctx: Ctx, event: GameEvent): BoolGenerator {
   const { state } = ctx;
+  const isOutermostWindow = state.eventStack.length === 0;
   pushEvent(state, event);
   const responder = yield* pollForWuxie(state, event);
   let effective = true;
@@ -57,5 +66,13 @@ export function* resolveWithWuxieWindow(ctx: Ctx, event: GameEvent): BoolGenerat
   }
   popEvent(state);
   event.cancelled = !effective;
+  if (isOutermostWindow && responder) {
+    log(state, "wuxieResult", {
+      ...(event.source ? { actorId: event.source } : {}),
+      cardType: event.type,
+      ...(event.targets ? { targetIds: event.targets } : {}),
+      data: { targetType: event.type, targetEventId: event.id, effective },
+    });
+  }
   return effective;
 }

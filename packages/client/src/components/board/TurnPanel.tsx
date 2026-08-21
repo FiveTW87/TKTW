@@ -52,7 +52,7 @@ export function TurnPanel({
 
   return (
     <div
-      className="table-turn-panel"
+      className={`table-turn-panel${urgent ? " is-urgent" : ""}`}
       style={{
         position: "fixed",
         top: "calc(12px + env(safe-area-inset-top, 0px))",
@@ -101,7 +101,9 @@ export function TurnPanel({
       </div>
 
       {remaining !== null && (
-        <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} style={{ flexShrink: 0 }}>
+        <div className="table-turn-timer" style={{ position: "relative", flexShrink: 0 }}>
+        {urgent && <span className="table-turn-urgent-label" aria-live="assertive">ด่วน</span>}
+        <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`}>
           <circle cx={ringCenter} cy={ringCenter} r={ringR} fill="rgba(0,0,0,.3)" stroke="rgba(255,255,255,.08)" strokeWidth={5} />
           <circle
             cx={ringCenter}
@@ -120,6 +122,7 @@ export function TurnPanel({
             {remaining}
           </text>
         </svg>
+        </div>
       )}
     </div>
   );
