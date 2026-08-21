@@ -35,7 +35,7 @@ Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
 
 ## Next actions
 
-1. Commit and push the `TS-002` checkpoint.
+1. Push the `TS-002` checkpoint.
 2. Review Claude's initial read-only audit if available.
 3. Start `LEGAL-001` with per-variant schema/tests before client migration.
 4. Keep Zod parsing authoritative at external seams and preserve hidden-information tests.
@@ -44,7 +44,7 @@ Overall status: Phase 1 complete; `TS-001` and `TS-002` complete
 
 - `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
 - `TS-001`: `e75d6d3` (`TS-001-add-root-typecheck-gate`).
-- `TS-002`: pending commit.
+- `TS-002`: `98410dc` (`TS-002-add-typed-protocol-seams`).
 
 ## Known workspace notes
 

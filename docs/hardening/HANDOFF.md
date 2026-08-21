@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `TS-002` complete and awaiting checkpoint commit; next task is `LEGAL-001`
+Current task: `TS-002` complete; next task is `LEGAL-001`
 
 ## Objective
 
@@ -19,7 +19,7 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Planning base: `faa89ef` (`Refine responsive player tiles`)
 - Documentation checkpoint: `8dfb57e` (`DOC-001-hardening-execution-plan`)
 - TypeScript compiler checkpoint: `e75d6d3` (`TS-001-add-root-typecheck-gate`)
-- Typed protocol checkpoint: pending `TS-002` commit.
+- Typed protocol checkpoint: `98410dc` (`TS-002-add-typed-protocol-seams`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
 - Automated tests passed: engine 1,087; server 44; client 162; total 1,293.
 - Production client build passed on 2026-08-21.

@@ -240,7 +240,7 @@ Shared protocol types, boundary adapters, decision-copy routing, and focused tes
 ### Completion report
 
 Completed at: 2026-08-21
-Commit: pending
+Commit: `98410dc` (`TS-002-add-typed-protocol-seams`)
 Status: completed
 
 Changed:
