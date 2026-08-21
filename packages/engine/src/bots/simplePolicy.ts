@@ -70,6 +70,10 @@ function holdsSomething(p: ProjectedPlayer): boolean {
   return handCount > 0 || Object.values(p.equipment).some(Boolean);
 }
 
+function assertNever(value: never): never {
+  throw new Error(`simpleBotAnswer: unhandled decision kind ${String(value)}`);
+}
+
 export function simpleBotAnswer(session: GameSession): PlayerAnswer {
   const pending = session.state.pendingDecision;
   if (!pending) throw new Error("simpleBotAnswer: no pending decision");
@@ -239,7 +243,20 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
       return { ...base, pass: true }; // decline the bonus attempt, keeps games bounded
     case "swordYyChoice":
       return hand.length > 0 ? { ...base, choice: "discard", cardIds: [hand[0]!.id] } : { ...base, choice: "draw" };
-    default:
+    case "jiedaoWeaponSwap":
+    case "hujiaVolunteer":
+    case "huibiRedirect":
+    case "yijiGive":
+    case "fankuiPick":
+    case "guicaiReplace":
+    case "ganglieChoice":
+    case "fanjianGuess":
+    case "guandouOrder":
+      // Preserve the previous conservative fallback explicitly. Listing
+      // every kind makes a newly-added engine decision fail typecheck until
+      // its bot policy is deliberately selected.
       return { ...base, pass: true };
+    default:
+      return assertNever(pending.kind);
   }
 }

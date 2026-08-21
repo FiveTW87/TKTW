@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `TS-001` complete; next task is `TS-002`
+Current task: `TS-002` complete and awaiting checkpoint commit; next task is `LEGAL-001`
 
 ## Objective
 
@@ -19,8 +19,9 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Planning base: `faa89ef` (`Refine responsive player tiles`)
 - Documentation checkpoint: `8dfb57e` (`DOC-001-hardening-execution-plan`)
 - TypeScript compiler checkpoint: `e75d6d3` (`TS-001-add-root-typecheck-gate`)
+- Typed protocol checkpoint: pending `TS-002` commit.
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,087; server 41; client 162; total 1,290.
+- Automated tests passed: engine 1,087; server 44; client 162; total 1,293.
 - Production client build passed on 2026-08-21.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -31,16 +32,16 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after TS-001
+## Immediate next task after TS-002
 
-`TS-002` — typed IDs and exhaustive decisions.
+`LEGAL-001` — legal-action union and schemas.
 
 Before implementing:
 
-1. Inventory ID and decision/action types at engine/shared/server/client boundaries.
-2. Prefer derived string unions or branded types for IDs and discriminated unions for actions.
-3. Keep Zod as the runtime authority for network inputs.
-4. Add type-level or schema fixtures before changing boundary models.
+1. Define legal-action variants in the engine without moving legality into the client.
+2. Mirror the union in Zod with compiler-checked variant coverage.
+3. Verify owner-only projection and hidden information before client consumption.
+4. Defer client legality migration to `LEGAL-004`.
 5. Preserve runtime behavior and run the full verification gate.
 
 ## Claude coordination

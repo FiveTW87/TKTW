@@ -12,6 +12,40 @@ export type Gender = "male" | "female";
 export type CardCategory = "basic" | "trick" | "delayedTrick" | "equipment";
 export type EquipSlot = "weapon" | "armor" | "horseMinus" | "horsePlus";
 
+export const DECISION_KINDS = [
+  "mainAction",
+  "drawCard",
+  "discardTo",
+  "respondShan",
+  "respondSha",
+  "respondTao",
+  "askWuxie",
+  "activateSkill",
+  "pickCardFromPlayer",
+  "wuguPick",
+  "judgmentReveal",
+  "pickGeneral",
+  "discardChosenBy",
+  "tuxiTargets",
+  "swordIceChoice",
+  "qilinDestroyHorse",
+  "guanshiForce",
+  "qinglongReplay",
+  "swordYyChoice",
+  "jiedaoForceSha",
+  "jiedaoWeaponSwap",
+  "hujiaVolunteer",
+  "huibiRedirect",
+  "yijiGive",
+  "fankuiPick",
+  "guicaiReplace",
+  "ganglieChoice",
+  "fanjianGuess",
+  "guandouOrder",
+] as const;
+
+export type DecisionKind = (typeof DECISION_KINDS)[number];
+
 export interface Card {
   id: string; // "spade_1_1" = {suit}_{rank}_{copy}
   typeKey: string; // "sha" | "shan" | "tao" | "crossbow" | ...
@@ -73,7 +107,7 @@ export interface GameEvent {
  */
 export interface PendingDecision {
   id: string;
-  kind: string; // "askForCard" | "askYesNo" | "chooseTarget" | ...
+  kind: DecisionKind;
   playerId: string;
   data: Record<string, unknown>;
 }

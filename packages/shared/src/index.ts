@@ -1,4 +1,5 @@
 export * from "./protocol/schema";
+export * from "./protocol/ids";
 export * from "./protocol/views";
 export * from "./events";
 export * from "./roomTypes";
@@ -28,4 +29,5 @@ export type {
   Phase,
   MatchSummary,
   MatchPlayerSummary,
+  DecisionKind,
 } from "@tktw/engine";

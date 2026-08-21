@@ -51,6 +51,10 @@ export interface DecisionCopy {
   shape: DecisionShape;
 }
 
+function assertNever(value: never): never {
+  throw new Error(`describeDecision: unhandled decision kind ${String(value)}`);
+}
+
 function playerName(gameView: GameView, id: string | undefined): string {
   if (!id) return "?";
   return gameView.players.find((p) => p.id === id)?.name ?? id;
@@ -358,11 +362,19 @@ export function describeDecision(pending: PendingDecision, gameView: GameView): 
         hint: "ใบที่แตะก่อนจะถูกจั่วก่อน · ไม่แตะ = เรียงเดิม",
         shape: { kind: "anonymousPicker", ordered: true },
       };
-    default:
+    case "mainAction":
+    case "drawCard":
+    case "discardTo":
+    case "pickGeneral":
+      // These have dedicated table/general-selection flows. Keep the former
+      // generic copy if a caller routes one here, but make the routing list
+      // explicit so a brand-new decision cannot silently inherit it.
       return {
         icon: "問",
         title: `ตัดสินใจ: ${pending.kind}`,
         shape: { kind: "card", declineLabel: "ปฏิเสธ", confirmLabel: "ยืนยัน" },
       };
+    default:
+      return assertNever(pending.kind);
   }
 }

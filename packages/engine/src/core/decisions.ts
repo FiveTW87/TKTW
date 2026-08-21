@@ -1,9 +1,9 @@
-import type { DecisionLogEntry, GameState, PlayerAnswer } from "../types";
+import type { DecisionKind, DecisionLogEntry, GameState, PlayerAnswer } from "../types";
 import type { Rng } from "./rng";
 
 /** What an effect generator yields when it needs a player's answer. */
 export interface Decision {
-  kind: string;
+  kind: DecisionKind;
   playerId: string;
   data: Record<string, unknown>;
 }

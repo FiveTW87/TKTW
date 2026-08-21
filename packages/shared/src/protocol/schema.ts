@@ -2,6 +2,13 @@
 // touches a GameRoom or the engine on the server side, and used by the
 // client to know exactly what shape each event expects.
 import { z } from "zod";
+import {
+  cardIdSchema,
+  clientActionIdSchema,
+  decisionIdSchema,
+  matchIdSchema,
+  playerIdSchema,
+} from "./ids";
 
 // 6 chars, uppercase, no 0/O/1/I — avoids the pairs people misread out loud.
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -77,12 +84,12 @@ export const quickstartWithBotsSchema = z.object({
 // succeeded) — see server rooms/gameFlow.ts's per-match seen-id cache.
 export const answerSchema = z.object({
   roomCode: roomCodeSchema,
-  matchId: z.string().min(1),
-  decisionId: z.string().min(1),
-  clientActionId: z.string().min(1).max(64),
+  matchId: matchIdSchema,
+  decisionId: decisionIdSchema,
+  clientActionId: clientActionIdSchema,
   choice: z.string().max(64).optional(),
-  cardIds: z.array(z.string().max(64)).max(10).optional(),
-  targetIds: z.array(z.string().max(64)).max(10).optional(),
+  cardIds: z.array(cardIdSchema).max(10).optional(),
+  targetIds: z.array(playerIdSchema).max(10).optional(),
   skillId: z.string().max(64).optional(),
   asType: z.string().max(32).optional(),
   pass: z.boolean().optional(),

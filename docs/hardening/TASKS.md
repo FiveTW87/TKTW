@@ -34,7 +34,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 |---|---|---|---|---:|---|
 | DOC-001 | Coordination foundation | completed | Codex | 1d | — |
 | TS-001 | Compiler and command foundation | completed | Codex | 0.5d | DOC-001 |
-| TS-002 | Typed IDs and exhaustive decisions | backlog | Codex | 1d | TS-001 |
+| TS-002 | Typed IDs and exhaustive decisions | completed | Codex | 1d | TS-001 |
 | LEGAL-001 | Legal-action union and schemas | backlog | Codex | 1d | TS-002 |
 | LEGAL-002 | Card play and conversion legality | backlog | Codex | 1.5d | LEGAL-001 |
 | LEGAL-003 | Targets, range, and multi-step legality | backlog | Codex | 1.5d | LEGAL-002 |
@@ -216,7 +216,7 @@ Verification:
 
 ## TS-002 — Typed IDs and exhaustive decisions
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: High
 
 ### Objective
 
@@ -236,6 +236,28 @@ Shared protocol types, boundary adapters, decision-copy routing, and focused tes
 
 - Type-level compile fixtures where practical.
 - Protocol-schema tests, full typecheck, shared/server/client tests, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: pending
+Status: completed
+
+Changed:
+
+- Added the canonical `DecisionKind` union and compiler-checked runtime Zod vocabulary.
+- Made the engine bot, client decision-copy routing, and client interaction reducer exhaustive.
+- Added Zod-branded `PlayerId`, `CardId`, `MatchId`, `DecisionId`, and `ClientActionId` outputs at protocol seams.
+- Kept engine state IDs and the wire representation as strings; this is not a state-model rewrite.
+- Added compile-only ID interchange fixtures and runtime protocol-schema tests.
+
+Verification:
+
+- Targeted protocol tests: 3 passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- `pnpm test`: 59 files and 1,293 tests passed.
+- `pnpm build:client`: production build passed with 198 modules transformed.
+- No gameplay-rule changes.
 
 ---
 

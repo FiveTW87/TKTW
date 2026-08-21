@@ -59,3 +59,9 @@ Reason: The cycle spans multiple agents and long-lived context, so tests and dur
 Date: 2026-08-21
 Decision: Reused values are modeled with shared types/interfaces, catalog-derived string unions, `as const` maps, or discriminated unions. TypeScript enums are reserved for cases that genuinely need a runtime namespace.
 Reason: JSON catalogs, Zod schemas, network payloads, and exhaustive action handling compose more directly with string unions while avoiding duplicated runtime values.
+
+## DEC-011 — Brand IDs at validated seams, not throughout engine state
+
+Date: 2026-08-21
+Decision: Zod brands distinguish player, card, match, decision, and client-action IDs after external parsing. The engine's serializable state and wire values remain plain strings for now.
+Reason: This prevents accidental ID interchange where packages meet while avoiding a high-risk rewrite of every internal engine function and saved deterministic fixture.

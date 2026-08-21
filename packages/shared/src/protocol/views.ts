@@ -10,6 +10,49 @@
 // drift is possible. This does NOT run on the client's hot path (every
 // broadcast) — only at assembly/test time, per the locked scope.
 import { z } from "zod";
+import type { DecisionKind } from "@tktw/engine";
+
+// Kept local so importing the browser protocol does not pull engine runtime
+// code into the client bundle. The completeness assertion below makes this
+// duplication compiler-enforced: changing the engine union requires this
+// runtime Zod vocabulary to change in the same commit.
+const DECISION_KIND_VALUES = [
+  "mainAction",
+  "drawCard",
+  "discardTo",
+  "respondShan",
+  "respondSha",
+  "respondTao",
+  "askWuxie",
+  "activateSkill",
+  "pickCardFromPlayer",
+  "wuguPick",
+  "judgmentReveal",
+  "pickGeneral",
+  "discardChosenBy",
+  "tuxiTargets",
+  "swordIceChoice",
+  "qilinDestroyHorse",
+  "guanshiForce",
+  "qinglongReplay",
+  "swordYyChoice",
+  "jiedaoForceSha",
+  "jiedaoWeaponSwap",
+  "hujiaVolunteer",
+  "huibiRedirect",
+  "yijiGive",
+  "fankuiPick",
+  "guicaiReplace",
+  "ganglieChoice",
+  "fanjianGuess",
+  "guandouOrder",
+] as const satisfies readonly DecisionKind[];
+
+type MissingDecisionKind = Exclude<DecisionKind, (typeof DECISION_KIND_VALUES)[number]>;
+const decisionKindsAreComplete: MissingDecisionKind extends never ? true : never = true;
+void decisionKindsAreComplete;
+
+export const decisionKindSchema = z.enum(DECISION_KIND_VALUES);
 
 export const suitSchema = z.enum(["spade", "heart", "club", "diamond"]);
 export const rankSchema = z.union([
@@ -62,7 +105,7 @@ export const playerViewSchema = z.object({
 
 export const decisionViewSchema = z.object({
   id: z.string(),
-  kind: z.string(),
+  kind: decisionKindSchema,
   playerId: z.string(),
   data: z.record(z.string(), z.unknown()),
   // §9.4 timer — absent for a decision that isn't independently timed

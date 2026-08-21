@@ -36,6 +36,10 @@ type Action =
   | { type: "SET_ZHANGBA_MODE"; on: boolean }
   | { type: "SET_AS_TYPE"; asType: string | null };
 
+function assertNever(value: never): never {
+  throw new Error(`interaction reducer received an unhandled action: ${JSON.stringify(value)}`);
+}
+
 const initialState: InteractionState = {
   mode: "idle",
   selectedCardIds: [],
@@ -70,7 +74,7 @@ function reducer(state: InteractionState, action: Action): InteractionState {
     case "SET_AS_TYPE":
       return { ...state, selectedAsType: action.asType };
     default:
-      return state;
+      return assertNever(action);
   }
 }
 
