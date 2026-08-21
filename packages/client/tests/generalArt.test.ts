@@ -1,9 +1,50 @@
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { generalArt, generalPoseArt, generalPosePresentation } from "../src/data/generalArt";
+import { GENERALS } from "@tktw/engine";
+import {
+  GENERAL_ART_MANIFEST,
+  KNOWN_UNMAPPED_GENERAL_ART_PATHS,
+  generalArt,
+  generalPoseArt,
+  generalPosePresentation,
+} from "../src/data/generalArt";
 
 describe("generalArt", () => {
+  it("has exactly one typed manifest entry for every playable engine general", () => {
+    const engineIds = Object.keys(GENERALS).filter((id) => id !== "none").sort();
+    expect(Object.keys(GENERAL_ART_MANIFEST).sort()).toEqual(engineIds);
+  });
+
+  it("accounts for every general asset on disk without silently selecting extras", () => {
+    const selectedPaths: ReadonlySet<string> = new Set<string>(
+      Object.values(GENERAL_ART_MANIFEST).flatMap((entry) => [
+        entry.portrait,
+        entry.fullBody,
+        entry.poses.attack.src,
+        entry.poses.hit.src,
+        entry.poses.skill.src,
+      ]),
+    );
+    expect(selectedPaths.size).toBe(125);
+
+    for (const path of selectedPaths) {
+      expect(existsSync(resolve("public", path.slice(1))), path).toBe(true);
+    }
+
+    const diskPaths = readdirSync(resolve("public", "assets", "generals"))
+      .map((filename) => `/assets/generals/${filename}`)
+      .sort();
+    const unselectedPaths = diskPaths.filter((path) => !selectedPaths.has(path));
+    expect(unselectedPaths).toEqual([...KNOWN_UNMAPPED_GENERAL_ART_PATHS].sort());
+  });
+
+  it("keeps approved version exceptions explicit in the manifest", () => {
+    expect(GENERAL_ART_MANIFEST.guojia.poses.attack.src).toBe("/assets/generals/guo_jia_attack-v2.png");
+    expect(GENERAL_ART_MANIFEST.liubei.poses.hit.src).toBe("/assets/generals/liu_bei_hit-v3.png");
+    expect(GENERAL_ART_MANIFEST.guanyu.poses.hit.src).toBe("/assets/generals/guan_yu_hit-v2.png");
+  });
+
   it("maps an engine general id to its web portrait, full-body art, and faction scene", () => {
     expect(generalArt("caocao", "wei")).toEqual({
       portrait: "/assets/generals/cao_cao_head.webp",
@@ -18,6 +59,18 @@ describe("generalArt", () => {
       fullBody: undefined,
       background: "/assets/factions/shu_background.webp",
     });
+    expect(generalArt("none", "unknown")).toEqual({
+      portrait: undefined,
+      fullBody: undefined,
+      background: "/assets/factions/independent_background.webp",
+    });
+  });
+
+  it("resolves every faction background to a real browser asset", () => {
+    for (const faction of ["wei", "shu", "wu", "qun"] as const) {
+      const background = generalArt("", faction).background;
+      expect(existsSync(resolve("public", background.slice(1))), background).toBe(true);
+    }
   });
 
   it("selects Cao Cao action poses and falls back to full-body art for other generals", () => {
@@ -100,12 +153,20 @@ describe("generalArt", () => {
   });
 
   it("normalizes oversized pose art while retaining idle art as a loading fallback", () => {
-    expect(generalPosePresentation("lubu", "qun", "attack")).toEqual({
-      art: "/assets/generals/lu_bu_attack-v1.png",
-      fallbackArt: "/assets/generals/lu_bu.webp",
-      scale: 0.92,
+    for (const pose of ["attack", "hit", "skill"] as const) {
+      expect(generalPosePresentation("lubu", "qun", pose)).toEqual({
+        art: `/assets/generals/lu_bu_${pose}-v1.png`,
+        fallbackArt: "/assets/generals/lu_bu.webp",
+        scale: 0.92,
+        offsetX: 0,
+        offsetY: 4,
+      });
+    }
+    expect(generalPosePresentation("lubu", "qun", "idle")).toMatchObject({
+      art: "/assets/generals/lu_bu.webp",
+      scale: 1,
       offsetX: 0,
-      offsetY: 4,
+      offsetY: 0,
     });
     expect(generalPosePresentation("caocao", "wei", "attack")).toMatchObject({
       scale: 1,

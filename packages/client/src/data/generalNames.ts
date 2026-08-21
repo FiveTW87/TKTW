@@ -12,7 +12,7 @@ export interface GeneralDisplay {
   maxHp: number;
 }
 
-export const GENERAL_DISPLAY: Record<string, GeneralDisplay> = {
+export const GENERAL_DISPLAY = {
   none: { name: "ไม่มีนายพล", glyph: "?", maxHp: 4 },
   caocao: { name: "โจโฉ", glyph: "曹", maxHp: 4 },
   simayi: { name: "สุมาอี้", glyph: "司", maxHp: 3 },
@@ -39,23 +39,26 @@ export const GENERAL_DISPLAY: Record<string, GeneralDisplay> = {
   huatuo: { name: "ฮัวโต๋", glyph: "華", maxHp: 3 },
   lubu: { name: "ลิโป้", glyph: "呂", maxHp: 4 },
   diaochan: { name: "เตียวเสี้ยน", glyph: "貂", maxHp: 3 },
-};
+} as const satisfies Record<string, GeneralDisplay>;
+
+export type GeneralId = Exclude<keyof typeof GENERAL_DISPLAY, "none">;
 
 export function generalDisplay(generalId: string): GeneralDisplay {
-  return GENERAL_DISPLAY[generalId] ?? { name: generalId, glyph: "?", maxHp: 4 };
+  return (GENERAL_DISPLAY as Readonly<Record<string, GeneralDisplay>>)[generalId]
+    ?? { name: generalId, glyph: "?", maxHp: 4 };
 }
 
 // Faction per generalId — needed at general-select time, where the offered
 // generals aren't assigned to a player (with a faction) yet.
-const GENERAL_FACTION: Record<string, string> = {
+const GENERAL_FACTION = {
   caocao: "wei", simayi: "wei", xiahoudun: "wei", caoren: "wei", zhangliao: "wei", guojia: "wei", zhenji: "wei",
   liubei: "shu", guanyu: "shu", zhangfei: "shu", zhaoyun: "shu", machao: "shu", zhugeliang: "shu", pangtong: "shu",
   sunquan: "wu", zhouyu: "wu", ganning: "wu", lumeng: "wu", huanggai: "wu", daiqiao: "wu", sunshangxiang: "wu", luxun: "wu",
   lubu: "qun", diaochan: "qun", huatuo: "qun",
-};
+} as const satisfies Record<GeneralId, string>;
 
 export function generalFaction(generalId: string): string {
-  return GENERAL_FACTION[generalId] ?? "qun";
+  return (GENERAL_FACTION as Readonly<Record<string, string>>)[generalId] ?? "qun";
 }
 
 const FACTION_COLOR: Record<string, string> = {
