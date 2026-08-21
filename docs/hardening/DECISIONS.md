@@ -77,3 +77,9 @@ Reason: Consumers should route by what the viewer can do, while the server keeps
 Date: 2026-08-21
 Decision: Card-play options may report a conversion the player owns as currently unavailable with a stable reason, while command validation continues to evaluate the real turn/response context.
 Reason: A beginner-facing UI must distinguish “this ability exists but cannot be used now” from “this card has no such conversion,” without weakening server-authoritative rules such as Hua Tuo's outside-own-turn restriction.
+
+## DEC-014 — Target contracts model selection shape explicitly
+
+Date: 2026-08-21
+Decision: Card targets use a discriminated contract for no-selection, fixed automatic targets, independent selections, and dependent ordered selections. Jiedao publishes a public first-target list plus second targets keyed by the chosen armed player.
+Reason: A single flat target list cannot represent ordered dependent choices safely, while enumerating every permutation would inflate GameView payloads and complicate touch interaction. The explicit shapes remain compact for 3–10 players and preserve server revalidation.

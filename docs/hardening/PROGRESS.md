@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 2 — Server-authoritative legal actions
-Overall status: `LEGAL-002` complete; card/converted plays are authoritative and target legality is next
+Overall status: `LEGAL-003` complete; card and target legality are authoritative, skill legality/client migration are next
 
 ## Next task
 
-- `LEGAL-003` — Targets, range, and multi-step legality
+- `LEGAL-004` — Skills, projection, and client migration
 - Owner: Codex
 - Status: `backlog`
 
@@ -17,6 +17,7 @@ Overall status: `LEGAL-002` complete; card/converted plays are authoritative and
 - `TS-002` — Typed IDs and exhaustive decisions.
 - `LEGAL-001` — Legal-action discriminated union and strict schemas.
 - `LEGAL-002` — Literal/conversion card-play options, shared Sha quota, and stable unavailable reasons.
+- `LEGAL-003` — Target contracts for range, fixed/implicit effects, Fangtian, and dependent Jiedao selection.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -31,15 +32,15 @@ Overall status: `LEGAL-002` complete; card/converted plays are authoritative and
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 38 | 1,101 | Passed |
-| Server | 3 | 52 | Passed |
+| Engine | 39 | 1,109 | Passed |
+| Server | 3 | 57 | Passed |
 | Client | 19 | 162 | Passed |
-| Total | 60 | 1,315 | Passed |
+| Total | 61 | 1,328 | Passed |
 
 ## Next actions
 
-1. Push the pending `LEGAL-001` and `LEGAL-002` checkpoints after explicit payload confirmation.
-2. Start `LEGAL-003` by deriving eligible targets and target-count rules from engine authority.
+1. Push the pending `LEGAL-001` through `LEGAL-003` checkpoints after explicit payload confirmation.
+2. Start `LEGAL-004` with active-skill legality and projection contracts.
 3. Review Claude's initial read-only audit if available.
 4. Keep client consumption deferred until `LEGAL-004`.
 
@@ -50,6 +51,7 @@ Overall status: `LEGAL-002` complete; card/converted plays are authoritative and
 - `TS-002`: `98410dc` (`TS-002-add-typed-protocol-seams`).
 - `LEGAL-001`: `950699e` (`LEGAL-001-add-action-union-schemas`).
 - `LEGAL-002`: `5404729` (`LEGAL-002-add-card-play-options`).
+- `LEGAL-003`: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 
 ## Known workspace notes
 
@@ -59,5 +61,5 @@ Overall status: `LEGAL-002` complete; card/converted plays are authoritative and
 
 ## Blockers
 
-- None for `LEGAL-003`.
+- None for `LEGAL-004`.
 - GitHub CLI is not installed, so this checkpoint is pushed with normal Git rather than a CLI-created pull request.

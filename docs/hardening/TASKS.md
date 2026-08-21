@@ -37,7 +37,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TS-002 | Typed IDs and exhaustive decisions | completed | Codex | 1d | TS-001 |
 | LEGAL-001 | Legal-action union and schemas | completed | Codex | 1d | TS-002 |
 | LEGAL-002 | Card play and conversion legality | completed | Codex | 1.5d | LEGAL-001 |
-| LEGAL-003 | Targets, range, and multi-step legality | backlog | Codex | 1.5d | LEGAL-002 |
+| LEGAL-003 | Targets, range, and multi-step legality | completed | Codex | 1.5d | LEGAL-002 |
 | LEGAL-004 | Skills, projection, and client migration | backlog | Codex | 2d | LEGAL-003 |
 | TABLE-001 | Decision and main-action controllers | backlog | Codex | 1d | LEGAL-004 |
 | TABLE-002 | Selection, dialogs, and sound controllers | backlog | Codex | 1d | TABLE-001 |
@@ -379,7 +379,7 @@ Follow-up:
 
 ## LEGAL-003 — Targets, range, and multi-step legality
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1.5 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1.5 days | Risk: High
 
 ### Objective
 
@@ -400,6 +400,47 @@ Self-target restrictions, Tao/self-heal, dead seats, horses, Ma Chao, Fangtian, 
 - Per-card target unit tests.
 - Hidden-information and rejected-answer regression tests.
 - Engine/server tests, fuzz, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`)
+Status: completed
+
+Changed:
+
+- Added a typed target contract for no-selection, fixed automatic, independent, and dependent two-step targeting.
+- Derived eligible targets from live seats, attack/fixed range, horses, distance skills, target-immunity hooks, takeable-card state, delayed-trick duplication, and public equipment.
+- Added Tao's optional implicit self target and Fangtian's last-card target cap while keeping Zhangba single-target.
+- Added dependent Jiedao maps from armed player to reachable victim and hardened engine validation against out-of-range victims.
+- Added `no_legal_target` so a visible card option with no valid selection is reported unavailable.
+- Moved shared Sha/target predicates into `cardTargets.ts` and updated the deterministic bot to consume viewer-safe legal targets rather than invent Jiedao pairs.
+- Kept client migration deferred to `LEGAL-004`.
+
+Tests added or updated:
+
+- Added 8 target contract tests for equipment/fixed effects, Tao, Sha range, horses, Ma Chao, dead seats, Fangtian, Zhangba, takeable cards, immunity, delayed tricks, Jiedao, and self-target rejection.
+- Expanded strict protocol tests across all four target variants and malformed cross-variant fields.
+- Updated conversion fixtures so availability includes real target state.
+
+Verification:
+
+- Targeted engine legality/trick/weapon/atomicity/retry tests: 154 passed.
+- Targeted server protocol-schema tests: 16 passed.
+- Previously failing fuzz/determinism group after bot integration: 71 passed, including more than 3,000 complete simulated games.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- Full suites: 61 files and 1,328 tests passed (engine 1,109; server 57; client 162).
+- `pnpm build:client`: production build passed with 198 modules transformed.
+- `git diff --check`: passed.
+
+Known limitations:
+
+- Active-skill card/target legality and client consumption remain in `LEGAL-004`.
+- Fixed automatic effects expose affected public player IDs but continue to submit no explicit target IDs.
+
+Follow-up:
+
+- `LEGAL-004` — Skills, projection, and client migration.
 
 ---
 

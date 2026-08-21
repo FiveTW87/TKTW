@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `LEGAL-002` complete; next task is `LEGAL-003`
+Current task: `LEGAL-003` complete; next task is `LEGAL-004`
 
 ## Objective
 
@@ -22,8 +22,9 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Typed protocol checkpoint: `98410dc` (`TS-002-add-typed-protocol-seams`).
 - Legal-action schema checkpoint: `950699e` (`LEGAL-001-add-action-union-schemas`).
 - Card-play legality checkpoint: `5404729` (`LEGAL-002-add-card-play-options`).
+- Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,101; server 52; client 162; total 1,315.
+- Automated tests passed: engine 1,109; server 57; client 162; total 1,328.
 - Production client build passed on 2026-08-21.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -34,16 +35,16 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after LEGAL-002
+## Immediate next task after LEGAL-003
 
-`LEGAL-003` — targets, range, and multi-step legality.
+`LEGAL-004` — skills, projection, and client migration.
 
 Before implementing:
 
-1. Derive target IDs and target-count constraints from engine authority for each advertised card option.
-2. Cover self-target restrictions, Tao, dead seats, distance/horses/Ma Chao, and Fangtian.
-3. Model both targeting steps of Jiedao without exposing hidden zones.
-4. Keep client consumption deferred to `LEGAL-004`.
+1. Add active-skill card/target counts, usage limits, and stable unavailable reasons.
+2. Preserve owner-only projection and verify all registered generals/skills.
+3. Migrate client card, target, and skill affordances from mirror calculations to legal actions.
+4. Keep cosmetic distance display client-derived only if explicitly documented.
 5. Preserve server revalidation and run the full verification gate.
 
 ## Claude coordination

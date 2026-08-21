@@ -1,7 +1,7 @@
 # Test and Verification Baseline
 
 Baseline date: 2026-08-21
-Commands executed through `LEGAL-002`: targeted Vitest, `pnpm typecheck`, `pnpm test`, `pnpm build:client`
+Commands executed through `LEGAL-003`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`
 
 ## Typecheck and build result
 
@@ -14,10 +14,10 @@ Commands executed through `LEGAL-002`: targeted Vitest, `pnpm typecheck`, `pnpm 
 
 | Package | Test files | Tests | Status |
 |---|---:|---:|---|
-| `@tktw/engine` | 38 | 1,101 | Passed |
-| `@tktw/server` | 3 | 52 | Passed |
+| `@tktw/engine` | 39 | 1,109 | Passed |
+| `@tktw/server` | 3 | 57 | Passed |
 | `@tktw/client` | 19 | 162 | Passed |
-| Total | 60 | 1,315 | Passed |
+| Total | 61 | 1,328 | Passed |
 
 The engine baseline includes deterministic replay, atomicity/retry safety, 3–10-player identity games, 1,000-game fuzz suites, all card/equipment contracts, all registered generals, death/forfeit, hidden information, and physical-deck integrity.
 
