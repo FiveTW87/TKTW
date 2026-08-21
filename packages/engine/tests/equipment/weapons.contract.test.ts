@@ -532,7 +532,7 @@ describe("E-QILIN — ง้าวกิเลน", () => {
     step(g, { kind: "respondShan", playerId: "p2" }, pass);
     expectEquipped(g.state, "p2", "horseMinus", undefined);
     expectZone(g.state, C.horse_chitu.any, "discardPile");
-    expectLog(g.state, { eventType: "qilinDestroyHorse", actorId: "p2" }, 1);
+    expectLog(g.state, { eventType: "qilinDestroyHorse", actorId: "p2", cardId: C.horse_chitu.any, cardType: "horse_chitu" }, 1);
   });
 
   it("[E-QILIN-02a] a target with no horse is unaffected and never prompts", () => {

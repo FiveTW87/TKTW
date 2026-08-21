@@ -114,7 +114,7 @@ export function CentralZone({
   );
 
   return (
-    <div className="mat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: compact ? 9 : 34, padding: compact ? 6 : 20, minHeight: compact ? 62 : 132, position: "relative" }}>
+    <div className="mat" data-card-motion-anchor="pile:table" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: compact ? 9 : 34, padding: compact ? 6 : 20, minHeight: compact ? 62 : 132, position: "relative" }}>
       <div style={{ position: "absolute", top: 8, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-glyph)", fontSize: 40, color: "rgba(120,90,40,.1)", letterSpacing: 8 }}>
         三國鼎立
       </div>
@@ -134,6 +134,7 @@ export function CentralZone({
           </div>
         )}
         <div
+          data-card-motion-anchor="pile:draw"
           className={pendingReveal ? "pile-pulse" : undefined}
           onClick={pendingReveal && !busy ? onReveal : undefined}
           role={pendingReveal ? "button" : undefined}
@@ -164,6 +165,7 @@ export function CentralZone({
       <div style={{ textAlign: "center", zIndex: 1, minWidth: compact ? 52 : 96 }}>
         <ZoneLabel>กองทิ้ง</ZoneLabel>
         <button
+          data-card-motion-anchor="pile:discard"
           onClick={() => discardCount > 0 && onOpenDiscard()}
           title="ดูกองทิ้งทั้งหมด"
           style={{ all: "unset", cursor: discardCount > 0 ? "pointer" : "default", display: "block" }}

@@ -205,7 +205,7 @@ export function SelfDock({
           </div>
           {/* pending judgment cards (delayed tricks awaiting judgment) — attached
               beside this panel, per bug list "Attach Delayed Tricks to target". */}
-          <DelayedTrickList cards={me.judgmentZone} />
+          <div data-card-motion-anchor={`player:${me.id}:judgment`}><DelayedTrickList cards={me.judgmentZone} /></div>
         </div>}
         {compact ? (
           <div className="table-self-skill-chips" aria-label="สกิลของตัวเอง">
@@ -285,7 +285,7 @@ export function SelfDock({
           dock's total width stays clear of the fixed end-turn button that
           floats over the bottom-right corner of the viewport; extra cards
           past the visible width scroll horizontally instead. */}
-      <div className="table-hand-zone" style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
+      <div className="table-hand-zone" data-card-motion-anchor={`player:${me.id}:hand`} style={{ flex: compact ? "0 1 auto" : 1, width: compact ? 190 : undefined, minWidth: 0, background: "var(--panel-bg-2)", border: "1px solid var(--card-border-2)", borderRadius: 6, padding: compact ? "4px 6px" : "9px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 3 : 8 }}>
           <span style={{ fontSize: compact ? 10.5 : 12, color: "var(--ink-muted)" }}>{compact ? "การ์ดในมือ" : `การ์ดในมือ · ${myHand.length} ใบ`}</span>
           {selecting && selectingLabel && <span style={{ fontSize: 11, color: "var(--red)" }}>{selectingLabel}</span>}
@@ -323,7 +323,7 @@ export function SelfDock({
 
       {/* RIGHT: equipment only. Global table controls live in the top-right
           utility rail so this dock can spend its limited height on play. */}
-      <div className="table-equipment-zone" style={{ width: compact ? 116 : 250, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
+      <div className="table-equipment-zone" data-card-motion-anchor={`player:${me.id}:equipment`} style={{ width: compact ? 116 : 250, flexShrink: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 10 }}>
         <div>
           <div style={{ fontSize: compact ? 9.5 : 11, color: "var(--ink-muted)", letterSpacing: 1, marginBottom: compact ? 3 : 5, textAlign: "center" }}>ของสวมใส่</div>
           <div className="table-equipment-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: compact ? 3 : 6 }}>

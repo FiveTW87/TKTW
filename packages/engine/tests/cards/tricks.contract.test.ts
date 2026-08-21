@@ -41,6 +41,7 @@ describe("C-WUZHONG — เนรมิตจากความว่างเ�
     playTrick(g, [WUZHONG], []);
     expectHandSize(g.state, "p0", 2);
     expectZone(g.state, WUZHONG, "discardPile");
+    expectLog(g.state, { eventType: "cardPlay", actorId: "p0", cardId: WUZHONG, cardType: "wuzhong" }, 1);
     expectLog(g.state, { eventType: "draw", cardType: "wuzhong", amount: 2 }, 1);
   });
 
@@ -84,6 +85,7 @@ describe("C-GUOHE — ข้ามสะพานแล้วรื้อทิ�
     expectEquipped(g.state, "p1", "weapon", undefined);
     expectZone(g.state, C.crossbow.any, "discardPile");
     expectZone(g.state, SHA, "hand", "p1"); // the hand was untouched
+    expectLog(g.state, { eventType: "guoheDiscard", cardId: C.crossbow.any, cardType: "crossbow", data: { sourceZone: "equipment" } }, 1);
   });
 
   it("[C-GUOHE-01b] discards a blind hand card when no equipment is chosen", () => {
@@ -92,7 +94,7 @@ describe("C-GUOHE — ข้ามสะพานแล้วรื้อทิ�
     step(g, { kind: "pickCardFromPlayer" }, pass);
     expectHandSize(g.state, "p1", 0);
     expectZone(g.state, SHA, "discardPile");
-    expectLog(g.state, { eventType: "guoheDiscard", actorId: "p0", targetIds: ["p1"] }, 1);
+    expectLog(g.state, { eventType: "guoheDiscard", actorId: "p0", targetIds: ["p1"], cardId: SHA, cardType: "sha", data: { sourceZone: "hand" } }, 1);
   });
 
   it("[C-GUOHE-02a] a target holding no cards at all is refused", () => {
@@ -146,6 +148,10 @@ describe("C-SHUNSHOU — ฉวยโอกาสลักแกะ", () => {
     expectZone(g.state, SHA, "hand", "p0");
     expectHandSize(g.state, "p1", 0);
     expectLog(g.state, { eventType: "shunshouSteal", actorId: "p0", targetIds: ["p1"] }, 1);
+    const movementLog = g.state.log.find((entry) => entry.eventType === "shunshouSteal");
+    expect(movementLog).toMatchObject({ data: { sourceZone: "hand" } });
+    expect(movementLog?.cardId).toBeUndefined();
+    expect(movementLog?.cardType).toBeUndefined();
   });
 
   it("[C-SHUNSHOU-02a] a target beyond range 1 is refused", () => {

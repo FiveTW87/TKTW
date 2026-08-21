@@ -44,10 +44,12 @@ registerGeneral({
             }
           }
           for (const targetId of named) {
-            const card = yield* pickCardFrom(ctx, ownerId, targetId, "tuxi");
-            if (card) {
-              getPlayer(state, ownerId).hand.push(card);
-              log(state, "skillUse", { actorId: ownerId, skillId: "zhangliao_tuxi", targetIds: [targetId], cardType: card.typeKey });
+            const picked = yield* pickCardFrom(ctx, ownerId, targetId, "tuxi");
+            if (picked) {
+              getPlayer(state, ownerId).hand.push(picked.card);
+              // The stolen hand card remains private; the public log records
+              // the action without revealing its identity.
+              log(state, "skillUse", { actorId: ownerId, skillId: "zhangliao_tuxi", targetIds: [targetId] });
             }
           }
         },

@@ -8,13 +8,16 @@ import { ModalGlyph, ModalOverlay, ModalPanel } from "../Modal";
 import { SkillToast, type ToastData } from "../SkillToast";
 import { cardDisplay } from "../../data/cardNames";
 import type { CombatEffect } from "../../hooks/useCombatPresentation";
+import type { CardMotionEffect } from "../../hooks/useCardMotionPresentation";
 import type { PlayCardOption, PlayChoice } from "../../hooks/mainActionController";
 import { CombatEffectLayer } from "./CombatEffectLayer";
+import { CardMotionLayer } from "./CardMotionLayer";
 
 type AnswerFields = Omit<PlayerAnswer, "playerId">;
 
 export interface TableOverlayViewModel {
   toast: ToastData | null;
+  cardMotionEffects: CardMotionEffect[];
   combatEffects: CombatEffect[];
   generalPick: { playerName: string; remainingSeconds: number | null } | null;
   notice: string | null;
@@ -117,6 +120,7 @@ export function TableRecoveryPanel({
 export function TableOverlays({ model }: { model: TableOverlayViewModel }) {
   const {
     toast,
+    cardMotionEffects,
     combatEffects,
     generalPick,
     notice,
@@ -133,6 +137,7 @@ export function TableOverlays({ model }: { model: TableOverlayViewModel }) {
   return (
     <>
       {toast && <SkillToast toast={toast} />}
+      <CardMotionLayer effects={cardMotionEffects} />
       <CombatEffectLayer effects={combatEffects} />
       {generalPick && (
         <div

@@ -348,7 +348,7 @@ function PickFromRevealedShape({
     );
   }
   return (
-    <div style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
+    <div data-card-motion-anchor="pile:wugu" style={{ display: "flex", gap: compact ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
       {options.map((c) => (
         <HandCard
           key={c.id}

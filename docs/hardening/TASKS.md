@@ -46,7 +46,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | PRES-001 | Presentation-event model and queue | completed | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | completed | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | completed | Codex | 1.5d | PRES-001 |
-| FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
+| FX-001 | Card and equipment motion | completed | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | backlog | Codex | 2.5d | FX-001, SFX-001 |
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | backlog | Codex | 2d | FX-002 |
 | ROOM-001 | Typed room settings and presets | backlog | Codex | 1.5d | LEGAL-001 |
@@ -1164,11 +1164,61 @@ Centralize sound categories, preload/fallback, volume, mute, and concurrency lim
 
 ## FX-001 — Card and equipment motion
 
-Status: backlog | Owner: Codex | Reviewer: Claude scenarios | Estimate: 2 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude scenarios | Branch: main | Dependencies: PRES-002 | Estimate: 2 days | Risk: Medium
 
 ### Objective
 
 Add draw, play, discard, steal, equip/loss, delayed-trick, and Wugu movement using the presentation queue.
+
+### Current behavior
+
+- Drawn cards only flip into the local hand via a Table snapshot diff; other players receive no directional draw cue.
+- Combat presentation has bounded player-anchor retry, reconnect baselines, and reduced-motion meaning, but card movement has no typed event or lifecycle owner.
+- Structured logs cover draw, discard, equip, delayed placement, Wugu, steal, and several equipment-loss cases unevenly. Ordinary basic/trick play has no durable log, and some public movement logs omit source/destination metadata.
+- Board DOM exposes player anchors but not semantic hand/equipment/judgment/draw/discard/table/Wugu anchors.
+
+### Expected behavior
+
+- One deep card-motion presentation module consumes typed, match-scoped queue events and owns semantic-anchor lookup, bounded retry, reduced-motion fallback, overlap limits, reset, and cleanup.
+- Draw, ordinary play, over-limit/forced discard, anonymous steal, equip/replacement/loss, delayed placement/forward, and Wugu reveal/pick communicate source and destination without blocking controls.
+- Hidden hand movement uses an anonymous card back/count; exact card identity is rendered only when already public in the projected log/state.
+- Missing anchors drop or degrade harmlessly after a bound; reconnect/rebuild baselines remain silent; reduced motion shows a short destination cue without travel.
+
+### In scope / allowed files
+
+- Client presentation event model/queue, a new card-motion hook and visual layer, their focused tests, Table overlay wiring, semantic `data-*` anchors in existing board/card modules, and narrowly scoped CSS.
+- Narrow Engine structured-log metadata for ordinary card play and already-public movement source/destination/card fields, plus matching engine/client log tests and friendly history copy.
+- `docs/hardening/TASKS.md`, `PROGRESS.md`, and `DECISIONS.md`.
+
+### Out of scope / forbidden files
+
+- Gameplay legality/effects/order, legal actions, decisions, network timing, room/store/socket lifecycle, Database/User/Score, new assets, sound design, combat/skill sequence redesign, or `packages/client/src/App.tsx`.
+- Revealing hidden hand card IDs/types, deriving movement from private client snapshots for other players, awaiting animation before answers, or unbounded animation queues/retries.
+- Replacing the presentation queue, merging combat/SFX into a universal timeline, redesigning Table layout, or changing existing controls/modal interaction.
+
+### Type or protocol changes
+
+- Extend the client-only `PresentationEvent` discriminated union with semantic card-motion events and typed source/destination zone references.
+- Keep wire schemas backward-compatible: Engine log `eventType` remains string and optional movement metadata uses existing optional scalar/card/target fields.
+- Add no new answer/action/store protocol and no gameplay-domain enum; unknown/malformed logs continue to map to no event.
+
+### Implementation steps
+
+1. Add mapper red tests for every supported movement category, stable IDs/order, anonymous hidden movement, malformed logs, and multiple events from one authoritative entry where needed.
+2. Add hook red tests for initial/reconnect silence through the existing queue, semantic anchor resolution, bounded retry, missing-anchor fallback, overlap cap, reset/unmount cleanup, and reduced motion.
+3. Add layer red tests for public art vs anonymous back, count/labels, pointer transparency, reduced cue, and fragment/portal behavior.
+4. Add only the missing public structured-log metadata and semantic DOM anchors; preserve gameplay mutations and hidden-information projection.
+5. Wire the hook/layer through typed Table overlays, add responsive CSS, and capture changed desktop/mobile UI states.
+6. Run focused/full client/engine/server tests, root typecheck, production build, diff review, documentation, commit, and exact-range push approval.
+
+### Edge cases
+
+- Initial mount, match change, reconnect stale snapshot, first fresh snapshot, replay rollback, duplicate log IDs, and projected private-log gaps must remain silent/deduplicated as defined by PRES-001/002.
+- A source or destination anchor may mount late, be detached/zero-size, or exist twice in compact mode; retain first usable semantic anchor and fall back to the existing player anchor where safe.
+- Wugu/modal anchors may disappear before a queued pick, a player can die while effects are active, and multiple movements may arrive in one snapshot.
+- Discard/steal may be intentionally anonymous; public equipment/delayed/Wugu cards may show known art, while failed art loads fall back to a glyph/card back.
+- Reduced motion must preserve meaning at the destination without translating across the viewport.
+- Motion layers must be `pointer-events:none`, bounded in active count, timer-safe after unmount, and unable to cover or delay hand/action controls.
 
 ### Acceptance criteria
 
@@ -1176,9 +1226,25 @@ Add draw, play, discard, steal, equip/loss, delayed-trick, and Wugu movement usi
 - Hand/action controls remain usable.
 - Missing anchors and reduced motion have safe fallbacks.
 
-### Tests and verification
+### Tests to add
 
 - Event/component tests for every motion category, compact layout, failed anchor, reduced motion, and queue overlap.
+
+### Verification commands
+
+- Focused client presentation/motion/Table overlay suites and narrow Engine movement-log contracts.
+- `pnpm --filter @tktw/client test`, `pnpm --filter @tktw/engine test`, and `pnpm --filter @tktw/server test`.
+- `pnpm typecheck` and `pnpm --filter @tktw/client build`.
+- Desktop 1440×900 and mobile landscape 932×430 screenshots for draw/play/equip plus DOM anchor/count assertions.
+
+### Completion report
+
+- Added typed, match-scoped movement events for draw, play, discard, anonymous steal, equip/replacement/loss, delayed tricks, and Wugu reveal/pick.
+- Added one deep reconnect-safe motion controller with bounded semantic-anchor retry, destination fallback, reduced-motion meaning, active-effect cap, and timer cleanup.
+- Added a pointer-transparent portal layer with public card art and anonymous card backs, plus semantic anchors across draw/discard/table/Wugu and player hand/equipment/judgment zones.
+- Hardened Engine public logs only where presentation metadata was missing. Hidden stolen-hand identities are no longer published by Shunshou or Tuxi logs.
+- Verified Client 29/227, Engine 40/1,114, Server 3/58, root typecheck, production build (208 modules), and git diff --check.
+- Desktop/mobile screenshot capture was attempted but the in-app browser runtime rejected its own browser service before page connection. Responsive Table tests at 932×430, 844×390, and 740×360, layer DOM/class tests, and pointer-transparency assertions passed; no screenshot artifact was fabricated.
 
 ---
 

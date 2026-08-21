@@ -12,7 +12,12 @@ import type { Ctx } from "../core/ctx";
 import { getPlayer } from "../core/state";
 import { fireTrigger } from "../core/triggers";
 
-type PickGenerator = Generator<Decision, Card | undefined, PlayerAnswer>;
+export interface PickedCard {
+  card: Card;
+  sourceZone: "hand" | "equipment";
+}
+
+type PickGenerator = Generator<Decision, PickedCard | undefined, PlayerAnswer>;
 
 export function* pickCardFrom(
   ctx: Ctx,
@@ -46,7 +51,7 @@ export function* pickCardFrom(
     const c = target.equipment[slot as keyof typeof target.equipment];
     delete target.equipment[slot as keyof typeof target.equipment];
     yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
-    return c;
+    return c ? { card: c, sourceZone: "equipment" } : undefined;
   }
 
   if (target.hand.length === 0) return undefined;
@@ -55,5 +60,5 @@ export function* pickCardFrom(
   if (target.hand.length === 0) {
     yield* fireTrigger(ctx, "OnHandEmpty", { playerId: targetId });
   }
-  return card;
+  return card ? { card, sourceZone: "hand" } : undefined;
 }

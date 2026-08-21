@@ -73,6 +73,7 @@ export function PlayerTile({
       <div
         className={`table-player-tile table-player-tile-head${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
         data-player-anchor={player.id}
+        data-card-motion-anchor={`player:${player.id}:hand`}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
         aria-label={targetable ? player.name : undefined}
@@ -141,6 +142,7 @@ export function PlayerTile({
         className={`table-player-tile table-player-tile-${isCompact ? "compact" : "medium"}${inRange === false && player.alive ? " table-player-out-of-range" : ""}`}
         data-density={isCompact ? "compact" : "medium"}
         data-player-anchor={player.id}
+        data-card-motion-anchor={`player:${player.id}:hand`}
         onClick={targetable ? onClick : undefined}
         role={targetable ? "button" : undefined}
         aria-label={targetable ? player.name : undefined}
@@ -229,7 +231,7 @@ export function PlayerTile({
               <span style={{ width: 9, height: 12, borderRadius: 2, background: "linear-gradient(var(--gold-deep),var(--gold-bronze))", display: "inline-block" }} />
               {handCount}
             </span>
-            <span className="table-player-equipment-row">
+            <span className="table-player-equipment-row" data-card-motion-anchor={`player:${player.id}:equipment`}>
               {equipEntries.map(([slot, card]) => (
                 <EquipChip key={slot} slot={slot} card={card} compact={isCompact} />
               ))}
@@ -335,7 +337,7 @@ export function PlayerTile({
         )}
       </div>
 
-      <DelayedTrickList cards={player.judgmentZone} />
+      <div data-card-motion-anchor={`player:${player.id}:judgment`}><DelayedTrickList cards={player.judgmentZone} /></div>
     </div>
   );
 }

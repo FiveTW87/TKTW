@@ -5,6 +5,7 @@ import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from ".
 function overlayModel(overrides: Partial<TableOverlayViewModel> = {}): TableOverlayViewModel {
   return {
     toast: null,
+    cardMotionEffects: [],
     combatEffects: [],
     generalPick: null,
     notice: null,

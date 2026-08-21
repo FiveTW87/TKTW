@@ -420,7 +420,15 @@ function* playCard(
 
   if (def.category === "equipment") {
     const replaced = equipCard(state, playerId, removeFromHand(state, playerId, firstId));
-    log(state, "equip", { actorId: playerId, cardId: firstId, cardType: card.typeKey });
+    log(state, "equip", {
+      actorId: playerId,
+      cardId: firstId,
+      cardType: card.typeKey,
+      data: {
+        slot: def.slot!,
+        ...(replaced ? { replacedCardId: replaced.id, replacedCardType: replaced.typeKey } : {}),
+      },
+    });
     // Equipping over one's own gear counts as losing it too (SPEC-consistent
     // house reading — see the comment on equipCard).
     if (replaced) {
@@ -439,6 +447,13 @@ function* playCard(
 
   // basic + instant trick: spend the card(s), then resolve.
   for (const cid of cardIds) discardFromHand(state, playerId, cid);
+  log(state, "cardPlay", {
+    actorId: playerId,
+    targetIds,
+    cardId: firstId,
+    cardType: card.typeKey,
+    ...(asType && asType !== literalCard.typeKey ? { data: { literalCardType: literalCard.typeKey } } : {}),
+  });
   if (getPlayer(state, playerId).hand.length === 0) {
     yield* fireTrigger(ctx, "OnHandEmpty", { playerId });
   }

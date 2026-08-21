@@ -63,7 +63,7 @@ function* resolveShaHit(
       const c = p.equipment[slot]!;
       delete p.equipment[slot];
       state.discardPile.push(c);
-      log(state, "qilinDestroyHorse", { actorId: targetId, cardType: "qilin", data: { slot } });
+      log(state, "qilinDestroyHorse", { actorId: targetId, cardId: c.id, cardType: c.typeKey, data: { slot } });
       yield* fireTrigger(ctx, "OnEquipmentLost", { playerId: targetId, card: c });
     }
   }

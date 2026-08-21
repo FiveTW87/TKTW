@@ -7,10 +7,16 @@ export const guoheCard: CardDef = {
   play: function* (ctx) {
     const targetId = ctx.targetIds[0];
     if (!targetId) return;
-    const card = yield* pickCardFrom(ctx, ctx.playerId, targetId, "guohe");
-    if (card) {
-      ctx.state.discardPile.push(card);
-      log(ctx.state, "guoheDiscard", { actorId: ctx.playerId, targetIds: [targetId], cardType: card.typeKey });
+    const picked = yield* pickCardFrom(ctx, ctx.playerId, targetId, "guohe");
+    if (picked) {
+      ctx.state.discardPile.push(picked.card);
+      log(ctx.state, "guoheDiscard", {
+        actorId: ctx.playerId,
+        targetIds: [targetId],
+        cardId: picked.card.id,
+        cardType: picked.card.typeKey,
+        data: { sourceZone: picked.sourceZone },
+      });
     }
   },
 };

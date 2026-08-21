@@ -210,6 +210,13 @@ describe("E-HORSE-MINUS — ม้าลดระยะ", () => {
     step(g, { kind: "mainAction" }, play([C.horse_dilu.any], []));
     expectEquipped(g.state, "p0", "horseMinus", C.horse_dilu.any);
     expectZone(g.state, C.horse_chitu.any, "discardPile");
+    expectLog(g.state, {
+      eventType: "equip",
+      actorId: "p0",
+      cardId: C.horse_dilu.any,
+      cardType: "horse_dilu",
+      data: { slot: "horseMinus", replacedCardId: C.horse_chitu.any, replacedCardType: "horse_chitu" },
+    }, 1);
     expect(distanceNet(g.state, "p0", "p2")).toBe(1); // still exactly −1, not −2
   });
 

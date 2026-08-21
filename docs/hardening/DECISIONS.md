@@ -125,3 +125,9 @@ Reason: Engine log suffixes cannot be sorted lexically, projected private logs m
 Date: 2026-08-21
 Decision: One client SFX manager owns lazy Web Audio construction, autoplay recovery, preference gating, priority-aware concurrency, and cleanup. A multi-note sequence is one logical effect; blocked sounds are dropped rather than replayed after unlock, and every backend/storage failure is contained.
 Reason: Raw oscillator calls multiplied resources during event bursts and could leak browser policy or storage failures into React effects. One deep lifecycle owner keeps the existing sound vocabulary stable while making optional audio unable to delay or break gameplay.
+
+## DEC-022 — Card motion follows public semantic zones
+
+Date: 2026-08-21
+Decision: Card/equipment movement is derived from structured public logs and typed semantic source/destination zones. One client controller owns queue consumption, bounded anchor retry, reduced-motion fallback, overlap, and cleanup; one portal layer owns optional artwork. Hidden hand movement remains anonymous even when the acting engine knows the physical card.
+Reason: Snapshot guesses cannot explain remote movement reliably and can leak private identities. Semantic zones let desktop and compact layouts share one non-blocking lifecycle while keeping DOM geometry, card art, and privacy out of gameplay rules.

@@ -204,7 +204,7 @@ export function useCombatPresentation({
       }
     };
 
-    if (event.kind === "draw" || event.kind === "hpLoss") return;
+    if (event.kind === "draw" || event.kind === "hpLoss" || event.kind === "cardMotion") return;
     const targetPlayerId = event.kind === "skill" ? event.actorId : event.targetId;
     const sourceId = event.kind === "damage" || event.kind === "dodge" ? event.sourceId : undefined;
 

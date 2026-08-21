@@ -16,6 +16,7 @@ import { createMainActionController } from "../hooks/mainActionController";
 import { useTableTransientUi } from "../hooks/useTableTransientUi";
 import { useTableSfx } from "../hooks/useTableSfx";
 import { useCombatPresentation } from "../hooks/useCombatPresentation";
+import { useCardMotionPresentation } from "../hooks/useCardMotionPresentation";
 import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../components/board/TableControls";
 import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from "../components/board/TableOverlays";
 
@@ -48,6 +49,11 @@ export function Table() {
     matchId: gameView?.matchId,
     logs: gameView?.gameLogs,
     players: gameView?.players,
+  });
+  const cardMotionEffects = useCardMotionPresentation({
+    connected,
+    matchId: gameView?.matchId,
+    logs: gameView?.gameLogs,
   });
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
@@ -195,6 +201,7 @@ export function Table() {
 
   const overlayModel: TableOverlayViewModel = {
     toast,
+    cardMotionEffects,
     combatEffects,
     generalPick: generalPickPending && generalPickWaitingName
       ? { playerName: generalPickWaitingName, remainingSeconds: generalPickRemaining }

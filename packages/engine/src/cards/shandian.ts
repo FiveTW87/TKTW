@@ -13,7 +13,7 @@ export function forwardShandian(state: GameState, fromId: string, card: Card): v
   const nextId = seatOrderAfter(state, fromId)[0];
   if (nextId) {
     getPlayer(state, nextId).judgmentZone.push(card);
-    log(state, "forwardShandian", { targetIds: [nextId], cardType: "shandian" });
+    log(state, "forwardShandian", { actorId: fromId, targetIds: [nextId], cardId: card.id, cardType: "shandian" });
   } else {
     state.discardPile.push(card);
   }

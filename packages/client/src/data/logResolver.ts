@@ -36,6 +36,8 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
     }
     case "discard":
       return `${actor} ทิ้งการ์ด ${amt} ใบ${d.reason === "overLimit" ? " (เกินเพดาน HP)" : ""}`;
+    case "cardPlay":
+      return `${actor} ลง "${card(entry.cardType)}"${targets ? ` → ${targets}` : ""}`;
     case "equip":
       return `${actor} สวมอุปกรณ์ "${card(entry.cardType)}"`;
     case "placeDelayed":
@@ -91,7 +93,7 @@ export function resolveLogEntry(entry: GameLogView, view: GameView): string {
     case "jiedaoTakeWeapon": return `${actor} ได้อาวุธ "${card(entry.cardType)}" จาก ${targets} (${card("jiedao")})`;
     case "jiedaoWeaponDeclined": return `${actor} ปฏิเสธอาวุธ "${card(entry.cardType)}" จาก ${targets} — ทิ้งลงกอง (${card("jiedao")})`;
     case "guoheDiscard": return `${actor} ทิ้งการ์ด "${card(entry.cardType)}" ของ ${targets} (${card("guohe")})`;
-    case "shunshouSteal": return `${actor} ขโมยการ์ด "${card(entry.cardType)}" จาก ${targets} (${card("shunshou")})`;
+    case "shunshouSteal": return `${actor} ขโมยการ์ด 1 ใบจาก ${targets} (${card("shunshou")})`;
     case "wuguReveal": return `${actor} ใช้ "${card("wugu")}" เปิด ${amt} ใบ`;
     case "wuguPick": return `${actor} เลือกการ์ดจาก${card("wugu")}`;
     case "machaoTieqiJudge": {

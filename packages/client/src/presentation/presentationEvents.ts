@@ -48,6 +48,23 @@ export interface DeathPresentationEvent extends PresentationEventBase {
   targetId: string;
 }
 
+export type CardMotionZone =
+  | { kind: "player"; playerId: string; zone: "hand" | "equipment" | "judgment" }
+  | { kind: "pile"; zone: "draw" | "discard" | "table" | "wugu" };
+
+export type CardMotionKind = "draw" | "play" | "discard" | "steal" | "equip" | "equipmentLoss" | "delayed" | "wuguReveal" | "wuguPick";
+
+export interface CardMotionPresentationEvent extends PresentationEventBase {
+  kind: "cardMotion";
+  motion: CardMotionKind;
+  source: CardMotionZone;
+  destination: CardMotionZone;
+  cardId?: string;
+  cardType?: string;
+  amount?: number;
+  anonymous?: true;
+}
+
 export type PresentationEvent =
   | DrawPresentationEvent
   | SkillPresentationEvent
@@ -55,7 +72,8 @@ export type PresentationEvent =
   | HpLossPresentationEvent
   | DodgePresentationEvent
   | HealPresentationEvent
-  | DeathPresentationEvent;
+  | DeathPresentationEvent
+  | CardMotionPresentationEvent;
 
 function optionalAmount(amount: number | undefined): { amount?: number } {
   return amount === undefined ? {} : { amount };
@@ -66,6 +84,28 @@ function optionalSourceId(entry: GameLogView): { sourceId?: string } {
   return typeof sourceId === "string" && sourceId.length > 0 ? { sourceId } : {};
 }
 
+const pile = (zone: Extract<CardMotionZone, { kind: "pile" }>['zone']): CardMotionZone => ({ kind: "pile", zone });
+const player = (playerId: string, zone: Extract<CardMotionZone, { kind: "player" }>['zone']): CardMotionZone => ({ kind: "player", playerId, zone });
+
+function publicCard(entry: GameLogView): Pick<CardMotionPresentationEvent, "cardId" | "cardType"> {
+  return {
+    ...(entry.cardId ? { cardId: entry.cardId } : {}),
+    ...(entry.cardType ? { cardType: entry.cardType } : {}),
+  };
+}
+
+function movement(
+  matchId: string,
+  entry: GameLogView,
+  suffix: string,
+  motion: CardMotionKind,
+  source: CardMotionZone,
+  destination: CardMotionZone,
+  detail: Pick<CardMotionPresentationEvent, "cardId" | "cardType" | "amount" | "anonymous"> = {},
+): CardMotionPresentationEvent {
+  return { id: `${matchId}:${entry.id}:motion:${suffix}`, logId: entry.id, kind: "cardMotion", motion, source, destination, ...detail };
+}
+
 /** Maps one wire log into presentation semantics only. Localized labels,
  * artwork, coordinates, durations, and playback policy belong to adapters. */
 export function mapGameLogToPresentationEvents(matchId: string, entry: GameLogView): PresentationEvent[] {
@@ -74,7 +114,11 @@ export function mapGameLogToPresentationEvents(matchId: string, entry: GameLogVi
 
   switch (entry.eventType) {
     case "draw":
-      return [{ ...base, id: `${matchId}:${entry.id}:draw`, kind: "draw", actorId: entry.actorId, ...optionalAmount(entry.amount) }];
+    case "swordYyDraw":
+      return [
+        { ...base, id: `${matchId}:${entry.id}:draw`, kind: "draw", actorId: entry.actorId, ...optionalAmount(entry.amount) },
+        movement(matchId, entry, "draw", "draw", pile("draw"), player(entry.actorId, "hand"), { amount: entry.amount ?? 1, anonymous: true }),
+      ];
     case "skillUse":
       return [{
         ...base,
@@ -107,6 +151,61 @@ export function mapGameLogToPresentationEvents(matchId: string, entry: GameLogVi
       }];
     case "death":
       return [{ ...base, id: `${matchId}:${entry.id}:death`, kind: "death", targetId: entry.actorId }];
+    case "cardPlay":
+      return [movement(matchId, entry, "play", "play", player(entry.actorId, "hand"), pile("table"), publicCard(entry))];
+    case "discard":
+      return [movement(matchId, entry, "discard", "discard", player(entry.actorId, "hand"), pile("discard"), { amount: entry.amount ?? 1, anonymous: true })];
+    case "swordIceDiscard":
+    case "swordYyDiscard":
+    case "guanshiForce":
+    case "zhangbaSha":
+      return [movement(matchId, entry, "discard", "discard", player(entry.actorId, "hand"), pile("discard"), { amount: entry.amount ?? (entry.eventType === "swordYyDiscard" ? 1 : 2), anonymous: true })];
+    case "shunshouSteal": {
+      const sourceId = entry.targetIds?.[0];
+      if (!sourceId) return [];
+      const sourceZone = entry.data?.sourceZone === "equipment" ? "equipment" : "hand";
+      return [movement(matchId, entry, "steal", "steal", player(sourceId, sourceZone), player(entry.actorId, "hand"), { amount: 1, anonymous: true })];
+    }
+    case "equip": {
+      const events = [movement(matchId, entry, "equip", "equip", player(entry.actorId, "hand"), player(entry.actorId, "equipment"), publicCard(entry))];
+      const replacedCardId = entry.data?.replacedCardId;
+      const replacedCardType = entry.data?.replacedCardType;
+      if (typeof replacedCardId === "string" || typeof replacedCardType === "string") {
+        events.push(movement(matchId, entry, "equipmentLoss", "equipmentLoss", player(entry.actorId, "equipment"), pile("discard"), {
+          ...(typeof replacedCardId === "string" ? { cardId: replacedCardId } : {}),
+          ...(typeof replacedCardType === "string" ? { cardType: replacedCardType } : {}),
+        }));
+      }
+      return events;
+    }
+    case "placeDelayed": {
+      const targetId = entry.targetIds?.[0];
+      return targetId ? [movement(matchId, entry, "delayed", "delayed", player(entry.actorId, "hand"), player(targetId, "judgment"), publicCard(entry))] : [];
+    }
+    case "forwardShandian": {
+      const targetId = entry.targetIds?.[0];
+      return targetId ? [movement(matchId, entry, "delayedForward", "delayed", player(entry.actorId, "judgment"), player(targetId, "judgment"), publicCard(entry))] : [];
+    }
+    case "guoheDiscard": {
+      const targetId = entry.targetIds?.[0];
+      if (!targetId) return [];
+      const sourceZone = entry.data?.sourceZone === "hand" ? "hand" : "equipment";
+      return [movement(matchId, entry, sourceZone === "equipment" ? "equipmentLoss" : "discard", sourceZone === "equipment" ? "equipmentLoss" : "discard", player(targetId, sourceZone), pile("discard"), publicCard(entry))];
+    }
+    case "jiedaoTakeWeapon": {
+      const sourceId = entry.targetIds?.[0];
+      return sourceId ? [movement(matchId, entry, "stealEquipment", "steal", player(sourceId, "equipment"), player(entry.actorId, "equipment"), publicCard(entry))] : [];
+    }
+    case "jiedaoWeaponDeclined": {
+      const sourceId = entry.targetIds?.[0];
+      return sourceId ? [movement(matchId, entry, "equipmentLoss", "equipmentLoss", player(sourceId, "equipment"), pile("discard"), publicCard(entry))] : [];
+    }
+    case "qilinDestroyHorse":
+      return [movement(matchId, entry, "equipmentLoss", "equipmentLoss", player(entry.actorId, "equipment"), pile("discard"), publicCard(entry))];
+    case "wuguReveal":
+      return [movement(matchId, entry, "wuguReveal", "wuguReveal", pile("draw"), pile("wugu"), { amount: entry.amount ?? 1, anonymous: true })];
+    case "wuguPick":
+      return [movement(matchId, entry, "wuguPick", "wuguPick", pile("wugu"), player(entry.actorId, "hand"), publicCard(entry))];
     default:
       return [];
   }
