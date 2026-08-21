@@ -41,7 +41,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | LEGAL-004 | Skills, projection, and client migration | completed | Codex | 2d | LEGAL-003 |
 | TABLE-001 | Decision and main-action controllers | completed | Codex | 1d | LEGAL-004 |
 | TABLE-002 | Selection, dialogs, and sound controllers | completed | Codex | 1d | TABLE-001 |
-| TABLE-003 | Presentational extraction and cleanup | backlog | Codex | 1d | TABLE-002 |
+| TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | backlog | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | backlog | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | backlog | Codex | 1d | PRES-001 |
@@ -641,7 +641,7 @@ Follow-up:
 
 ## TABLE-003 — Presentational extraction and cleanup
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
 
 ### Objective
 
@@ -658,6 +658,37 @@ Leave `Table.tsx` as a composition layer by extracting action cluster, utility r
 - Rendering and mobile viewport tests.
 - Anchor/effect regressions.
 - Client suite, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `d737611` (`TABLE-003-extract-table-presentation`)
+Status: completed
+
+Changed:
+
+- Added `TableControls` with a discriminated action view model for hidden, confirm, discard, and end-phase states.
+- Moved the utility rail and its complete SFX preference popover behind a focused callback-only interface.
+- Added `TableOverlays` and `TableRecoveryPanel` with grouped typed presentation models and no game-store access.
+- Preserved overlay sibling order, fixed geometry, compact/desktop anchors, Thai copy, close-before-submit behavior, and diagnostics ordering.
+- Reduced `Table.tsx` to 326 lines while keeping board/controller composition there.
+- Added focused rendering tests for action priority, disabled states, utility preferences, overlay ordering, recovery commands, and diagnostics.
+
+Verification:
+
+- Focused TABLE-003 tests: 2 files and 9 tests passed.
+- Client suite: 25 files and 188 tests passed, including 67 Table regressions and all mobile viewport/anchor checks.
+- Engine suite: 40 files and 1,114 tests passed.
+- Server suite: 3 files and 58 tests passed.
+- Total: 68 files and 1,360 tests passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- Client production build: passed with 204 modules transformed.
+- No gameplay, CSS, responsive layout, DOM-anchor, or visual behavior changes; screenshots were intentionally omitted because this task only reorganized code.
+
+Limitations and follow-up:
+
+- `GameBoard`, draw-card animation state, and controller composition intentionally remain in `Table.tsx`.
+- Presentation-event queuing, anchor retry, new effects, and sound expansion remain in `PRES-*`, `FX-*`, and `SFX-*`.
 
 ---
 

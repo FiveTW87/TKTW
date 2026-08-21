@@ -1,12 +1,12 @@
 # Hardening Progress
 
 Last updated: 2026-08-21
-Current milestone: Phase 3 — Table composition hardening
-Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes, and reconnect-safe table sound routing each have one owner
+Current milestone: Phase 4 — Asset and presentation hardening
+Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered overlays now have separate typed owners
 
 ## Next task
 
-- `TABLE-003` — Presentational extraction and cleanup
+- `ASSET-001` — Typed general-art manifest
 - Owner: Codex
 - Status: `backlog`
 
@@ -21,6 +21,7 @@ Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes
 - `LEGAL-004` — Active-skill contracts, owner projection, atomic validation, and client migration off legality mirrors.
 - `TABLE-001` — Typed decision routing and authoritative main-action controllers extracted from `Table.tsx`.
 - `TABLE-002` — Semantic selection transitions, transient UI lifetimes, and reconnect-safe sound routing extracted from `Table.tsx`.
+- `TABLE-003` — Typed controls/action states, ordered overlays, SFX preferences, and recovery presentation extracted from `Table.tsx`.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -37,15 +38,15 @@ Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 23 | 179 | Passed |
-| Total | 66 | 1,351 | Passed |
+| Client | 25 | 188 | Passed |
+| Total | 68 | 1,360 | Passed |
 
 ## Next actions
 
-1. Push the verified `TABLE-002` code and documentation checkpoints to `origin/main`.
-2. Start `TABLE-003` by extracting action cluster, utility rail, and overlay markup behind typed presentation props.
-3. Preserve the authoritative `legalActions` seam, controller lifetimes, and existing DOM anchors.
-4. Keep presentation-only distance calculations separate from gameplay legality.
+1. Push the verified `TABLE-003` code and documentation checkpoints to `origin/main`.
+2. Start `ASSET-001` by inventorying the canonical art paths for all 25 generals.
+3. Preserve the approved portrait/full-body/attack/hit/skill fallbacks and report unmapped assets explicitly.
+4. Keep presentation-only art resolution separate from gameplay and protocol legality.
 
 ## Checkpoints
 
@@ -58,6 +59,7 @@ Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes
 - `LEGAL-004`: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - `TABLE-001`: `04af1ae` (`TABLE-001-extract-table-controllers`).
 - `TABLE-002`: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
+- `TABLE-003`: `d737611` (`TABLE-003-extract-table-presentation`).
 
 ## Known workspace notes
 
@@ -67,4 +69,4 @@ Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes
 
 ## Blockers
 
-- None for `TABLE-003`.
+- None for `ASSET-001`.

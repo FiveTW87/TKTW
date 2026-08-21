@@ -101,3 +101,9 @@ Reason: These two modules keep decision policy and target-contract interpretatio
 Date: 2026-08-21
 Decision: `useInteraction` owns semantic selection transitions keyed to every authoritative decision; `useTableTransientUi` owns decision/table/timer/match UI lifetimes; `useTableSfx` owns snapshot-diff sound routing and reconnect baselines. The pure main-action module continues to interpret authoritative `legalActions`.
 Reason: Combining these lifetimes under main action would couple discard/reactive selection and reconnect presentation to one route. Three deep modules keep transition ordering, modal lifetime policy, and sound replay prevention local behind small interfaces.
+
+## DEC-018 — Table presentation uses concrete typed compositions
+
+Date: 2026-08-21
+Decision: Fixed table controls use one discriminated action view model, while overlays use one concrete ordered presentation model rendered as sibling fragments. Neither module reads the game store, and `Table.tsx` remains the composition owner.
+Reason: A generic overlay array or many tiny wrapper components would move ordering and field knowledge back into the caller. Two concrete modules preserve fixed-position DOM contracts and modal semantics while making impossible action-state combinations unrepresentable.
