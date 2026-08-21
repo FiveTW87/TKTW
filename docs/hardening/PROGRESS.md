@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, autoplay-recoverable, bounded, and failure-isolated
+Overall status: `FX-001` complete; typed card/equipment movement is reconnect-safe, bounded, privacy-preserving, and non-blocking
 
 ## Next task
 
-- `FX-001` — Card and equipment motion
+- `FX-002` — Combat and skill sequences
 - Owner: Codex
 - Status: `backlog`
 
@@ -26,6 +26,7 @@ Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, auto
 - `PRES-001` — Typed presentation-event model, silent-baseline queue, combat adapter migration, and failure isolation.
 - `PRES-002` — Reconnect-safe presentation baseline, bounded target/source anchor retry, and reduced-motion outcome verification.
 - `SFX-001` — Centralized synthesized playback, autoplay recovery, bounded logical-effect concurrency, and resilient preferences.
+- `FX-001` — Typed card/equipment movement, semantic anchors, anonymous hidden-card cues, reduced motion, and bounded lifecycle.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -42,15 +43,15 @@ Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, auto
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 27 | 218 | Passed |
-| Total | 70 | 1,390 | Passed |
+| Client | 29 | 227 | Passed |
+| Total | 72 | 1,399 | Passed |
 
 ## Next actions
 
-1. Commit and push the verified `SFX-001` implementation and documentation checkpoints.
-2. Start `FX-001` by inventorying authoritative card/equipment presentation events and current DOM anchors.
-3. Specify motion lifetimes, reduced-motion equivalents, reconnect baselines, and bounded fallback behavior before implementation.
-4. Keep animation optional and non-blocking under the presentation contract.
+1. Commit and push the verified `FX-001` implementation and documentation checkpoints.
+2. Start `FX-002` by inventorying current combat/skill event sequences, pose arbitration, and sound synchronization.
+3. Specify a bounded sequence contract that reuses typed presentation events without blocking gameplay.
+4. Preserve mobile/desktop anchors, reduced-motion meaning, and hidden-information boundaries.
 
 ## Checkpoints
 
@@ -68,6 +69,7 @@ Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, auto
 - `PRES-001`: `5259d14` (`PRES-001-add-presentation-event-queue`).
 - `PRES-002`: `e3f0525` (`PRES-002-harden-presentation-lifecycle`).
 - `SFX-001`: `50f7f9e` (`SFX-001-centralize-audio-lifecycle`).
+- `FX-001`: `cbf5007` (`FX-001-add-card-equipment-motion`).
 
 ## Known workspace notes
 
@@ -77,4 +79,5 @@ Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, auto
 
 ## Blockers
 
-- None for `FX-001`.
+- No code or verification blocker for `FX-002`.
+- FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.
