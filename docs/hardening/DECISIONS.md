@@ -107,3 +107,9 @@ Reason: Combining these lifetimes under main action would couple discard/reactiv
 Date: 2026-08-21
 Decision: Fixed table controls use one discriminated action view model, while overlays use one concrete ordered presentation model rendered as sibling fragments. Neither module reads the game store, and `Table.tsx` remains the composition owner.
 Reason: A generic overlay array or many tiny wrapper components would move ordering and field knowledge back into the caller. Two concrete modules preserve fixed-position DOM contracts and modal semantics while making impossible action-state combinations unrepresentable.
+
+## DEC-019 — General artwork selection is explicit and inventory-audited
+
+Date: 2026-08-21
+Decision: Every playable general declares portrait, full-body, attack, hit, skill, and layout metadata in one typed client manifest. Runtime resolvers remain defensive for hidden/unknown wire values, while filesystem reconciliation and unmapped-asset reporting stay test-time only.
+Reason: Filename inference and version globs can silently select the wrong approved image. One deep manifest concentrates canonical selection and fallback locality without introducing a browser-incompatible filesystem seam or coupling artwork to gameplay.

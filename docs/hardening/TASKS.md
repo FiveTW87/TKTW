@@ -42,7 +42,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TABLE-001 | Decision and main-action controllers | completed | Codex | 1d | LEGAL-004 |
 | TABLE-002 | Selection, dialogs, and sound controllers | completed | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
-| ASSET-001 | Typed general-art manifest | backlog | Codex | 1.5d | TS-002 |
+| ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | backlog | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | backlog | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
@@ -694,11 +694,59 @@ Limitations and follow-up:
 
 ## ASSET-001 — Typed general-art manifest
 
-Status: backlog | Owner: Codex | Reviewer: Claude inventory | Estimate: 1.5 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude inventory | Estimate: 1.5 days | Risk: Medium
 
 ### Objective
 
 Replace scattered filename/layout mappings with a complete typed manifest for all 25 generals.
+
+### Current behavior
+
+- Portrait/full-body paths are inferred from a filename-stem map while action paths and Lu Bu layout live in separate maps.
+- Resolver inputs are defensive strings and unknown/hidden generals return no character art.
+- The general-art directory contains 125 selected files plus four unmapped Dian Wei/Xu Chu files with no explicit inventory status.
+
+### Expected behavior
+
+- One typed manifest explicitly records all five approved paths and action layout metadata for every playable general.
+- Runtime resolvers keep their existing safe string interface and fallback behavior.
+- Tests reconcile the manifest with the Engine roster and on-disk inventory, including deliberate unmapped files.
+
+### In scope / allowed files
+
+- `packages/client/src/data/generalArt.ts`
+- `packages/client/src/data/generalNames.ts` only for a derived playable-general ID type
+- `packages/client/tests/generalArt.test.ts`
+- `packages/client/tests/generalData.test.ts` only if roster typing needs coverage
+- `docs/hardening/TASKS.md`, `PROGRESS.md`, and `DECISIONS.md`
+
+### Out of scope / forbidden files
+
+- No additions, edits, renames, or deletion under `packages/client/public/assets/**`.
+- No Engine, Shared, Server, protocol, gameplay, Table/controller, CSS, or DOM changes.
+- No package dependency/configuration changes and no Thai name/skill copy changes.
+- Do not stage the pre-existing `packages/client/src/App.tsx` line-ending-only change.
+
+### Type or protocol changes
+
+- Add a client-only `GeneralId` string union derived from the display roster.
+- Add template-literal asset-path types and an exhaustive general-art manifest.
+- No wire, Zod, Engine state, or server protocol changes.
+
+### Implementation steps
+
+1. Freeze the 25-general roster and define the typed manifest interface.
+2. Add completeness, filesystem, inventory-exclusion, fallback, version, and layout tests.
+3. Replace the filename/action/layout maps with one explicit manifest while preserving resolver exports.
+4. Run focused and full verification, then record the selected paths and unmapped inventory.
+
+### Edge cases
+
+- `none` and an empty/unknown ID must not reveal character art.
+- Invalid factions continue to use the independent background; a known general still uses the caller-supplied background faction.
+- Action loading fallback remains full-body then portrait and never blocks gameplay.
+- Guo Jia attack v2, Liu Bei hit v3, Guan Yu hit v2, and all three Lu Bu layouts remain explicit.
+- Dian Wei/Xu Chu files remain on disk but are deliberately excluded because they have no registered Engine general.
 
 ### Acceptance criteria
 
@@ -711,6 +759,38 @@ Replace scattered filename/layout mappings with a complete typed manifest for al
 - Manifest completeness and filesystem existence tests.
 - Fallback and Lu Bu normalization tests.
 - Client suite and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `da0f7ad` (`ASSET-001-add-typed-general-art-manifest`)
+Status: completed
+
+Changed:
+
+- Derived the client `GeneralId` union from the canonical display roster and made faction coverage compile-time exhaustive.
+- Replaced separate filename, pose, and layout maps with one typed manifest containing 25 generals and 125 explicit approved paths.
+- Preserved the public resolver interface and all hidden/unknown/faction fallback behavior, so production callers required no changes.
+- Kept Guo Jia attack v2, Liu Bei hit v3, Guan Yu hit v2, and Lu Bu's three normalized layouts explicit.
+- Declared Dian Wei and Xu Chu portrait/full-body files as four known unmapped assets without selecting, deleting, or modifying them.
+- Added test-time roster and filesystem reconciliation so missing, extra, renamed, or silently superseded art fails verification.
+
+Verification:
+
+- Focused manifest/roster/combat/player-art verification: 5 files and 35 tests passed.
+- Client suite: 25 files and 192 tests passed.
+- Engine suite: 40 files and 1,114 tests passed.
+- Server suite: 3 files and 58 tests passed.
+- Total: 68 files and 1,364 tests passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- Client production build: passed with 204 modules transformed.
+- No UI, CSS, DOM, gameplay, protocol, or artwork-file changes; screenshots were intentionally omitted.
+
+Limitations and follow-up:
+
+- Runtime image decode/network failure remains non-blocking and continues to use the existing full-body fallback in combat presentation.
+- Dian Wei and Xu Chu remain inventory-only until matching Engine generals are deliberately added in a future scoped task.
+- Presentation event mapping and preload/queue behavior remain in `PRES-001` and `PRES-002`.
 
 ---
 

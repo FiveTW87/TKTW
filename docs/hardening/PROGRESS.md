@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered overlays now have separate typed owners
+Overall status: `ASSET-001` complete; all 25 playable generals now resolve through one typed, filesystem-audited art manifest
 
 ## Next task
 
-- `ASSET-001` — Typed general-art manifest
+- `PRES-001` — Presentation-event model and queue
 - Owner: Codex
 - Status: `backlog`
 
@@ -22,6 +22,7 @@ Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered
 - `TABLE-001` — Typed decision routing and authoritative main-action controllers extracted from `Table.tsx`.
 - `TABLE-002` — Semantic selection transitions, transient UI lifetimes, and reconnect-safe sound routing extracted from `Table.tsx`.
 - `TABLE-003` — Typed controls/action states, ordered overlays, SFX preferences, and recovery presentation extracted from `Table.tsx`.
+- `ASSET-001` — Explicit typed artwork manifest for 25 generals, 125 selected files, and four known unmapped inventory files.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -38,15 +39,15 @@ Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 25 | 188 | Passed |
-| Total | 68 | 1,360 | Passed |
+| Client | 25 | 192 | Passed |
+| Total | 68 | 1,364 | Passed |
 
 ## Next actions
 
-1. Push the verified `TABLE-003` code and documentation checkpoints to `origin/main`.
-2. Start `ASSET-001` by inventorying the canonical art paths for all 25 generals.
-3. Preserve the approved portrait/full-body/attack/hit/skill fallbacks and report unmapped assets explicitly.
-4. Keep presentation-only art resolution separate from gameplay and protocol legality.
+1. Push the verified `ASSET-001` code and documentation checkpoints to `origin/main`.
+2. Start `PRES-001` by defining stable, ordered presentation events from structured game logs.
+3. Preserve initial-snapshot silence, dedupe, and non-blocking gameplay behavior.
+4. Keep presentation queue errors isolated from answers, turns, and reconnect state.
 
 ## Checkpoints
 
@@ -60,6 +61,7 @@ Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered
 - `TABLE-001`: `04af1ae` (`TABLE-001-extract-table-controllers`).
 - `TABLE-002`: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
 - `TABLE-003`: `d737611` (`TABLE-003-extract-table-presentation`).
+- `ASSET-001`: `da0f7ad` (`ASSET-001-add-typed-general-art-manifest`).
 
 ## Known workspace notes
 
@@ -69,4 +71,4 @@ Overall status: `TABLE-003` complete; Table orchestration, controls, and ordered
 
 ## Blockers
 
-- None for `ASSET-001`.
+- None for `PRES-001`.
