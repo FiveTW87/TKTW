@@ -26,7 +26,7 @@ export interface InteractionState {
   selectedAsType: string | null;
 }
 
-type Action =
+export type InteractionAction =
   | { type: "RESET" }
   | { type: "SELECT_CARDS"; ids: string[] }
   | { type: "TOGGLE_CARD"; id: string }
@@ -49,7 +49,7 @@ const initialState: InteractionState = {
   selectedAsType: null,
 };
 
-function reducer(state: InteractionState, action: Action): InteractionState {
+function reducer(state: InteractionState, action: InteractionAction): InteractionState {
   switch (action.type) {
     case "RESET":
       return initialState;

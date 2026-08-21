@@ -1,27 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import type { Card, LegalActionView, PlayerView } from "@tktw/shared";
+import type { Card, PlayerView } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
-import { SelfDock, SfxControl, type CardTapState } from "../components/board/SelfDock";
+import { SelfDock, SfxControl } from "../components/board/SelfDock";
 import { RulesButton } from "../components/RulesModal";
 import { GameHistoryPanel } from "../components/board/GameHistoryPanel";
 import { DecisionModal } from "../components/DecisionModal";
 import { InspectModal } from "../components/InspectModal";
 import { DeathDialog } from "../components/DeathDialog";
 import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
-import { SkillToast, type ToastData } from "../components/SkillToast";
-import { describeDecision } from "../data/decisionCopy";
+import { SkillToast } from "../components/SkillToast";
 import { cardDisplay } from "../data/cardNames";
-import { generalDisplay } from "../data/generalNames";
-import { generalSkills, skillById } from "../data/generalSkills";
-import { cardMeta, type EquipSlot } from "../data/cardMeta";
-import { skillInteraction, sameFactionTeammateAlive } from "../data/skillInteraction";
-import { clientCountsAs } from "../data/conversions";
+import { generalSkills } from "../data/generalSkills";
+import type { EquipSlot } from "../data/cardMeta";
 import { attackDistance, weaponRange } from "../data/distance";
 import { useCountdown } from "../lib/useCountdown";
 import { useIsNarrow } from "../lib/useIsNarrow";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { useInteraction } from "../hooks/useInteraction";
+import { useDecisionController } from "../hooks/useDecisionController";
+import { createMainActionController, type PlayChoice } from "../hooks/mainActionController";
 import { HandCard } from "../components/HandCard";
 import { CombatEffectLayer } from "../components/board/CombatEffectLayer";
 import { playSfx } from "../lib/sfx";
@@ -59,9 +57,6 @@ function LeaveGameConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void
   );
 }
 
-type PlayCardOption = Extract<LegalActionView, { kind: "playCard" }>["options"][number];
-type ActiveSkillOption = Extract<LegalActionView, { kind: "useSkill" }>["options"][number];
-
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
   { slot: "armor", label: "เกราะ", glyph: "甲" },
@@ -94,17 +89,15 @@ export function Table() {
   // SPEC §11.1 — card/target/skill selection lives in a dedicated interaction
   // reducer, reset whenever the authoritative decision changes.
   const [interaction, dispatch] = useInteraction(decisionKey);
-  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode, selectedAsType } = interaction;
+  const { selectedCardIds, selectedTargetIds, skillMode, zhangbaMode } = interaction;
 
   // Dialog / animation state stays local (SPEC §11.1's 4-way split) — never
   // reset by the decision-change effect above.
-  const [busy, setBusy] = useState(false);
   const [inspecting, setInspecting] = useState<PlayerView | null>(null);
   const [inspectingCard, setInspectingCard] = useState<{ card: Card; canChoose: boolean } | null>(null);
-  const [toast, setToast] = useState<ToastData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
-  const [playChoices, setPlayChoices] = useState<{ card: Card; options: PlayCardOption[] } | null>(null);
+  const [playChoices, setPlayChoices] = useState<PlayChoice | null>(null);
   const [deathDialogDismissedFor, setDeathDialogDismissedFor] = useState<string | null>(null);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [drawnIds, setDrawnIds] = useState<Set<string>>(() => new Set());
@@ -112,8 +105,6 @@ export function Table() {
   const prevDiscardTopIdRef = useRef<string | null | undefined>(undefined);
   const prevLogCountRef = useRef<number | null>(null);
   const prevTurnPlayerIdRef = useRef<string | null | undefined>(undefined);
-  const autoHandledRef = useRef<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNotice = (msg: string) => {
@@ -123,10 +114,22 @@ export function Table() {
   };
 
   const me = gameView?.players.find((p) => p.id === gameView.viewerPlayerId);
+  const decision = useDecisionController({ gameView, me, answer });
+  const {
+    isMyDecision,
+    isMainAction,
+    isDiscardTo,
+    route,
+    pendingActivateId,
+    pendingActivateMode,
+    busy,
+    toast,
+    runAnswer,
+    answerActivate,
+  } = decision;
 
   useEffect(() => {
     return () => {
-      if (toastTimer.current !== null) clearTimeout(toastTimer.current);
       if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
     };
   }, []);
@@ -190,62 +193,6 @@ export function Table() {
     }
   }, [gameView?.currentTurnPlayerId, me?.id]);
 
-  // ── Auto-route skill decisions the engine asks about ──────────────────
-  // The engine yields activateSkill for every non-locked trigger skill; here
-  // we answer the ones that shouldn't bother the player (beneficial autos,
-  // and a lord's hujia with no eligible teammate), and auto-accept fankui's
-  // steal. Everything else falls through to the inline row / dialog.
-  useEffect(() => {
-    if (!gameView || !me || !pending) return;
-    if (pending.playerId !== gameView.viewerPlayerId) return;
-    if (autoHandledRef.current === pending.id) return;
-
-    const accept = () => {
-      autoHandledRef.current = pending.id;
-      void answer({ decisionId: pending.id });
-    };
-    const pass = () => {
-      autoHandledRef.current = pending.id;
-      void answer({ decisionId: pending.id, pass: true });
-    };
-
-    if (pending.kind === "fankuiPick") {
-      accept();
-      return;
-    }
-    // ไร้ช่องโหว่: no general can convert anything into a wuxie, so if it's
-    // not literally in hand the player can never respond — skip the prompt.
-    if (pending.kind === "askWuxie") {
-      const hand = Array.isArray(me.hand) ? me.hand : [];
-      if (!hand.some((c) => c.typeKey === "wuxie")) pass();
-      return;
-    }
-    // ท้อ (dying rescue): if the player holds nothing that counts as ท้อ, they
-    // can't help — skip the prompt instead of asking. (หัวโต๋ can turn a red
-    // card into ท้อ off-turn, so use the conversion-aware check.)
-    if (pending.kind === "respondTao") {
-      const hand = Array.isArray(me.hand) ? me.hand : [];
-      const isOwnTurn = gameView.currentTurnPlayerId === me.id;
-      if (!hand.some((c) => clientCountsAs(c, "tao", me.generalId, isOwnTurn))) pass();
-      return;
-    }
-    if (pending.kind === "activateSkill") {
-      const sid = String((pending.data as { skillId?: string }).skillId ?? "");
-      const mode = skillInteraction(sid);
-      if (mode === "autoToast") {
-        const sk = skillById(sid);
-        setToast({ glyph: generalDisplay(me.generalId).glyph, name: sk?.name ?? sid, owner: generalDisplay(me.generalId).name });
-        if (toastTimer.current !== null) clearTimeout(toastTimer.current);
-        toastTimer.current = setTimeout(() => setToast(null), 1600);
-        accept();
-      } else if (mode === "autoSilent") {
-        accept();
-      } else if (mode === "hujia" && !sameFactionTeammateAlive(gameView, me)) {
-        pass();
-      }
-    }
-  }, [pending?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
   if (!gameView) return null;
 
   // SPEC 8.4: a finished match's own screen is <Result/>, driven by the
@@ -286,311 +233,38 @@ export function Table() {
     ? (gameView.players.find((p) => p.id === generalPickPending.playerId)?.name ?? generalPickPending.playerId)
     : null;
 
-  const isMyDecision = pending?.playerId === gameView.viewerPlayerId;
-  const isMainAction = pending?.kind === "mainAction";
-  const isDiscardTo = pending?.kind === "discardTo";
-
-  // Which activateSkill (if any) is pending for me, and how to route it.
-  const pendingActivateId =
-    pending?.kind === "activateSkill" && isMyDecision ? String((pending.data as { skillId?: string }).skillId ?? "") : null;
-  const pendingActivateMode = pendingActivateId ? skillInteraction(pendingActivateId) : undefined;
-
-  // Modal only for reactive decisions that aren't auto-handled / inline.
-  const noWuxieInHand = !myHand.some((c) => c.typeKey === "wuxie");
-  const canRespondTao = myHand.some((c) => clientCountsAs(c, "tao", me.generalId, gameView.currentTurnPlayerId === me.id));
-  let showDecisionModal = false;
-  if (pending && isMyDecision && !isMainAction && !isDiscardTo) {
-    // judgmentReveal is handled on the board (tap the draw pile), not a modal.
-    if (pending.kind === "fankuiPick" || pending.kind === "judgmentReveal") showDecisionModal = false;
-    else if (pending.kind === "drawCard") showDecisionModal = false; // a board button, not a modal
-    else if (pending.kind === "askWuxie") showDecisionModal = !noWuxieInHand; // auto-passed otherwise
-    else if (pending.kind === "respondTao") showDecisionModal = canRespondTao; // auto-passed otherwise
-    else if (pending.kind === "activateSkill") {
-      // hujia shows a dialog only when a teammate can actually help; unknown
-      // skills fall back to a dialog; auto*/inline never show a modal.
-      showDecisionModal =
-        pendingActivateMode === undefined ||
-        (pendingActivateMode === "hujia" && sameFactionTeammateAlive(gameView, me));
-    } else showDecisionModal = true;
-  }
 
   // A judgment reveal AND a mandatory draw are both answered by tapping the
   // draw pile itself (see the mat) instead of a separate floating dialog.
-  const pendingJudgmentReveal = isMyDecision && pending?.kind === "judgmentReveal";
-  const pendingDraw = isMyDecision && pending?.kind === "drawCard";
+  const pendingJudgmentReveal = route.kind === "pile" && route.action === "reveal";
+  const pendingDraw = route.kind === "pile" && route.action === "draw";
   const pendingPileAction = pendingJudgmentReveal || pendingDraw;
-  const revealCopy = pendingJudgmentReveal && pending ? describeDecision(pending, gameView) : null;
-  const drawCount = pendingDraw && pending ? Number((pending.data as { count?: number }).count ?? 2) : 0;
-  const drawSkillNames = pendingDraw && pending ? ((pending.data as { skills?: string[] }).skills ?? []).map((s) => skillById(s)?.name ?? s) : [];
-  const pileActionTitle = pendingJudgmentReveal ? revealCopy?.title : pendingDraw ? `จั่ว ${drawCount} ใบ` : undefined;
-  const drawActionPrompt = pendingDraw ? `เฟสจั่ว — จั่ว ${drawCount} ใบ` + (drawSkillNames.length ? ` ⚡ ${drawSkillNames.join(", ")}` : "") : null;
+  const pileActionTitle = route.kind === "pile" ? route.title : undefined;
+  const drawActionPrompt = route.kind === "pile" && route.action === "draw" ? route.prompt ?? null : null;
 
-  const selecting = isMyDecision && (isMainAction || isDiscardTo);
-  const legalActions = gameView.legalActions ?? [];
-  const playCardAction = legalActions.find((action) => action.kind === "playCard");
-  const useSkillAction = legalActions.find((action) => action.kind === "useSkill");
-  const playCardOptions = playCardAction?.options ?? [];
-  const activeSkillOptions = useSkillAction?.options ?? [];
-  const selectedPlayCard = !skillMode ? myHand.find((c) => c.id === selectedCardIds[0]) : undefined;
-  const selectedPlayOption = zhangbaMode
-    ? playCardOptions.find((option) => option.source === "zhangba")
-    : selectedPlayCard
-      ? playCardOptions.find(
-          (option) =>
-            option.source !== "zhangba" &&
-            option.selectableCardIds.includes(selectedPlayCard.id) &&
-            (option.asType ?? null) === selectedAsType,
-        )
-      : undefined;
-  const selectedSkillOption = skillMode
-    ? activeSkillOptions.find((option) => option.skillId === skillMode)
-    : undefined;
-  const selectedOption = selectedSkillOption ?? selectedPlayOption;
-  const targeting = selectedOption?.targeting;
-  const targetRange = targeting
-    ? { min: targeting.minTargets, max: targeting.maxTargets }
-    : { min: 0, max: 0 };
-
-  // Card-first: in skill mode, targets only light up once the required discard
-  // cards are chosen (so you pick the card to spend, THEN the targets).
-  const skillCardsReady = !selectedOption || selectedCardIds.length >= selectedOption.minCards;
-  const targetsActive =
-    isMyDecision &&
-    isMainAction &&
-    targetRange.max > 0 &&
-    skillCardsReady &&
-    (targeting?.kind === "independent" || targeting?.kind === "dependent");
-  const selfTargetable =
-    !!targetsActive &&
-    targeting?.kind === "independent" &&
-    targeting.eligibleTargetIds.includes(me.id);
-  const showConfirmBar = isMyDecision && isMainAction && (skillMode !== null || zhangbaMode || selectedCardIds.length > 0);
-  const mustDiscard = isDiscardTo ? Number((pending!.data as { mustDiscard?: number }).mustDiscard ?? 0) : 0;
-
-  const targetCountOk = selectedTargetIds.length >= targetRange.min && selectedTargetIds.length <= targetRange.max;
-  const cardCountOk = selectedOption
-    ? selectedCardIds.length >= selectedOption.minCards && selectedCardIds.length <= selectedOption.maxCards
-    : false;
-  const confirmOk = targetCountOk && cardCountOk && selectedOption?.available === true;
-
-  // Tapping a target respects the max: at the cap, a new tap replaces the
-  // oldest pick (so a single-target action always ends with exactly one).
-  const toggleTarget = (playerId: string) => {
-    const prev = selectedTargetIds;
-    const next = prev.includes(playerId)
-      ? prev.filter((id) => id !== playerId)
-      : prev.length < targetRange.max
-      ? [...prev, playerId]
-      : [...prev.slice(1), playerId]; // at cap → drop oldest, add new
-    dispatch({ type: "SELECT_TARGETS", ids: next });
-  };
-
-  const targetableFor = (p: PlayerView): boolean => {
-    if (!targetsActive || !targeting) return false;
-    if (selectedTargetIds.includes(p.id)) return true;
-    if (targeting.kind === "independent") return targeting.eligibleTargetIds.includes(p.id);
-    if (targeting.kind === "dependent") {
-      const first = selectedTargetIds[0];
-      return first
-        ? (targeting.secondTargetIdsByFirst[first] ?? []).includes(p.id)
-        : targeting.firstTargetIds.includes(p.id);
-    }
-    return false;
-  };
-  const onTapTarget = (pid: string) => {
-    if (targeting?.kind === "dependent") {
-      const prev = selectedTargetIds;
-      const next =
-        prev[0] === pid ? [] // re-tap the armed player → reset both steps
-        : prev[1] === pid ? [prev[0]!] // re-tap the victim → drop it
-        : prev.length === 0 ? [pid] // step 1: the armed player
-        : [prev[0]!, pid]; // step 2: the victim (replaces any prior victim)
-      dispatch({ type: "SELECT_TARGETS", ids: next });
-      return;
-    }
-    toggleTarget(pid);
-  };
-
-  const runAnswer = async (fields: Parameters<typeof answer>[0]) => {
-    setBusy(true);
-    try {
-      await answer(fields);
-    } finally {
-      // Always release — even if the ack somehow never comes, the UI must
-      // never lock up (this is the "second สังหาร froze the game" guard).
-      setBusy(false);
-    }
-  };
-  const resetSelection = () => dispatch({ type: "RESET" });
-
-  // Resolve a tap into an actual play, given the chosen effective type. `asType`
-  // is set only for conversion plays (Guan Yu red→สังหาร etc.).
-  const proceedPlay = (card: Card, opt: PlayCardOption) => {
-    if (!pending) return;
-    const asType = opt.asType ?? null;
-    if (!opt.available) {
-      const message = opt.unavailableReason === "no_legal_target"
-        ? "ตอนนี้ไม่มีเป้าหมายที่ถูกกติกา"
-        : opt.unavailableReason === "sha_usage_limit"
-          ? `ลง "${cardDisplay(opt.typeKey).name}" ได้ครั้งเดียวต่อเทิร์น`
-          : "ตอนนี้ยังใช้การ์ดนี้ไม่ได้";
-      showNotice(message);
-      return;
-    }
-    if (
-      opt.targeting.kind === "independent" &&
-      opt.targeting.implicitTargetId === me.id &&
-      opt.targeting.eligibleTargetIds.length === 1
-    ) {
-      void runAnswer({
-        decisionId: pending.id,
-        choice: "playCard",
-        cardIds: [card.id],
-        targetIds: [],
-        ...(asType ? { asType } : {}),
-      });
-      return;
-    }
-    if (opt.targeting.kind === "none" || opt.targeting.kind === "fixed") {
-      const meta = cardMeta(card.typeKey);
-      const replacing = !asType && meta.targetRule === "equipment" && meta.slot && !!me.equipment[meta.slot as EquipSlot];
-      if (!replacing) {
-        void runAnswer({
-          decisionId: pending.id,
-          choice: "playCard",
-          cardIds: [card.id],
-          targetIds: [],
-          ...(asType ? { asType } : {}),
-        });
-        return;
-      }
-    }
-    dispatch({ type: "SELECT_CARDS", ids: [card.id] });
-    dispatch({ type: "SET_AS_TYPE", asType });
-    const soleTarget = opt.targeting.kind === "independent" && opt.targeting.eligibleTargetIds.length === 1
-      ? opt.targeting.eligibleTargetIds
-      : [];
-    dispatch({ type: "SELECT_TARGETS", ids: soleTarget });
-  };
-
-  // Tap a hand card. Skill-mode / discard toggle multi-select; otherwise figure
-  // out the ways it can be played (its own type + any conversion) and either
-  // proceed directly or ask "play as?" when there's more than one.
-  const onTapCard = (card: Card) => {
-    if (!pending) return;
-    if (skillMode || isDiscardTo || zhangbaMode) {
-      // ENG-002: a discard can't select more than the required count.
-      const selectable = (pending.data as { selectableCardIds?: string[] }).selectableCardIds;
-      const prev = selectedCardIds;
-      if (prev.includes(card.id)) {
-        dispatch({ type: "SELECT_CARDS", ids: prev.filter((id) => id !== card.id) });
-        return;
-      }
-      if (skillMode && !selectedSkillOption?.selectableCardIds.includes(card.id)) return;
-      if (zhangbaMode && !selectedPlayOption?.selectableCardIds.includes(card.id)) return;
-      if (isDiscardTo && selectable && !selectable.includes(card.id)) return; // not discardable
-      if (isDiscardTo && mustDiscard > 0 && prev.length >= mustDiscard) return; // at the cap
-      dispatch({ type: "SELECT_CARDS", ids: [...prev, card.id] });
-      return;
-    }
-    if (!isMainAction) return;
-    if (selectedCardIds.includes(card.id)) {
-      resetSelection();
-      return;
-    }
-    const opts = playCardOptions.filter(
-      (option) => option.source !== "zhangba" && option.selectableCardIds.includes(card.id),
-    );
-    if (opts.length === 0) {
-      showNotice("การ์ดนี้ใช้ตอนถูกกระทำเท่านั้น");
-      return;
-    }
-    const availableOpts = opts.filter((option) => option.available);
-    if (availableOpts.length === 0) {
-      proceedPlay(card, opts[0]!);
-      return;
-    }
-    if (availableOpts.length === 1) {
-      proceedPlay(card, availableOpts[0]!);
-      return;
-    }
-    setPlayChoices({ card, options: availableOpts }); // "play as?" chooser
-  };
-
-  const getCardState = (c: Card): CardTapState => {
-    const inSelectMode = skillMode !== null || zhangbaMode;
-    const skillSelectable = selectedSkillOption?.selectableCardIds.includes(c.id) ?? false;
-    const zhangbaSelectable = selectedPlayOption?.selectableCardIds.includes(c.id) ?? false;
-    const hasPlayOption = playCardOptions.some(
-      (option) => option.source !== "zhangba" && option.selectableCardIds.includes(c.id),
-    );
-    const canSelect = skillMode ? skillSelectable : zhangbaMode ? zhangbaSelectable : hasPlayOption;
-    const tappable = selecting && (!isMainAction || canSelect);
-    const dimmed = isMainAction && (inSelectMode || playCardOptions.length > 0) && !canSelect;
-    return { tappable, dimmed };
-  };
-
-  const submitConfirm = () => {
-    if (!pending) return;
-    if (skillMode) {
-      void runAnswer({ decisionId: pending.id, choice: "useSkill", skillId: skillMode, cardIds: selectedCardIds, targetIds: selectedTargetIds });
-    } else {
-      // zhangbaMode also plays a card, just with 2 cardIds (engine's playZhangbaSha).
-      void runAnswer({ decisionId: pending.id, choice: "playCard", cardIds: selectedCardIds, targetIds: selectedTargetIds, ...(selectedAsType ? { asType: selectedAsType } : {}) });
-    }
-  };
-  const submitEndPhase = () => pending && void runAnswer({ decisionId: pending.id, choice: "endPhase" });
-  const submitDiscard = () => pending && void runAnswer({ decisionId: pending.id, cardIds: selectedCardIds });
-  const answerActivate = (accept: boolean) => {
-    if (!pending) return;
-    autoHandledRef.current = pending.id;
-    void runAnswer(accept ? { decisionId: pending.id } : { decisionId: pending.id, pass: true });
-  };
-
+  const mainAction = createMainActionController({
+    gameView, me, pending, isMyDecision, isMainAction, isDiscardTo, interaction, dispatch,
+    submit: runAnswer, notify: showNotice, requestPlayChoice: setPlayChoices,
+  });
+  const { activeSkill: activeSkillOptions } = mainAction.options;
+  const { selecting, showConfirmBar, confirmOk, confirmText, mustDiscard, selfTargetable } = mainAction.selection;
+  const onTapCard = mainAction.cards.tap;
+  const getCardState = mainAction.cards.stateFor;
+  const proceedPlay = mainAction.cards.proceedPlay;
+  const targetableFor = mainAction.targets.isTargetable;
+  const onTapTarget = mainAction.targets.tap;
+  const resetSelection = mainAction.commands.reset;
+  const submitConfirm = mainAction.commands.submitConfirm;
+  const submitEndPhase = mainAction.commands.submitEndPhase;
+  const submitDiscard = mainAction.commands.submitDiscard;
   const skills = generalSkills(me.generalId);
-  const waitingCopy = pending && !isMyDecision ? describeDecision(pending, gameView) : null;
-  const responderLabel =
-    pending && !isMyDecision && waitingCopy
-      ? `${gameView.players.find((p) => p.id === pending!.playerId)?.name ?? pending!.playerId}: ${waitingCopy.title}`
-      : null;
-
-  const chosenCardNames = selectedCardIds.map((id) => cardDisplay(myHand.find((c) => c.id === id)?.typeKey ?? "").name).filter(Boolean);
-  const chosenTargetNames = selectedTargetIds.map((id) => gameView.players.find((p) => p.id === id)?.name).filter(Boolean);
-  let confirmText: string;
-  if (skillMode) {
-    const sk = skills.find((s) => s.id === skillMode);
-    const hints: string[] = [];
-    if (selectedSkillOption && !cardCountOk) {
-      hints.push(selectedSkillOption.minCards === selectedSkillOption.maxCards ? `เลือกการ์ด ${selectedSkillOption.minCards} ใบ` : `เลือกการ์ด ${selectedSkillOption.minCards}+ ใบ`);
-    }
-    if (selectedSkillOption && selectedSkillOption.targeting.maxTargets > 0 && !targetCountOk) {
-      if (!skillCardsReady) hints.push("เลือกการ์ดทิ้งก่อน");
-      else hints.push(`เลือกเป้าหมาย ${targetRange.min}${targetRange.min !== targetRange.max ? `-${targetRange.max}` : ""} คน`);
-    }
-    confirmText =
-      `ใช้สกิล "${sk?.name ?? skillMode}"` +
-      (chosenCardNames.length ? ` · การ์ด: ${chosenCardNames.join(", ")}` : "") +
-      (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "") +
-      (hints.length ? ` — ${hints.join(", ")}` : "");
-  } else if (selectedPlayOption?.targeting.kind === "dependent") {
-    // step-aware hint: pick an armed player, then who they must attack
-    const step = selectedTargetIds.length === 0 ? "เลือกคนที่มีอาวุธ" : selectedTargetIds.length === 1 ? "เลือกเป้าที่คนนั้นตีถึง" : "พร้อมยืนยัน";
-    confirmText = `${cardDisplay("jiedao").name} — ${step}` + (chosenTargetNames.length ? ` (${chosenTargetNames.join(" → ")})` : "");
-  } else if (zhangbaMode) {
-    const step = selectedCardIds.length < 2 ? `เลือกการ์ด 2 ใบ (เลือกแล้ว ${selectedCardIds.length})` : !targetCountOk ? "เลือกเป้าในระยะ" : "พร้อมยืนยัน";
-    confirmText = `${cardDisplay("zhangba").name} (2 ใบ = ${cardDisplay("sha").name}) — ${step}` + (chosenTargetNames.length ? ` → ${chosenTargetNames.join(", ")}` : "");
-  } else {
-    const needMore = targetRange.max > 0 && !targetCountOk;
-    const needLabel = targetRange.min === targetRange.max ? `เลือกเป้าหมาย ${targetRange.min} คน` : `เลือกเป้าหมาย ${targetRange.min}-${targetRange.max} คน`;
-    confirmText = `ลง "${chosenCardNames.join(", ")}"` + (needMore ? ` — ${needLabel} (เลือกแล้ว ${selectedTargetIds.length})` : chosenTargetNames.length ? ` ใส่ ${chosenTargetNames.join(", ")}` : "");
-  }
+  const responderLabel = route.kind === "waiting" ? route.label : null;
 
   const selectingLabel = skillMode ? "เลือกการ์ดสำหรับสกิล" : zhangbaMode ? "เลือกการ์ด 2 ใบสำหรับทวน" : isDiscardTo ? "เลือกการ์ดที่จะทิ้ง" : "แตะการ์ดเพื่อเล่น";
   const phaseLabel = (gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase ?? "";
   const isMyTurn = gameView.currentTurnPlayerId === me.id;
   const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
-  const zhangbaOption = playCardOptions.find((option) => option.source === "zhangba");
-  const zhangbaAvailable = zhangbaOption?.available === true;
+  const zhangbaAvailable = mainAction.zhangba.available;
 
   const showDeathDialog = !me.alive && deathDialogDismissedFor !== gameView.matchId;
 
@@ -658,7 +332,7 @@ export function Table() {
             onInspectCard={(card, canChoose) => setInspectingCard({ card, canChoose })}
             selfTargetable={selfTargetable}
             selfTargetSelected={selectedTargetIds.includes(me.id)}
-            onToggleSelfTarget={() => toggleTarget(me.id)}
+            onToggleSelfTarget={mainAction.targets.toggleSelf}
             pendingActivateId={pendingActivateId}
             pendingActivateMode={pendingActivateMode}
             skillMode={skillMode}
@@ -673,15 +347,7 @@ export function Table() {
             isMainAction={isMainAction}
             zhangbaAvailable={!!zhangbaAvailable}
             zhangbaMode={zhangbaMode}
-            onToggleZhangba={() => {
-              if (zhangbaMode) { resetSelection(); return; }
-              if (!zhangbaOption?.available) {
-                showNotice(zhangbaOption?.unavailableReason === "insufficient_cards" ? "ต้องมีการ์ดอย่างน้อย 2 ใบ" : "ตอนนี้ยังใช้ทวนงูเลื้อยไม่ได้");
-                return;
-              }
-              resetSelection();
-              dispatch({ type: "SET_ZHANGBA_MODE", on: true });
-            }}
+            onToggleZhangba={mainAction.zhangba.toggle}
             onInspect={() => setInspecting(me)}
             equipSlots={equipSlotsWithCards}
             showHero={compact}
@@ -813,7 +479,7 @@ export function Table() {
           {notice}
         </div>
       )}
-      {showDecisionModal && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
+      {route.kind === "modal" && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
       {inspecting && (
         <InspectModal
           player={inspecting}
