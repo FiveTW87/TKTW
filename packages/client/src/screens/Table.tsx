@@ -2,15 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Card } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
-import { SelfDock, SfxControl } from "../components/board/SelfDock";
-import { RulesButton } from "../components/RulesModal";
+import { SelfDock } from "../components/board/SelfDock";
 import { GameHistoryPanel } from "../components/board/GameHistoryPanel";
-import { DecisionModal } from "../components/DecisionModal";
-import { InspectModal } from "../components/InspectModal";
-import { DeathDialog } from "../components/DeathDialog";
-import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
-import { SkillToast } from "../components/SkillToast";
-import { cardDisplay } from "../data/cardNames";
 import { generalSkills } from "../data/generalSkills";
 import type { EquipSlot } from "../data/cardMeta";
 import { attackDistance, weaponRange } from "../data/distance";
@@ -22,10 +15,9 @@ import { useDecisionController } from "../hooks/useDecisionController";
 import { createMainActionController } from "../hooks/mainActionController";
 import { useTableTransientUi } from "../hooks/useTableTransientUi";
 import { useTableSfx } from "../hooks/useTableSfx";
-import { HandCard } from "../components/HandCard";
-import { CombatEffectLayer } from "../components/board/CombatEffectLayer";
-import { CardInspectModal } from "../components/CardInspectModal";
 import { useCombatPresentation } from "../hooks/useCombatPresentation";
+import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../components/board/TableControls";
+import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from "../components/board/TableOverlays";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -35,28 +27,6 @@ const PHASE_LABEL: Record<string, string> = {
   discard: "เฟสทิ้งไพ่",
   end: "เฟสจบเทิร์น",
 };
-
-function LeaveGameConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <ModalOverlay onClose={onCancel}>
-      <ModalPanel width={380}>
-        <ModalGlyph>退</ModalGlyph>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>ออกจากเกมตอนนี้?</div>
-        <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 18 }}>
-          ตัวละครของคุณจะเสียชีวิตทันที และกลับเข้าเกมเดิมไม่ได้
-        </div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-          <button onClick={onConfirm} className="btn-danger" style={{ padding: "10px 22px", fontSize: 14 }}>
-            ยืนยัน
-          </button>
-          <button onClick={onCancel} className="btn-secondary" style={{ padding: "10px 22px", fontSize: 14 }}>
-            ยกเลิก
-          </button>
-        </div>
-      </ModalPanel>
-    </ModalOverlay>
-  );
-}
 
 const EQUIP_SLOTS: { slot: EquipSlot; label: string; glyph: string }[] = [
   { slot: "weapon", label: "อาวุธ", glyph: "兵" },
@@ -145,23 +115,11 @@ export function Table() {
   // frozen screen — surface a recovery panel (with the debug trace) instead.
   if (!pending && !gameView.finished) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-        <div className="panel-plain" style={{ width: 460, maxWidth: "100%", padding: 32, textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--red)" }}>เกมค้าง — ไม่มีตาให้เล่น</div>
-          <div style={{ marginTop: 8, color: "var(--ink-muted)", fontSize: 14 }}>
-            เซิร์ฟเวอร์ไม่ได้ส่งตาถัดไปมา ลองรีเฟรชหน้า หรือออกจากห้อง
-          </div>
-          <div style={{ marginTop: 16, textAlign: "left", background: "rgba(28,22,14,.92)", color: "#e8dcc0", borderRadius: 8, padding: "10px 12px", fontFamily: "monospace", fontSize: 11, maxHeight: 180, overflow: "auto" }}>
-            {[...debug].reverse().slice(0, 12).map((l, i) => (
-              <div key={i}>{l}</div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}>
-            <button onClick={() => window.location.reload()} className="btn-secondary" style={{ padding: "11px 22px", fontSize: 14 }}>รีเฟรช</button>
-            <button onClick={leaveRoom} className="btn-primary" style={{ padding: "11px 22px", fontSize: 14 }}>ออกจากห้อง</button>
-          </div>
-        </div>
-      </div>
+      <TableRecoveryPanel
+        debugLines={debug}
+        onReload={() => window.location.reload()}
+        onLeave={leaveRoom}
+      />
     );
   }
 
@@ -204,18 +162,110 @@ export function Table() {
   const equipSlotsWithCards = EQUIP_SLOTS.map((s) => ({ ...s, card: me.equipment[s.slot] }));
   const zhangbaAvailable = mainAction.zhangba.available;
 
+  const tableAction: TableActionViewModel = showConfirmBar
+    ? {
+        kind: "confirm",
+        caption: confirmText || "เลือกการ์ด/เป้าหมาย",
+        busy,
+        enabled: confirmOk,
+        onCancel: resetSelection,
+        onConfirm: submitConfirm,
+      }
+    : isMyDecision && isDiscardTo
+      ? {
+          kind: "discard",
+          selectedCount: selectedCardIds.length,
+          requiredCount: mustDiscard,
+          busy,
+          onSubmit: submitDiscard,
+        }
+      : isMyDecision && isMainAction
+        ? {
+            kind: "endPhase",
+            turnNumber: gameView.turnNumber,
+            busy,
+            onSubmit: submitEndPhase,
+          }
+        : { kind: "hidden" };
+
+  const overlayModel: TableOverlayViewModel = {
+    toast,
+    combatEffects,
+    generalPick: generalPickPending && generalPickWaitingName
+      ? { playerName: generalPickWaitingName, remainingSeconds: generalPickRemaining }
+      : null,
+    notice,
+    decision: route.kind === "modal" && pending
+      ? { pending, gameView, hand: myHand, onAnswer: runAnswer }
+      : null,
+    playerInspection: inspecting
+      ? {
+          player: inspecting,
+          onClose: transient.inspection.closePlayer,
+          onInspectCard: transient.inspection.openCard,
+        }
+      : null,
+    cardInspection: inspectingCard
+      ? {
+          card: inspectingCard.card,
+          onClose: transient.inspection.closeCard,
+          ...(inspectingCard.canChoose
+            ? {
+                onChoose: () => {
+                  const card = inspectingCard.card;
+                  transient.inspection.closeCard();
+                  onTapCard(card);
+                },
+              }
+            : {}),
+        }
+      : null,
+    death: showDeathDialog
+      ? {
+          role: me.role,
+          onSpectate: transient.death.dismiss,
+          onLeave: () => void leaveRoom(),
+        }
+      : null,
+    leaveConfirm: confirmingLeave
+      ? {
+          onConfirm: () => {
+            transient.leaveConfirm.close();
+            void leaveRoom();
+          },
+          onCancel: transient.leaveConfirm.close,
+        }
+      : null,
+    playChoice: playChoices
+      ? {
+          choice: playChoices,
+          viewerName: me.name,
+          onClose: transient.playChoice.close,
+          onChoose: (card, option) => {
+            transient.playChoice.close();
+            proceedPlay(card, option);
+          },
+        }
+      : null,
+    discard: showDiscard
+      ? {
+          cardsNewestFirst: [...gameView.discardPile].reverse(),
+          onInspect: transient.inspection.openCard,
+          onClose: transient.discard.close,
+        }
+      : null,
+    diagnostics: {
+      open: showDebug,
+      lines: debug,
+      error,
+      onToggle: () => setShowDebug((current) => !current),
+    },
+  };
+
   return (
     <div className="war-table-bg table-theme" style={{ position: "relative" }}>
       <div className="war-table-rays" />
-      <nav className="table-utility-rail" aria-label="เมนูโต๊ะเล่น">
-        <div title="วิธีเล่นและกติกา">
-          <RulesButton label="วิธีเล่น & กติกา" iconOnly style={{ width: 44, height: 44, padding: 0, fontSize: 17 }} />
-        </div>
-        <SfxControl compact iconOnly />
-        <button className="table-utility-leave" onClick={transient.leaveConfirm.open} aria-label="ออกจากเกม" title="ออกจากเกม">
-          退
-        </button>
-      </nav>
+      <TableUtilityRail onRequestLeave={transient.leaveConfirm.open} />
       {/* Board + history share ONE flex row (column when narrow) so history
           always owns its own reserved column and never floats over the board
           — previously a position:fixed sidebar could overlap GameBoard's own
@@ -291,267 +341,9 @@ export function Table() {
       />
       </div>
 
-      {/* Consolidated bottom-right action cluster — one place for every
-          confirm-style action instead of separate floating bars + a
-          separate always-on end-turn button. Priority: confirm (+ its own
-          cancel) > discard > end-turn > nothing. จบเทิร์น is deliberately
-          hidden (not merged) while a confirm/discard is pending — you must
-          resolve or cancel that first. */}
-      {(() => {
-        const showEndPhase = isMyDecision && isMainAction;
-        const discardPending = isMyDecision && isDiscardTo;
-        let caption: string;
-        if (showConfirmBar) caption = confirmText || "เลือกการ์ด/เป้าหมาย";
-        else if (discardPending) caption = `การ์ดเกินมือ — ทิ้ง ${selectedCardIds.length}/${mustDiscard} ใบ`;
-        else if (showEndPhase) caption = `เทิร์นที่ ${gameView.turnNumber}`;
-        else return null;
+      <TableActionCluster action={tableAction} />
 
-        return (
-          <div
-            className="table-action-cluster"
-            style={{
-              position: "fixed",
-              right: "calc(24px + env(safe-area-inset-right, 0px))",
-              bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
-              zIndex: 60,
-              textAlign: "center",
-            }}
-          >
-            <div
-              className="anim-rise"
-              style={{
-                marginBottom: 10,
-                maxWidth: 260,
-                fontSize: 12,
-                fontWeight: 600,
-                color: showConfirmBar || discardPending ? "var(--ink)" : "var(--ink-muted)",
-                background: "rgba(20,14,9,.9)",
-                border: "1px solid var(--panel-border-2)",
-                borderRadius: 10,
-                padding: "6px 12px",
-                lineHeight: 1.4,
-              }}
-            >
-              {caption}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center" }}>
-              {showConfirmBar && (
-                <button onClick={resetSelection} disabled={busy} className="btn-secondary table-action-cancel" style={{ width: 60, height: 60, borderRadius: "50%", fontSize: 11, fontWeight: 700 }}>
-                  ยกเลิก
-                </button>
-              )}
-              {showConfirmBar ? (
-                <button onClick={submitConfirm} disabled={busy || !confirmOk} className="btn-primary table-action-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
-                  ยืนยัน
-                </button>
-              ) : discardPending ? (
-                <button onClick={submitDiscard} disabled={busy || selectedCardIds.length !== mustDiscard} className="btn-primary table-action-primary" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 14, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
-                  ทิ้ง {selectedCardIds.length}/{mustDiscard}
-                </button>
-              ) : (
-                <button onClick={submitEndPhase} disabled={busy} className="btn-primary table-action-primary table-end-turn" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
-                  จบเทิร์น
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {toast && <SkillToast toast={toast} />}
-      <CombatEffectLayer effects={combatEffects} />
-      {generalPickPending && (
-        <div
-          className="anim-rise"
-          style={{
-            position: "fixed",
-            top: 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 60,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            background: "linear-gradient(#241a11,#160f09)",
-            border: "1px solid var(--panel-border-3)",
-            borderRadius: 10,
-            padding: "10px 18px",
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ink)",
-            boxShadow: "0 12px 34px rgba(0,0,0,.5)",
-            pointerEvents: "none",
-          }}
-        >
-          <span>รอ {generalPickWaitingName} เลือกนายพล...</span>
-          {generalPickRemaining !== null && (
-            <span style={{ fontSize: 12, fontWeight: 700, color: generalPickRemaining <= 5 ? "var(--target-red)" : "var(--ink-muted)" }}>
-              เหลือ {generalPickRemaining} วิ
-            </span>
-          )}
-        </div>
-      )}
-      {notice && (
-        <div
-          className="anim-rise"
-          style={{
-            position: "fixed",
-            top: 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 60,
-            background: "linear-gradient(#241a11,#160f09)",
-            border: "1px solid var(--panel-border-3)",
-            borderRadius: 10,
-            padding: "10px 18px",
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ink)",
-            boxShadow: "0 12px 34px rgba(0,0,0,.5)",
-            pointerEvents: "none",
-          }}
-        >
-          {notice}
-        </div>
-      )}
-      {route.kind === "modal" && pending && <DecisionModal pending={pending} gameView={gameView} myHand={myHand} onAnswer={runAnswer} />}
-      {inspecting && (
-        <InspectModal
-          player={inspecting}
-          onClose={transient.inspection.closePlayer}
-          onInspectCard={(card) => transient.inspection.openCard(card)}
-        />
-      )}
-      {inspectingCard && (
-        <CardInspectModal
-          card={inspectingCard.card}
-          onClose={transient.inspection.closeCard}
-          {...(inspectingCard.canChoose ? {
-            onChoose: () => {
-              const card = inspectingCard.card;
-              transient.inspection.closeCard();
-              onTapCard(card);
-            },
-          } : {})}
-        />
-      )}
-      {showDeathDialog && (
-        <DeathDialog
-          role={me.role}
-          onSpectate={transient.death.dismiss}
-          onLeave={() => void leaveRoom()}
-        />
-      )}
-      {confirmingLeave && (
-        <LeaveGameConfirmDialog
-          onConfirm={() => { transient.leaveConfirm.close(); void leaveRoom(); }}
-          onCancel={transient.leaveConfirm.close}
-        />
-      )}
-      {playChoices && (
-        <ModalOverlay onClose={transient.playChoice.close}>
-          <ModalPanel width={360}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
-              เล่น "{cardDisplay(playChoices.card.typeKey).name}" เป็น?
-            </div>
-            <div style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 16 }}>{me.name} · เลือกวิธีเล่นการ์ดใบนี้</div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-              {playChoices.options.map((opt) => (
-                <button
-                  key={opt.typeKey}
-                  className="btn-primary"
-                  style={{ padding: "10px 18px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}
-                  onClick={() => {
-                    const card = playChoices.card;
-                    transient.playChoice.close();
-                    proceedPlay(card, opt);
-                  }}
-                >
-                  <span style={{ fontFamily: "var(--font-glyph)" }}>{cardDisplay(opt.typeKey).glyph}</span>
-                  {cardDisplay(opt.typeKey).name}
-                  {opt.asType && <span style={{ fontSize: 10, opacity: 0.8 }}>(แปลง)</span>}
-                </button>
-              ))}
-            </div>
-            <button onClick={transient.playChoice.close} className="btn-secondary" style={{ marginTop: 16, padding: "8px 16px", fontSize: 13 }}>
-              ยกเลิก
-            </button>
-          </ModalPanel>
-        </ModalOverlay>
-      )}
-      {showDiscard && (
-        <ModalOverlay onClose={transient.discard.close}>
-          <ModalPanel width={560}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>กองทิ้ง · {gameView.discardPile.length} ใบ</span>
-              <button onClick={transient.discard.close} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }}>ปิด</button>
-            </div>
-            <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10, textAlign: "left" }}>ใหม่สุดอยู่บนซ้าย · เอาเมาส์ชี้เพื่อดูรายละเอียด</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-start", maxHeight: "60vh", overflowY: "auto", paddingTop: 40 }}>
-              {[...gameView.discardPile].reverse().map((c, i) => (
-                <HandCard key={`${c.id}-${i}`} card={c} selected={false} onInspect={() => transient.inspection.openCard(c)} />
-              ))}
-            </div>
-          </ModalPanel>
-        </ModalOverlay>
-      )}
-
-      {/* Diagnostic trace — toggle the 🐛 button to see every decision/answer/
-          error as it happens (for reporting freezes). */}
-      <button
-        onClick={() => setShowDebug((v) => !v)}
-        title="แสดง/ซ่อน debug log"
-        style={{
-          position: "fixed",
-          bottom: 16,
-          left: 16,
-          zIndex: 70,
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: showDebug ? "var(--red)" : "linear-gradient(#241a11,#160f09)",
-          border: "1px solid var(--panel-border-2)",
-          cursor: "pointer",
-          fontSize: 18,
-          boxShadow: "0 4px 12px rgba(0,0,0,.5)",
-        }}
-      >
-        🐛
-      </button>
-      {showDebug && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 64,
-            left: 16,
-            zIndex: 70,
-            width: 420,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "50vh",
-            overflow: "auto",
-            background: "rgba(28,22,14,.94)",
-            color: "#e8dcc0",
-            border: "1px solid var(--panel-border-2)",
-            borderRadius: 8,
-            padding: "10px 12px",
-            fontFamily: "monospace",
-            fontSize: 11.5,
-            lineHeight: 1.5,
-            boxShadow: "0 12px 34px rgba(0,0,0,.5)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <b style={{ color: "#f0d68a" }}>DEBUG LOG (ล่าสุดอยู่บน)</b>
-            <span style={{ fontSize: 10, opacity: 0.7 }}>{error ? `error: ${error}` : ""}</span>
-          </div>
-          {[...debug].reverse().map((line, i) => (
-            <div key={i} style={{ whiteSpace: "pre-wrap", color: line.includes("✗") ? "#ff9a8a" : line.includes("⨯") ? "#ffcf6a" : "#cfe0c0" }}>
-              {line}
-            </div>
-          ))}
-          {debug.length === 0 && <div style={{ opacity: 0.6 }}>(ยังไม่มี event)</div>}
-        </div>
-      )}
+      <TableOverlays model={overlayModel} />
     </div>
   );
 }
