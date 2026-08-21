@@ -1,12 +1,12 @@
 # Hardening Progress
 
 Last updated: 2026-08-21
-Current milestone: Phase 1 — TypeScript foundation
-Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-001` complete
+Current milestone: Phase 2 — Server-authoritative legal actions
+Overall status: `LEGAL-002` complete; card/converted plays are authoritative and target legality is next
 
 ## Next task
 
-- `LEGAL-002` — Card play and conversion legality
+- `LEGAL-003` — Targets, range, and multi-step legality
 - Owner: Codex
 - Status: `backlog`
 
@@ -16,6 +16,7 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 - `TS-001` — Root compiler and command foundation.
 - `TS-002` — Typed IDs and exhaustive decisions.
 - `LEGAL-001` — Legal-action discriminated union and strict schemas.
+- `LEGAL-002` — Literal/conversion card-play options, shared Sha quota, and stable unavailable reasons.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -30,16 +31,16 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 37 | 1,089 | Passed |
-| Server | 3 | 51 | Passed |
+| Engine | 38 | 1,101 | Passed |
+| Server | 3 | 52 | Passed |
 | Client | 19 | 162 | Passed |
-| Total | 59 | 1,302 | Passed |
+| Total | 60 | 1,315 | Passed |
 
 ## Next actions
 
-1. Push the `LEGAL-001` checkpoint.
-2. Review Claude's initial read-only audit if available.
-3. Start `LEGAL-002` by enumerating literal and converted card plays with stable unavailable reason codes.
+1. Push the pending `LEGAL-001` and `LEGAL-002` checkpoints after explicit payload confirmation.
+2. Start `LEGAL-003` by deriving eligible targets and target-count rules from engine authority.
+3. Review Claude's initial read-only audit if available.
 4. Keep client consumption deferred until `LEGAL-004`.
 
 ## Checkpoints
@@ -48,6 +49,7 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 - `TS-001`: `e75d6d3` (`TS-001-add-root-typecheck-gate`).
 - `TS-002`: `98410dc` (`TS-002-add-typed-protocol-seams`).
 - `LEGAL-001`: `950699e` (`LEGAL-001-add-action-union-schemas`).
+- `LEGAL-002`: `5404729` (`LEGAL-002-add-card-play-options`).
 
 ## Known workspace notes
 
@@ -57,5 +59,5 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 
 ## Blockers
 
-- None for `LEGAL-001`.
+- None for `LEGAL-003`.
 - GitHub CLI is not installed, so this checkpoint is pushed with normal Git rather than a CLI-created pull request.

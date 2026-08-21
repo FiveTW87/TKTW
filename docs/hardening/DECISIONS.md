@@ -71,3 +71,9 @@ Reason: This prevents accidental ID interchange where packages meet while avoidi
 Date: 2026-08-21
 Decision: `legalActions` is a viewer-owned discriminated union (`playCard`, `useSkill`, `response`, `draw`, `discard`, `endPhase`). The originating engine decision remains available separately as `decisionKind` only where a response needs context.
 Reason: Consumers should route by what the viewer can do, while the server keeps decision ownership and hidden-information gating authoritative.
+
+## DEC-013 — Capability discovery is separate from current legality
+
+Date: 2026-08-21
+Decision: Card-play options may report a conversion the player owns as currently unavailable with a stable reason, while command validation continues to evaluate the real turn/response context.
+Reason: A beginner-facing UI must distinguish “this ability exists but cannot be used now” from “this card has no such conversion,” without weakening server-authoritative rules such as Hua Tuo's outside-own-turn restriction.

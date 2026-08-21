@@ -1,23 +1,23 @@
 # Test and Verification Baseline
 
 Baseline date: 2026-08-21
-Commands executed through `LEGAL-001`: targeted Vitest, `pnpm typecheck`, `pnpm test`, `pnpm build:client`
+Commands executed through `LEGAL-002`: targeted Vitest, `pnpm typecheck`, `pnpm test`, `pnpm build:client`
 
 ## Typecheck and build result
 
 - `pnpm typecheck` checks engine, shared, server, and client with their existing TypeScript include lists.
 - All four packages pass `tsc --noEmit`.
-- The production client build passes with 197 modules transformed.
+- The production client build passes with 198 modules transformed.
 - Engine contract tests remain inside typechecking; no test or source directory was excluded to make the gate pass.
 
 ## Automated test result
 
 | Package | Test files | Tests | Status |
 |---|---:|---:|---|
-| `@tktw/engine` | 37 | 1,089 | Passed |
-| `@tktw/server` | 3 | 51 | Passed |
+| `@tktw/engine` | 38 | 1,101 | Passed |
+| `@tktw/server` | 3 | 52 | Passed |
 | `@tktw/client` | 19 | 162 | Passed |
-| Total | 59 | 1,302 | Passed |
+| Total | 60 | 1,315 | Passed |
 
 The engine baseline includes deterministic replay, atomicity/retry safety, 3–10-player identity games, 1,000-game fuzz suites, all card/equipment contracts, all registered generals, death/forfeit, hidden information, and physical-deck integrity.
 

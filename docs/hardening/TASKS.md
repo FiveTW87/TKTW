@@ -36,7 +36,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TS-001 | Compiler and command foundation | completed | Codex | 0.5d | DOC-001 |
 | TS-002 | Typed IDs and exhaustive decisions | completed | Codex | 1d | TS-001 |
 | LEGAL-001 | Legal-action union and schemas | completed | Codex | 1d | TS-002 |
-| LEGAL-002 | Card play and conversion legality | backlog | Codex | 1.5d | LEGAL-001 |
+| LEGAL-002 | Card play and conversion legality | completed | Codex | 1.5d | LEGAL-001 |
 | LEGAL-003 | Targets, range, and multi-step legality | backlog | Codex | 1.5d | LEGAL-002 |
 | LEGAL-004 | Skills, projection, and client migration | backlog | Codex | 2d | LEGAL-003 |
 | TABLE-001 | Decision and main-action controllers | backlog | Codex | 1d | LEGAL-004 |
@@ -312,7 +312,7 @@ Verification:
 
 ## LEGAL-002 — Card play and conversion legality
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1.5 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1.5 days | Risk: High
 
 ### Objective
 
@@ -335,6 +335,45 @@ Every advertised play is accepted by engine validation when submitted with a leg
 - Contract tests for all card categories and conversions.
 - Retry-safety and atomicity regression tests.
 - Engine fuzz, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `5404729` (`LEGAL-002-add-card-play-options`)
+Status: completed
+
+Changed:
+
+- Added server-authoritative literal, conversion, and Zhangba card-play options to the `playCard` legal-action variant.
+- Added stable unavailable reasons for response-only cards, exhausted Sha usage, wrong conversion timing, and insufficient substitute cards.
+- Centralized the Sha usage-limit query so legal-action projection and command validation use the same calculation for normal Sha, crossbow, and Zhang Fei.
+- Separated conversion capability discovery from real-time validation so Hua Tuo's red-as-Tao ability can be reported as unavailable during his own turn without making the play legal.
+- Passed real state into viewer-gated legal-action projection and extended the strict shared Zod schema.
+- Kept target enumeration and validation metadata deferred to `LEGAL-003`.
+
+Tests added or updated:
+
+- Added 12 engine contract cases covering literal basic/trick/equipment plays, response-only cards, accepted equipment and Guan Yu submissions, all conversion generals in scope, Sha limits, Zhangba, Fangtian, and Hua Tuo timing.
+- Added strict protocol coverage for available/unavailable option shapes and reason-code requirements.
+- Updated existing legal-action/schema fixtures for the required `options` array.
+
+Verification:
+
+- Targeted engine legal-action tests: 22 passed.
+- Targeted server protocol tests: 11 passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- `pnpm test`: 60 files and 1,315 tests passed (engine 1,101; server 52; client 162).
+- `pnpm build:client`: production build passed with 198 modules transformed.
+- `git diff --check`: passed.
+
+Known limitations:
+
+- Card target IDs/counts are intentionally not included yet; `LEGAL-003` adds them and verifies every advertised option against eligible targets.
+- Client consumption remains deferred to `LEGAL-004`; the server continues to revalidate every answer.
+
+Follow-up:
+
+- `LEGAL-003` — Targets, range, and multi-step legality.
 
 ---
 
