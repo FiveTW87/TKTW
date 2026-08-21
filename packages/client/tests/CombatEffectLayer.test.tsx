@@ -57,4 +57,22 @@ describe("CombatEffectLayer", () => {
     fireEvent.error(image!);
     expect(image?.hidden).toBe(true);
   });
+
+  it("labels the visible attack route with an unambiguous source and target", () => {
+    const effect: CombatEffect = {
+      id: "effect-route",
+      kind: "travel",
+      left: 120,
+      top: 80,
+      angleDeg: 20,
+      distance: 240,
+      sourceLabel: "โจโฉ",
+      targetLabel: "สุมาอี้",
+    };
+
+    render(<CombatEffectLayer effects={[effect]} />);
+
+    expect(document.body.querySelector(".combat-effect-travel")?.getAttribute("aria-label")).toBe("โจโฉ โจมตี สุมาอี้");
+    expect(document.body.querySelector(".combat-route-label")?.textContent).toBe("โจโฉ → สุมาอี้");
+  });
 });

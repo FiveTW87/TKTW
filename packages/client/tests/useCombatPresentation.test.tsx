@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCombatPresentation } from "../src/hooks/useCombatPresentation";
 
 const players = [
-  { id: "attacker", generalId: "caocao", faction: "wei" as const },
-  { id: "target", generalId: "caocao", faction: "wei" as const },
+  { id: "attacker", name: "โจโฉ", generalId: "caocao", faction: "wei" as const },
+  { id: "target", name: "สุมาอี้", generalId: "caocao", faction: "wei" as const },
 ];
 
 function anchor(playerId: string, left: number, top: number): HTMLElement {
@@ -71,6 +71,7 @@ describe("useCombatPresentation", () => {
 
     expect(result.current.map((effect) => effect.kind)).toEqual(["travel"]);
     expect(result.current[0]?.poseArt).toBe("/assets/generals/cao_cao_attack-v1.png");
+    expect(result.current[0]).toMatchObject({ sourceLabel: "โจโฉ", targetLabel: "สุมาอี้" });
 
     act(() => vi.advanceTimersByTime(240));
     expect(result.current.some((effect) => effect.kind === "hit" && effect.amount === 2)).toBe(true);
@@ -78,6 +79,37 @@ describe("useCombatPresentation", () => {
 
     act(() => vi.advanceTimersByTime(1800));
     expect(result.current).toEqual([]);
+  });
+
+  it("presents multi-target outcomes in received order without stacking body poses", () => {
+    const { result, rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] } },
+    );
+    const hits = [1, 2, 3].map((amount, index) => log({
+      id: `multi-${index + 1}`,
+      actorId: "target",
+      amount,
+      data: { sourceId: "attacker" },
+    }));
+
+    act(() => rerender({ logs: hits }));
+    expect(result.current.filter((effect) => effect.kind === "travel")).toHaveLength(1);
+
+    act(() => vi.advanceTimersByTime(240));
+    expect(result.current.filter((effect) => effect.kind === "hit").map((effect) => effect.kind === "hit" ? effect.amount : 0)).toEqual([1]);
+    expect(result.current.filter((effect) => effect.kind === "travel")).toHaveLength(1);
+    expect(new Set(result.current.filter((effect) => effect.poseArt).map((effect) => effect.posePlayerId)).size).toBe(
+      result.current.filter((effect) => effect.poseArt).length,
+    );
+
+    act(() => vi.advanceTimersByTime(70));
+    expect(result.current.filter((effect) => effect.kind === "travel")).toHaveLength(2);
+    expect(result.current.filter((effect) => effect.posePlayerId === "attacker" && effect.poseArt)).toHaveLength(1);
+
+    act(() => vi.advanceTimersByTime(610));
+    expect(result.current.filter((effect) => effect.kind === "hit").map((effect) => effect.kind === "hit" ? effect.amount : 0)).toEqual([1, 2, 3]);
+    expect(result.current.filter((effect) => effect.posePlayerId === "target" && effect.poseArt)).toHaveLength(1);
   });
 
   it("clamps a desktop opponent pose into the visible battle area", () => {
@@ -148,6 +180,59 @@ describe("useCombatPresentation", () => {
     expect(result.current.find((effect) => effect.kind === "skill")?.poseArt).toBe("/assets/generals/cao_cao_skill-v1.png");
   });
 
+  it("plays combat sound when the visible outcome lands, not when the snapshot arrives", () => {
+    const play = vi.fn();
+    const { rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({
+        connected: true,
+        matchId: "match-1",
+        logs,
+        players,
+        play,
+      }),
+      { initialProps: { logs: [] } },
+    );
+
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 2, data: { sourceId: "attacker" } })] }));
+    expect(play).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(220));
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledWith("damage");
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 2, data: { sourceId: "attacker" } })] }));
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps skill, damage, and death phases ordered with their matching sounds", () => {
+    const play = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({
+        connected: true,
+        matchId: "match-1",
+        logs,
+        players,
+        play,
+      }),
+      { initialProps: { logs: [] } },
+    );
+    const sequence = [
+      log({ id: "sequence-skill", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" }),
+      log({ id: "sequence-damage", actorId: "target", amount: 2, data: { sourceId: "attacker" } }),
+      log({ id: "sequence-death", eventType: "death", actorId: "target" }),
+    ];
+
+    act(() => rerender({ logs: sequence }));
+    expect(result.current.map((effect) => effect.kind)).toEqual(["skill"]);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse"]);
+
+    act(() => vi.advanceTimersByTime(540));
+    expect(result.current.some((effect) => effect.kind === "hit")).toBe(true);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "damage"]);
+
+    act(() => vi.advanceTimersByTime(90));
+    expect(result.current.some((effect) => effect.kind === "death")).toBe(true);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "damage", "death"]);
+  });
+
   it("keeps full-body poses inside a short mobile landscape viewport while impact stays on the seat", () => {
     const originalWidth = window.innerWidth;
     const originalHeight = window.innerHeight;
@@ -194,6 +279,28 @@ describe("useCombatPresentation", () => {
     expect(result.current.find((effect) => effect.id === "match-1:skill-2:skill")?.poseArt).toBe(
       "/assets/generals/cao_cao_skill-v1.png",
     );
+  });
+
+  it("bounds active combat nodes during a long burst without changing received order", () => {
+    const { result, rerender } = renderHook(
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] } },
+    );
+    const burst = Array.from({ length: 12 }, (_, index) => log({
+      id: `burst-${index}`,
+      actorId: "target",
+      amount: index + 1,
+      data: { sourceId: "attacker" },
+    }));
+
+    act(() => rerender({ logs: burst }));
+    act(() => vi.advanceTimersByTime(1860));
+
+    expect(result.current.length).toBeLessThanOrEqual(10);
+    const visibleHits = result.current
+      .filter((effect) => effect.kind === "hit")
+      .map((effect) => effect.kind === "hit" ? effect.amount : 0);
+    expect(visibleHits).toEqual([...visibleHits].sort((a, b) => (a ?? 0) - (b ?? 0)));
   });
 
   it("does not let follow-up attack travel immediately replace an active skill pose", () => {

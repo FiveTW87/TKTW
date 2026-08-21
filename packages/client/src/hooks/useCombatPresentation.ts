@@ -3,6 +3,7 @@ import type { GameLogView, PlayerView } from "@tktw/shared";
 import { skillById } from "../data/generalSkills";
 import { generalPosePresentation, type GeneralPose } from "../data/generalArt";
 import type { PresentationEvent } from "../presentation/presentationEvents";
+import { playSfx, type SfxName } from "../lib/sfx";
 import { usePresentationQueue } from "./usePresentationQueue";
 
 interface BaseEffect {
@@ -10,6 +11,8 @@ interface BaseEffect {
   left: number;
   top: number;
   angleDeg: number;
+  sourceLabel?: string | undefined;
+  targetLabel?: string | undefined;
   poseArt?: string | undefined;
   poseFallbackArt?: string | undefined;
   posePlayerId?: string | undefined;
@@ -60,6 +63,17 @@ function posePriority(effect: CombatEffect): number {
   return POSE_PRIORITY[effect.kind] ?? 0;
 }
 
+function outcomeSfx(effect: CombatEffect): SfxName | undefined {
+  switch (effect.kind) {
+    case "hit": return "damage";
+    case "dodge": return "dodge";
+    case "heal": return "heal";
+    case "skill": return "skillUse";
+    case "death": return "death";
+    case "travel": return undefined;
+  }
+}
+
 function anchorCenter(playerId: string): { x: number; y: number } | null {
   const nodes = document.querySelectorAll<HTMLElement>("[data-player-anchor]");
   for (const element of nodes) {
@@ -90,23 +104,28 @@ function posePosition(anchor: { x: number; y: number }): { poseLeft: number; pos
   };
 }
 
-type CombatPlayer = Pick<PlayerView, "id" | "generalId" | "faction">;
+type CombatPlayer = Pick<PlayerView, "id" | "name" | "generalId" | "faction">;
 
 export interface CombatPresentationOptions {
   connected: boolean;
   matchId: string | undefined;
   logs: readonly GameLogView[] | undefined;
   players?: readonly CombatPlayer[] | undefined;
+  play?: (name: SfxName) => void;
 }
 
 const ANCHOR_RETRY_INTERVAL_MS = 50;
 const ANCHOR_RETRY_COUNT = 4;
+const COMBAT_EVENT_INTERVAL_MS = 310;
+const REDUCED_COMBAT_EVENT_INTERVAL_MS = 90;
+const MAX_ACTIVE_COMBAT_EFFECTS = 10;
 
 export function useCombatPresentation({
   connected,
   matchId,
   logs,
   players,
+  play = playSfx,
 }: CombatPresentationOptions): CombatEffect[] {
   const [effects, setEffects] = useState<CombatEffect[]>([]);
   const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
@@ -146,6 +165,7 @@ export function useCombatPresentation({
   const present = useCallback((event: PresentationEvent) => {
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const playerById = new Map((players ?? []).map((player) => [player.id, player]));
+    const playerLabel = (playerId: string | undefined) => playerId ? playerById.get(playerId)?.name ?? playerId : undefined;
     const posePresentation = (playerId: string, pose: GeneralPose, anchor: { x: number; y: number }) => {
       const player = playerById.get(playerId);
       if (!player) return {};
@@ -185,8 +205,16 @@ export function useCombatPresentation({
                 : item
             )),
             nextEffect,
-          ];
+          ].slice(-MAX_ACTIVE_COMBAT_EFFECTS);
         });
+        const sound = outcomeSfx(effect);
+        if (sound) {
+          try {
+            play(sound);
+          } catch {
+            // Optional audio cannot own presentation or gameplay control flow.
+          }
+        }
         const removeTimer = setTimeout(() => {
           timers.current.delete(removeTimer);
           if (mounted.current) setEffects((current) => current.filter((item) => item.id !== effect.id));
@@ -225,7 +253,7 @@ export function useCombatPresentation({
       if (!target) return;
 
       if (event.kind === "death") {
-        schedule({ id: event.id, kind: "death", left: target.x, top: target.y, angleDeg: 0 }, 0, reducedMotion ? 360 : 1250);
+        schedule({ id: event.id, kind: "death", left: target.x, top: target.y, angleDeg: 0, targetLabel: playerLabel(event.targetId) }, 0, reducedMotion ? 360 : 1250);
         return;
       }
       if (event.kind === "skill") {
@@ -235,6 +263,8 @@ export function useCombatPresentation({
           left: target.x,
           top: target.y,
           angleDeg: 0,
+          sourceLabel: playerLabel(event.actorId),
+          targetLabel: playerLabel(event.actorId),
           ...posePresentation(event.actorId, "skill", target),
           label: event.skillId ? skillById(event.skillId)?.name ?? event.skillId : "ใช้สกิล",
         }, 0, reducedMotion ? 360 : 920);
@@ -247,6 +277,8 @@ export function useCombatPresentation({
           left: target.x,
           top: target.y,
           angleDeg: 0,
+          sourceLabel: playerLabel(event.sourceId),
+          targetLabel: playerLabel(event.targetId),
           amount: event.amount,
         }, 0, reducedMotion ? 360 : 900);
         return;
@@ -260,6 +292,8 @@ export function useCombatPresentation({
           left: source.x,
           top: source.y,
           angleDeg,
+          sourceLabel: playerLabel(sourceId),
+          targetLabel: playerLabel(targetPlayerId),
           distance: Math.hypot(target.x - source.x, target.y - source.y),
           ...posePresentation(sourceId, "attack", source),
         }, 0, 1450);
@@ -271,6 +305,8 @@ export function useCombatPresentation({
           left: target.x,
           top: target.y,
           angleDeg,
+          sourceLabel: playerLabel(event.sourceId),
+          targetLabel: playerLabel(event.targetId),
           amount: event.amount,
           ...posePresentation(event.targetId, "hit", target),
         }, source && !reducedMotion ? 220 : 0, reducedMotion ? 520 : 1650);
@@ -281,12 +317,14 @@ export function useCombatPresentation({
           left: target.x,
           top: target.y,
           angleDeg,
+          sourceLabel: playerLabel(event.sourceId),
+          targetLabel: playerLabel(event.targetId),
         }, source && !reducedMotion ? 220 : 0, reducedMotion ? 360 : 680);
       }
     };
 
     tryPresent(ANCHOR_RETRY_COUNT);
-  }, [players]);
+  }, [play, players]);
 
   usePresentationQueue({
     connected,
@@ -294,6 +332,9 @@ export function useCombatPresentation({
     logs,
     present,
     onReset: clearPresentation,
+    intervalMs: (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false)
+      ? REDUCED_COMBAT_EVENT_INTERVAL_MS
+      : COMBAT_EVENT_INTERVAL_MS,
   });
 
   return effects;

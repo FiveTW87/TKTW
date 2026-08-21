@@ -25,7 +25,7 @@ function view({
 }
 
 describe("useTableSfx", () => {
-  it("keeps a rich initial snapshot silent, then maps each new event once and in order", () => {
+  it("keeps a rich initial snapshot silent and leaves combat sounds to the visible combat timeline", () => {
     const play = vi.fn();
     const initial = view({ logs: [{ id: "l0", eventType: "damage", actorId: "p2" }] });
     const { rerender } = renderHook(
@@ -47,7 +47,7 @@ describe("useTableSfx", () => {
         { id: "l6", eventType: "death", actorId: "p2" },
       ],
     }) });
-    expect(play.mock.calls.map(([name]) => name)).toEqual(["cardPlay", "skillUse", "draw", "damage", "dodge", "heal", "death", "turnStart"]);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["cardPlay", "draw", "turnStart"]);
   });
 
   it("ignores another player's draw and silently re-primes on log rollback or match change", () => {
@@ -77,6 +77,6 @@ describe("useTableSfx", () => {
     rerender({ connected: true, gameView: fresh });
     expect(play).not.toHaveBeenCalled();
     rerender({ connected: true, gameView: view({ logs: [...fresh.gameLogs, { id: "l2", eventType: "heal" }] }) });
-    expect(play).toHaveBeenCalledWith("heal");
+    expect(play).not.toHaveBeenCalled();
   });
 });

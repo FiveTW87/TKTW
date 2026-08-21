@@ -68,12 +68,10 @@ export function useTableSfx({
     if (discardTopId && discardTopId !== previous.discardTopId) play("cardPlay");
 
     for (const entry of gameView.gameLogs.slice(previous.logCount)) {
-      if (entry.eventType === "skillUse") play("skillUse");
-      else if (entry.eventType === "draw" && entry.actorId === viewerPlayerId) play("draw");
-      else if (entry.eventType === "damage" || entry.eventType === "hpLoss") play("damage");
-      else if (entry.eventType === "dodge") play("dodge");
-      else if (entry.eventType === "heal") play("heal");
-      else if (entry.eventType === "death") play("death");
+      // Combat/skill outcome sounds are owned by useCombatPresentation so
+      // they land with the visible phase instead of bursting on snapshot
+      // arrival. Table SFX retains snapshot-only draw/discard/turn cues.
+      if (entry.eventType === "draw" && entry.actorId === viewerPlayerId) play("draw");
     }
 
     const turnPlayerId = gameView.currentTurnPlayerId ?? null;

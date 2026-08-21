@@ -47,7 +47,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | PRES-002 | Anchor retry, reconnect, and reduced motion | completed | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | completed | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | completed | Codex | 2d | PRES-002 |
-| FX-002 | Combat and skill sequences | backlog | Codex | 2.5d | FX-001, SFX-001 |
+| FX-002 | Combat and skill sequences | completed | Codex | 2.5d | FX-001, SFX-001 |
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | backlog | Codex | 2d | FX-002 |
 | ROOM-001 | Typed room settings and presets | backlog | Codex | 1.5d | LEGAL-001 |
 | ROOM-002 | Create/lobby UI and lifecycle preservation | backlog | Codex | 1.5d | ROOM-001 |
@@ -1250,11 +1250,59 @@ Add draw, play, discard, steal, equip/loss, delayed-trick, and Wugu movement usi
 
 ## FX-002 — Combat and skill sequences
 
-Status: backlog | Owner: Codex | Reviewer: Claude rules audit | Estimate: 2.5 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude rules audit | Branch: main | Dependencies: FX-001, SFX-001 | Estimate: 2.5 days | Risk: High
 
 ### Objective
 
 Present attack, response, hit, dodge, heal, skill, death, and multi-target actions as readable timelines.
+
+### Current behavior
+
+- Structured combat events already map to attack travel, hit, dodge, heal, skill, and death cues with approved general pose art and bounded anchor retry.
+- The shared presentation queue dispatches every semantic event at a generic 90ms cadence. A Fangtian or other burst can start several attack poses before prior hits land.
+- Pose priority suppresses some duplicate art, but sequence pacing, active-effect bounds, source/target labels, and sound timing are not one explicit contract.
+- Reduced motion preserves outcomes, reconnect/rebuild snapshots are silent, and missing art/anchors already fail harmlessly.
+
+### Expected behavior
+
+- One combat timeline policy converts semantic events into bounded ordered phases: skill/attack, response, outcome, and death.
+- Multi-target actions preserve received log order while completing quickly enough for live play; only one body pose per player is visible at a time.
+- Directional cues and accessible labels make source/target unambiguous on desktop and compact layouts.
+- Combat sounds fire with their visible phase rather than as an unrelated snapshot burst.
+- Reduced motion removes travel while keeping ordered hit/dodge/heal/skill/death meaning and a shorter bounded cadence.
+
+### In scope / allowed files
+
+- Client combat presentation hook/layer, a narrow typed timeline policy if it earns depth, typed presentation/SFX adapters, Table wiring, focused CSS, and their tests.
+- Narrow structured-log metadata only if a sequence cannot be identified from existing public fields.
+- Hardening task/progress/decision documentation.
+
+### Out of scope / forbidden files
+
+- Gameplay order, damage/rule calculations, legal actions, server timing, decisions, socket/store lifecycle, room settings, new artwork/audio assets, judgment/Wuxie/turn/timer work reserved for FX-003, and `packages/client/src/App.tsx`.
+- Awaiting animation/audio before game actions, replaying historical logs, revealing private hands/roles, or an unbounded universal animation timeline.
+- Redesigning Table seats/controls, changing approved general art, or merging card motion and combat into one shallow event renderer.
+
+### Type or protocol changes
+
+- Prefer client-only discriminated timeline phases derived from existing `PresentationEvent`; no answer/action wire change.
+- Existing `GameLogView` fields remain authoritative and received array order remains the ordering source.
+- Public combat effect models may gain source/target labels and sequence metadata; malformed/unsupported events remain no-op.
+
+### Implementation steps
+
+1. Red→Green: multi-target damage order, bounded cadence, and one-pose invariant.
+2. Red→Green: attack→dodge, skill→outcome, heal, death, and accessible source/target presentation.
+3. Red→Green: phase-aligned sound routing without duplicate/replayed SFX.
+4. Red→Green: reduced-motion cadence, missing art/anchor fallback, reset/reconnect, overlap cap, and cleanup.
+5. Refactor only after Green, then run focused/full verification and changed-state visual QA.
+
+### Edge cases
+
+- Multiple appended logs in one snapshot, Fangtian three targets, repeated target, skill immediately followed by damage, and death following the final hit.
+- Source/target anchor missing or duplicated on mobile; image failure; player list changing while phases remain active.
+- Disconnect, first fresh snapshot, match change, rollback, StrictMode replay, unmount with pending phases, and SFX failure.
+- Reduced motion must retain order and meaning without viewport travel; presentation must never delay gameplay/networking.
 
 ### Acceptance criteria
 
@@ -1265,6 +1313,17 @@ Present attack, response, hit, dodge, heal, skill, death, and multi-target actio
 ### Tests and verification
 
 - Sequence/priority/multi-target tests, missing artwork fallback, mobile placement, reduced motion, and current combat regressions.
+- Full client/engine/server suites, root typecheck, production build, diff check, and desktop/mobile changed-state screenshots when browser runtime is available.
+
+### Completion report
+
+- Reused the deep combat presentation hook as the timeline owner and added a regular 310ms / reduced-motion 90ms semantic-event cadence.
+- Multi-target events retain received order, active combat nodes are capped at 10, and pose arbitration guarantees at most one visible pose per player while preserving attacker/target poses.
+- Added visible and accessible source→target route labels with mobile-safe truncation and existing first-usable-anchor/fallback behavior.
+- Moved combat/skill SFX ownership from snapshot arrival to visible outcome phases, eliminating duplicate burst audio while preserving draw/discard/turn snapshot cues.
+- Added sequence, burst, phase-aligned sound, route-label, skill→damage→death, and duplicate-sound regressions; retained missing-art, mobile-placement, reconnect, reduced-motion, and Table coverage.
+- Verified Client 29/232, Engine 40/1,114, Server 3/58, root typecheck, production build (208 modules), and git diff --check.
+- Browser screenshot capture remains unavailable because the in-app browser plugin rejects its own service before local-page connection; responsive Table and component DOM/CSS tests passed and no screenshot was fabricated.
 
 ---
 

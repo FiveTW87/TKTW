@@ -131,3 +131,9 @@ Reason: Raw oscillator calls multiplied resources during event bursts and could 
 Date: 2026-08-21
 Decision: Card/equipment movement is derived from structured public logs and typed semantic source/destination zones. One client controller owns queue consumption, bounded anchor retry, reduced-motion fallback, overlap, and cleanup; one portal layer owns optional artwork. Hidden hand movement remains anonymous even when the acting engine knows the physical card.
 Reason: Snapshot guesses cannot explain remote movement reliably and can leak private identities. Semantic zones let desktop and compact layouts share one non-blocking lifecycle while keeping DOM geometry, card art, and privacy out of gameplay rules.
+
+## DEC-023 — Visible combat phases own outcome sound
+
+Date: 2026-08-21
+Decision: Combat and skill events use one bounded client timeline with a deliberate cadence, per-player pose arbitration, and a maximum active-effect count. Damage, dodge, heal, skill, and death sounds fire when their visible outcome phase appears; the snapshot SFX owner retains only draw/discard/turn cues.
+Reason: Playing all appended log sounds immediately made multi-target actions noisy and visually disconnected. Keeping outcome sound beside the visual scheduler preserves received order, prevents duplicate audio, and still cannot delay gameplay because both adapters are best-effort.

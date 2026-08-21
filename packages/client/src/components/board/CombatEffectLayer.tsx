@@ -2,6 +2,19 @@ import { Fragment, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CombatEffect } from "../../hooks/useCombatPresentation";
 
+function effectLabel(effect: CombatEffect): string {
+  const source = effect.sourceLabel ?? "ผู้โจมตี";
+  const target = effect.targetLabel ?? "เป้าหมาย";
+  switch (effect.kind) {
+    case "travel": return `${source} โจมตี ${target}`;
+    case "hit": return `${target} ได้รับความเสียหาย${effect.amount === undefined ? "" : ` ${effect.amount}`}`;
+    case "dodge": return `${target} หลบการโจมตีจาก ${source}`;
+    case "heal": return `${target} ฟื้นพลังชีวิต ${effect.amount ?? 1}`;
+    case "skill": return `${source} ใช้สกิล ${effect.label}`;
+    case "death": return `${target} พ่ายแพ้`;
+  }
+}
+
 // A brief impact (red flash + gold slash streak + floating "-N" number, TFT-
 // style) or dodge (a small "หลบ!" pop) at a player's on-screen position.
 // Portaled to document.body with position:fixed so it renders above every
@@ -40,19 +53,25 @@ export function CombatEffectLayer({ effects }: { effects: CombatEffect[] }) {
           )}
           <div
             className={`combat-effect-node combat-effect-${e.kind}`}
+            aria-label={effectLabel(e)}
             style={{
               position: "fixed",
               left: e.left,
               top: e.top,
               zIndex: 150,
               pointerEvents: "none",
-              ...(e.kind === "travel" ? { width: e.distance, "--travel-angle": `${e.angleDeg}deg` } : {}),
+              ...(e.kind === "travel" ? {
+                width: e.distance,
+                "--travel-angle": `${e.angleDeg}deg`,
+                "--route-counter-angle": `${-e.angleDeg}deg`,
+              } : {}),
             } as CSSProperties}
           >
           {e.kind === "travel" ? (
             <>
               <div className="combat-source-pulse" />
               <div className="combat-travel-token">殺</div>
+              {e.sourceLabel && e.targetLabel && <div className="combat-route-label">{e.sourceLabel} → {e.targetLabel}</div>}
             </>
           ) : e.kind === "hit" ? (
             <>
