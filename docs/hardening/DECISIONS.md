@@ -89,3 +89,9 @@ Reason: A single flat target list cannot represent ordered dependent choices saf
 Date: 2026-08-21
 Decision: Every player-initiated active skill declares its card-count and target-rule metadata beside the engine handler. The engine derives owner-only availability and validates the same contract atomically before the handler runs; clients only render the projected options.
 Reason: A separate client skill-spec table duplicated usage limits and eligibility rules, could drift from handlers, and allowed invalid no-op submissions such as empty Zhiheng selections.
+
+## DEC-016 — Table orchestration uses two deep controller modules
+
+Date: 2026-08-21
+Decision: Decision ownership/automatic-answer routing lives in `useDecisionController`, while authoritative card/skill/target interpretation lives in `mainActionController`. `Table.tsx` composes their typed interfaces and retains presentation state until the later Table tasks.
+Reason: These two modules keep decision policy and target-contract interpretation local and independently testable. Splitting the same logic into many small pass-through helpers would increase interfaces without reducing the amount of gameplay orchestration a caller must understand.

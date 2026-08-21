@@ -39,7 +39,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | LEGAL-002 | Card play and conversion legality | completed | Codex | 1.5d | LEGAL-001 |
 | LEGAL-003 | Targets, range, and multi-step legality | completed | Codex | 1.5d | LEGAL-002 |
 | LEGAL-004 | Skills, projection, and client migration | completed | Codex | 2d | LEGAL-003 |
-| TABLE-001 | Decision and main-action controllers | backlog | Codex | 1d | LEGAL-004 |
+| TABLE-001 | Decision and main-action controllers | completed | Codex | 1d | LEGAL-004 |
 | TABLE-002 | Selection, dialogs, and sound controllers | backlog | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | backlog | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | backlog | Codex | 1.5d | TS-002 |
@@ -515,7 +515,7 @@ Follow-up:
 
 ## TABLE-001 — Decision and main-action controllers
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
 
 ### Objective
 
@@ -532,6 +532,46 @@ Extract decision routing and main-action orchestration from `Table.tsx` into typ
 - Hook tests for every decision route.
 - Existing Table, double-click, reactive, and stuck-state tests.
 - Client typecheck/build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `04af1ae` (`TABLE-001-extract-table-controllers`)
+Status: completed
+
+Changed:
+
+- Added a typed decision controller that owns owner/waiting routing, automatic answers, inline/modal/pile presentation routes, skill toast timing, and busy release.
+- Added a deep main-action controller that interprets authoritative card/skill options and all target-contract variants, including Jiedao order, Tao implicit self, conversion payloads, Zhangba, selection caps, and unavailable reasons.
+- Reduced `Table.tsx` to controller composition for those responsibilities without changing responsive JSX, dialogs, combat effects, or sound routing.
+- Exported the interaction action union so the main-action controller has a compiler-checked dispatch interface.
+
+Tests added or updated:
+
+- Added 4 decision-controller tests for exact-once auto-pass, modal/inline routing, and busy release after rejection.
+- Added 4 main-action-controller tests for authoritative target eligibility, dependent target order, implicit-self Tao, and unavailable actions.
+- Existing 67 Table regressions all remain green, including double-submit, reactive answers, Jiedao/Lijian/Zhangba, equipment replacement, conversion, auto skills, mobile, and stuck-state coverage.
+
+Verification:
+
+- Client: 21 files, 172 tests passed.
+- Engine: 40 files, 1,114 tests passed.
+- Server: 3 files, 58 tests passed.
+- Total: 64 files, 1,344 tests passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- Production client build: passed with 200 modules transformed.
+- Test catalog: 256 pass, 0 fail, 0 waived, 0 pending.
+- `git diff --check`: passed for the task files.
+
+Known limitations:
+
+- Dialog/notice state and snapshot-diff sound routing intentionally remain in `Table.tsx` for `TABLE-002`.
+- Presentational JSX extraction remains deferred to `TABLE-003`.
+- The client continues to use server `legalActions` as gameplay authority; cosmetic distance display remains presentation-only.
+
+Follow-up:
+
+- `TABLE-002` — Selection, dialogs, and sound controllers.
 
 ---
 

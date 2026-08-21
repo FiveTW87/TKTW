@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `LEGAL-004` complete; next task is `TABLE-001`
+Current task: `TABLE-001` complete; next task is `TABLE-002`
 
 ## Objective
 
@@ -24,8 +24,9 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Card-play legality checkpoint: `5404729` (`LEGAL-002-add-card-play-options`).
 - Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - Active-skill/client-migration checkpoint: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
+- Table-controller checkpoint: `04af1ae` (`TABLE-001-extract-table-controllers`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,114; server 58; client 164; total 1,336.
+- Automated tests passed: engine 1,114; server 58; client 172; total 1,344.
 - Production client build passed on 2026-08-21.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -36,17 +37,17 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after LEGAL-004
+## Immediate next task after TABLE-001
 
-`TABLE-001` — decision and main-action controllers.
+`TABLE-002` — selection, dialogs, and sound controllers.
 
 Before implementing:
 
-1. Extract decision routing and auto-answer behavior into a typed controller hook without changing UX.
-2. Extract main-action option/selection orchestration while continuing to consume `legalActions`.
-3. Preserve decision-key resets, double-submit protection, Thai copy, and responsive layouts.
-4. Keep cosmetic distance display presentation-only.
-5. Run targeted hook/Table tests, all package suites, typecheck, and production build.
+1. Move remaining selection lifecycle orchestration into a focused hook without duplicating engine legality.
+2. Move notice/dialog state into a controller while preserving decision-key and animation-state lifetimes.
+3. Give snapshot-diff sound routing one owner and keep reconnect snapshots silent.
+4. Preserve Thai copy, responsive DOM anchors, double-submit protection, and presentation-only distance display.
+5. Run targeted reducer/hook, Jiedao/Lijian/Zhangba, modal/SFX, full package, typecheck, and production build gates.
 
 ## Claude coordination
 

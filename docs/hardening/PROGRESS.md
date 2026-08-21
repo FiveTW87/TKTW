@@ -1,12 +1,12 @@
 # Hardening Progress
 
 Last updated: 2026-08-21
-Current milestone: Phase 2 — Server-authoritative legal actions
-Overall status: `LEGAL-004` complete; main-action card, target, and active-skill affordances now consume authoritative legal actions
+Current milestone: Phase 3 — Table composition hardening
+Overall status: `TABLE-001` complete; decision routing and authoritative main-action orchestration now live in typed controller modules
 
 ## Next task
 
-- `TABLE-001` — Decision and main-action controllers
+- `TABLE-002` — Selection, dialogs, and sound controllers
 - Owner: Codex
 - Status: `backlog`
 
@@ -19,6 +19,7 @@ Overall status: `LEGAL-004` complete; main-action card, target, and active-skill
 - `LEGAL-002` — Literal/conversion card-play options, shared Sha quota, and stable unavailable reasons.
 - `LEGAL-003` — Target contracts for range, fixed/implicit effects, Fangtian, and dependent Jiedao selection.
 - `LEGAL-004` — Active-skill contracts, owner projection, atomic validation, and client migration off legality mirrors.
+- `TABLE-001` — Typed decision routing and authoritative main-action controllers extracted from `Table.tsx`.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -35,14 +36,14 @@ Overall status: `LEGAL-004` complete; main-action card, target, and active-skill
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 19 | 164 | Passed |
-| Total | 62 | 1,336 | Passed |
+| Client | 21 | 172 | Passed |
+| Total | 64 | 1,344 | Passed |
 
 ## Next actions
 
-1. Push the pending `LEGAL-001` through `LEGAL-004` checkpoints after explicit destination confirmation.
-2. Start `TABLE-001` by extracting typed decision and main-action controllers without changing behavior.
-3. Review Claude's initial read-only audit if available.
+1. Push the verified `TABLE-001` code and documentation checkpoints to `origin/main`.
+2. Start `TABLE-002` by moving selection, dialog/notice state, and snapshot-diff sound routing into focused controllers.
+3. Preserve the authoritative `legalActions` seam and the existing decision-key reset behavior.
 4. Keep presentation-only distance calculations separate from gameplay legality.
 
 ## Checkpoints
@@ -54,6 +55,7 @@ Overall status: `LEGAL-004` complete; main-action card, target, and active-skill
 - `LEGAL-002`: `5404729` (`LEGAL-002-add-card-play-options`).
 - `LEGAL-003`: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - `LEGAL-004`: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
+- `TABLE-001`: `04af1ae` (`TABLE-001-extract-table-controllers`).
 
 ## Known workspace notes
 
@@ -63,5 +65,4 @@ Overall status: `LEGAL-004` complete; main-action card, target, and active-skill
 
 ## Blockers
 
-- None for `TABLE-001`.
-- Local commits are ahead of `origin/main`; push still requires explicit destination approval.
+- None for `TABLE-002`.
