@@ -1,13 +1,13 @@
 # Test and Verification Baseline
 
 Baseline date: 2026-08-21
-Commands executed through `TABLE-001`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`, `pnpm catalog:check`
+Commands executed through `TABLE-002`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`, `pnpm catalog:check`
 
 ## Typecheck and build result
 
 - `pnpm typecheck` checks engine, shared, server, and client with their existing TypeScript include lists.
 - All four packages pass `tsc --noEmit`.
-- The production client build passes with 200 modules transformed.
+- The production client build passes with 202 modules transformed.
 - Engine contract tests remain inside typechecking; no test or source directory was excluded to make the gate pass.
 - `pnpm catalog:check` reports 256 pass, 0 fail, 0 waived, and 0 pending.
 
@@ -17,8 +17,8 @@ Commands executed through `TABLE-001`: targeted Vitest, `pnpm typecheck`, full p
 |---|---:|---:|---|
 | `@tktw/engine` | 40 | 1,114 | Passed |
 | `@tktw/server` | 3 | 58 | Passed |
-| `@tktw/client` | 21 | 172 | Passed |
-| Total | 64 | 1,344 | Passed |
+| `@tktw/client` | 23 | 179 | Passed |
+| Total | 66 | 1,351 | Passed |
 
 The root parallel suite produced one 20-second quickstart-bot timeout while the client suite and engine fuzz suites were competing for resources. The same quickstart group then passed alone in 4.3 seconds, and the complete server suite passed separately with all 58 tests; no functional failure remained.
 
@@ -26,7 +26,7 @@ The engine baseline includes deterministic replay, atomicity/retry safety, 3–1
 
 The server baseline includes room lifecycle, authorization, reconnect, timeout, chat, grace/forfeit/abandon, result/rematch, GameView schema, hidden projection paths, and client-action idempotency.
 
-The client baseline includes direct decision/main-action controller coverage, table actions, decisions, skills, card conversion, authoritative target contracts, distance, mobile landscape at target viewport sizes, real seat ordering, effects, artwork, errors, sound preferences, lobby, role/general selection, result, tutorial-independent rules UI, and stuck-state guards.
+The client baseline includes semantic selection transitions, transient UI lifetime/timer rules, reconnect-safe table sound routing, direct decision/main-action controller coverage, table actions, skills, card conversion, authoritative target contracts, mobile landscape, effects, artwork, errors, sound preferences, lobby, role/general selection, result, rules UI, and stuck-state guards.
 
 ## Required verification layers
 

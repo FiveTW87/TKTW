@@ -95,3 +95,9 @@ Reason: A separate client skill-spec table duplicated usage limits and eligibili
 Date: 2026-08-21
 Decision: Decision ownership/automatic-answer routing lives in `useDecisionController`, while authoritative card/skill/target interpretation lives in `mainActionController`. `Table.tsx` composes their typed interfaces and retains presentation state until the later Table tasks.
 Reason: These two modules keep decision policy and target-contract interpretation local and independently testable. Splitting the same logic into many small pass-through helpers would increase interfaces without reducing the amount of gameplay orchestration a caller must understand.
+
+## DEC-017 — Selection, transient UI, and table sound use distinct lifetimes
+
+Date: 2026-08-21
+Decision: `useInteraction` owns semantic selection transitions keyed to every authoritative decision; `useTableTransientUi` owns decision/table/timer/match UI lifetimes; `useTableSfx` owns snapshot-diff sound routing and reconnect baselines. The pure main-action module continues to interpret authoritative `legalActions`.
+Reason: Combining these lifetimes under main action would couple discard/reactive selection and reconnect presentation to one route. Three deep modules keep transition ordering, modal lifetime policy, and sound replay prevention local behind small interfaces.

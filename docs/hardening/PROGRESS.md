@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 3 — Table composition hardening
-Overall status: `TABLE-001` complete; decision routing and authoritative main-action orchestration now live in typed controller modules
+Overall status: `TABLE-002` complete; semantic selection, transient UI lifetimes, and reconnect-safe table sound routing each have one owner
 
 ## Next task
 
-- `TABLE-002` — Selection, dialogs, and sound controllers
+- `TABLE-003` — Presentational extraction and cleanup
 - Owner: Codex
 - Status: `backlog`
 
@@ -20,6 +20,7 @@ Overall status: `TABLE-001` complete; decision routing and authoritative main-ac
 - `LEGAL-003` — Target contracts for range, fixed/implicit effects, Fangtian, and dependent Jiedao selection.
 - `LEGAL-004` — Active-skill contracts, owner projection, atomic validation, and client migration off legality mirrors.
 - `TABLE-001` — Typed decision routing and authoritative main-action controllers extracted from `Table.tsx`.
+- `TABLE-002` — Semantic selection transitions, transient UI lifetimes, and reconnect-safe sound routing extracted from `Table.tsx`.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -36,14 +37,14 @@ Overall status: `TABLE-001` complete; decision routing and authoritative main-ac
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 21 | 172 | Passed |
-| Total | 64 | 1,344 | Passed |
+| Client | 23 | 179 | Passed |
+| Total | 66 | 1,351 | Passed |
 
 ## Next actions
 
-1. Push the verified `TABLE-001` code and documentation checkpoints to `origin/main`.
-2. Start `TABLE-002` by moving selection, dialog/notice state, and snapshot-diff sound routing into focused controllers.
-3. Preserve the authoritative `legalActions` seam and the existing decision-key reset behavior.
+1. Push the verified `TABLE-002` code and documentation checkpoints to `origin/main`.
+2. Start `TABLE-003` by extracting action cluster, utility rail, and overlay markup behind typed presentation props.
+3. Preserve the authoritative `legalActions` seam, controller lifetimes, and existing DOM anchors.
 4. Keep presentation-only distance calculations separate from gameplay legality.
 
 ## Checkpoints
@@ -56,6 +57,7 @@ Overall status: `TABLE-001` complete; decision routing and authoritative main-ac
 - `LEGAL-003`: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - `LEGAL-004`: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - `TABLE-001`: `04af1ae` (`TABLE-001-extract-table-controllers`).
+- `TABLE-002`: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
 
 ## Known workspace notes
 
@@ -65,4 +67,4 @@ Overall status: `TABLE-001` complete; decision routing and authoritative main-ac
 
 ## Blockers
 
-- None for `TABLE-002`.
+- None for `TABLE-003`.

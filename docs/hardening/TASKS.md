@@ -40,7 +40,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | LEGAL-003 | Targets, range, and multi-step legality | completed | Codex | 1.5d | LEGAL-002 |
 | LEGAL-004 | Skills, projection, and client migration | completed | Codex | 2d | LEGAL-003 |
 | TABLE-001 | Decision and main-action controllers | completed | Codex | 1d | LEGAL-004 |
-| TABLE-002 | Selection, dialogs, and sound controllers | backlog | Codex | 1d | TABLE-001 |
+| TABLE-002 | Selection, dialogs, and sound controllers | completed | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | backlog | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | backlog | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | backlog | Codex | 1.5d | LEGAL-004, ASSET-001 |
@@ -577,7 +577,7 @@ Follow-up:
 
 ## TABLE-002 — Selection, dialogs, and sound controllers
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
 
 ### Objective
 
@@ -593,6 +593,49 @@ Extract target/card selection, notices/dialog state, and snapshot-diff sound rou
 
 - Reducer/hook tests, Jiedao/Lijian/Zhangba regressions, modal and SFX tests.
 - Client suite, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `c0accf6` (`TABLE-002-deepen-table-lifecycles`)
+Status: completed
+
+Changed:
+
+- Deepened `useInteraction` so callers use semantic, atomic commands rather than reducer actions or raw dispatch.
+- Selection now exposes an empty state immediately when the authoritative decision key changes; same-key renders preserve the current choice.
+- Added `useTableTransientUi` with explicit decision-, table-, timed cross-decision-, and match-scoped lifetimes for notices, skill toast, inspection, play-as choice, discard browser, leave confirmation, and death dismissal.
+- Added `useTableSfx` as the sole owner of table snapshot-to-sound mapping, including silent initial/match-reset/log-rollback/reconnect baselines.
+- Kept `mainActionController` as the pure authoritative legal-option interpreter and changed its seam to consume semantic selection commands.
+- Left responsive markup, draw animation, combat presentation, audio synthesis/preferences, and DOM anchors in their existing owners.
+
+Tests added or updated:
+
+- Expanded interaction tests to 7 cases covering immediate decision reset, atomic mode changes, independent caps, dependent Jiedao ordering/replacement, and reset.
+- Added 3 transient-UI fake-timer/lifetime tests.
+- Added 3 SFX routing/reconnect tests.
+- Existing 67 Table regressions, SFX/store tests, Jiedao/Lijian/Zhangba, double-submit, modal, death, mobile, and stuck-state cases remain green.
+
+Verification:
+
+- Client: 23 files, 179 tests passed.
+- Engine: 40 files, 1,114 tests passed.
+- Server: 3 files, 58 tests passed.
+- Total: 66 files, 1,351 tests passed.
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- Production client build: passed with 202 modules transformed.
+- Test catalog: 256 pass, 0 fail, 0 waived, 0 pending.
+- `git diff --check`: passed for task files.
+
+Known limitations:
+
+- Table overlay markup and the action cluster remain in `Table.tsx` for `TABLE-003`.
+- Hand draw-flash animation remains local; presentation-event/queue consolidation belongs to later PRES tasks.
+- Audio manager, concurrency limits, preload/fallback, and new sounds remain deferred to `SFX-001`.
+
+Follow-up:
+
+- `TABLE-003` — Presentational extraction and cleanup.
 
 ---
 

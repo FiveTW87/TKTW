@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `TABLE-001` complete; next task is `TABLE-002`
+Current task: `TABLE-002` complete; next task is `TABLE-003`
 
 ## Objective
 
@@ -25,8 +25,9 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - Active-skill/client-migration checkpoint: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - Table-controller checkpoint: `04af1ae` (`TABLE-001-extract-table-controllers`).
+- Table-lifecycle checkpoint: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,114; server 58; client 172; total 1,344.
+- Automated tests passed: engine 1,114; server 58; client 179; total 1,351.
 - Production client build passed on 2026-08-21.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -37,17 +38,17 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after TABLE-001
+## Immediate next task after TABLE-002
 
-`TABLE-002` — selection, dialogs, and sound controllers.
+`TABLE-003` — presentational extraction and cleanup.
 
 Before implementing:
 
-1. Move remaining selection lifecycle orchestration into a focused hook without duplicating engine legality.
-2. Move notice/dialog state into a controller while preserving decision-key and animation-state lifetimes.
-3. Give snapshot-diff sound routing one owner and keep reconnect snapshots silent.
-4. Preserve Thai copy, responsive DOM anchors, double-submit protection, and presentation-only distance display.
-5. Run targeted reducer/hook, Jiedao/Lijian/Zhangba, modal/SFX, full package, typecheck, and production build gates.
+1. Extract the action cluster, utility rail, and overlay markup into presentational modules with typed props.
+2. Keep gameplay/store knowledge in the existing controllers and leave DOM anchors/class names stable.
+3. Preserve Thai copy, responsive layouts, double-submit protection, modal lifetimes, and presentation-only distance display.
+4. Do not merge draw animation or combat presentation into the new markup modules.
+5. Run rendering/mobile/anchor/Table regressions, all package suites, typecheck, and production build.
 
 ## Claude coordination
 
