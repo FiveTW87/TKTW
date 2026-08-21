@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, and reduced-motion meaning are verified
+Overall status: `SFX-001` complete; synthesized playback is lifecycle-safe, autoplay-recoverable, bounded, and failure-isolated
 
 ## Next task
 
-- `SFX-001` — Audio manager and preferences
+- `FX-001` — Card and equipment motion
 - Owner: Codex
 - Status: `backlog`
 
@@ -25,6 +25,7 @@ Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, 
 - `ASSET-001` — Explicit typed artwork manifest for 25 generals, 125 selected files, and four known unmapped inventory files.
 - `PRES-001` — Typed presentation-event model, silent-baseline queue, combat adapter migration, and failure isolation.
 - `PRES-002` — Reconnect-safe presentation baseline, bounded target/source anchor retry, and reduced-motion outcome verification.
+- `SFX-001` — Centralized synthesized playback, autoplay recovery, bounded logical-effect concurrency, and resilient preferences.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -41,15 +42,15 @@ Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, 
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 27 | 210 | Passed |
-| Total | 70 | 1,382 | Passed |
+| Client | 27 | 218 | Passed |
+| Total | 70 | 1,390 | Passed |
 
 ## Next actions
 
-1. Push the verified `PRES-002` code and documentation checkpoints to `origin/main`.
-2. Start `SFX-001` by inventorying playback categories, preload/fallback, and browser autoplay behavior.
-3. Centralize mute/volume/concurrency without changing gameplay or presentation-event ordering.
-4. Keep audio failure non-blocking and retain reconnect-safe sound routing.
+1. Commit and push the verified `SFX-001` implementation and documentation checkpoints.
+2. Start `FX-001` by inventorying authoritative card/equipment presentation events and current DOM anchors.
+3. Specify motion lifetimes, reduced-motion equivalents, reconnect baselines, and bounded fallback behavior before implementation.
+4. Keep animation optional and non-blocking under the presentation contract.
 
 ## Checkpoints
 
@@ -66,6 +67,7 @@ Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, 
 - `ASSET-001`: `da0f7ad` (`ASSET-001-add-typed-general-art-manifest`).
 - `PRES-001`: `5259d14` (`PRES-001-add-presentation-event-queue`).
 - `PRES-002`: `e3f0525` (`PRES-002-harden-presentation-lifecycle`).
+- `SFX-001`: `50f7f9e` (`SFX-001-centralize-audio-lifecycle`).
 
 ## Known workspace notes
 
@@ -75,4 +77,4 @@ Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, 
 
 ## Blockers
 
-- None for `SFX-001`.
+- None for `FX-001`.
