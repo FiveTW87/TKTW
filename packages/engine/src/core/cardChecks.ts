@@ -7,7 +7,8 @@ export type CardPlayUnavailableReason =
   | "response_only"
   | "sha_usage_limit"
   | "conversion_wrong_context"
-  | "insufficient_cards";
+  | "insufficient_cards"
+  | "no_legal_target";
 
 export function shaUsageLimitFor(state: GameState, playerId: string): number {
   const bonus = queryHook<number>(

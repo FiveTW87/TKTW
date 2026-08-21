@@ -11,6 +11,11 @@ import {
   mainActionUnavailableReason,
   type CardPlayUnavailableReason,
 } from "./cardChecks";
+import {
+  cardTargetingFor,
+  hasLegalTargetSelection,
+  type CardTargetingView,
+} from "./cardTargets";
 
 export type ResponseDecisionKind = Exclude<
   DecisionKind,
@@ -29,6 +34,7 @@ export type CardPlayOptionView = {
   maxCards: number;
   exactCards: number;
   asType?: string;
+  targeting: CardTargetingView;
 } & CardPlayAvailability;
 
 export type LegalActionView =
@@ -71,12 +77,15 @@ function withAvailability(
   option: Omit<CardPlayOptionView, "available" | "unavailableReason">,
   reason: CardPlayUnavailableReason | undefined,
 ): CardPlayOptionView {
-  return reason ? { ...option, available: false, unavailableReason: reason } : { ...option, available: true };
+  const unavailableReason = reason ?? (!hasLegalTargetSelection(option.targeting) ? "no_legal_target" : undefined);
+  return unavailableReason
+    ? { ...option, available: false, unavailableReason }
+    : { ...option, available: true };
 }
 
-/** Main-action card candidates only. Target ids/counts deliberately arrive in
- * LEGAL-003; every option here is valid with some legal target set unless it
- * carries a stable unavailable reason. */
+/** Main-action card candidates with their viewer-safe target contract. Every
+ * available option has at least one legal target selection; the server still
+ * validates the submitted answer against the live state. */
 export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlayOptionView[] {
   const player = state.players.find((candidate) => candidate.id === playerId);
   if (!player) return [];
@@ -93,6 +102,7 @@ export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlay
           minCards: 1,
           maxCards: 1,
           exactCards: 1,
+          targeting: cardTargetingFor(state, playerId, card.typeKey, 1),
         },
         mainActionUnavailableReason(state, playerId, card.typeKey),
       ),
@@ -116,6 +126,7 @@ export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlay
             minCards: 1,
             maxCards: 1,
             exactCards: 1,
+            targeting: cardTargetingFor(state, playerId, typeKey, 1),
           },
           reason,
         ),
@@ -138,6 +149,7 @@ export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlay
           minCards: 2,
           maxCards: 2,
           exactCards: 2,
+          targeting: cardTargetingFor(state, playerId, "sha", 2),
         },
         reason,
       ),

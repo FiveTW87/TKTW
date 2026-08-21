@@ -106,6 +106,7 @@ describe("LEGAL-002 card play options", () => {
     {
       generalId: "ganning",
       cardId: findCard({ typeKey: "juedou", color: "black" }),
+      targetCardId: C.shan.any,
       typeKey: "guohe",
       available: true,
     },
@@ -121,8 +122,13 @@ describe("LEGAL-002 card play options", () => {
     typeKey,
     available,
     reason,
+    targetCardId,
   }) => {
-    const g = contractGame({ seed: 2111, assigns: [["p0", generalId]], hands: { p0: [cardId] } });
+    const g = contractGame({
+      seed: 2111,
+      assigns: [["p0", generalId]],
+      hands: { p0: [cardId], ...(targetCardId ? { p1: [targetCardId] } : {}) },
+    });
     const option = findOption(cardPlayOptionsFor(g.state, "p0"), {
       source: "conversion",
       typeKey,

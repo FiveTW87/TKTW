@@ -77,6 +77,12 @@ describe("typed protocol seams", () => {
           minCards: 1,
           maxCards: 1,
           exactCards: 1,
+          targeting: {
+            kind: "independent",
+            minTargets: 1,
+            maxTargets: 1,
+            eligibleTargetIds: ["p2"],
+          },
           available: true,
         },
         {
@@ -87,6 +93,12 @@ describe("typed protocol seams", () => {
           minCards: 1,
           maxCards: 1,
           exactCards: 1,
+          targeting: {
+            kind: "independent",
+            minTargets: 1,
+            maxTargets: 1,
+            eligibleTargetIds: [],
+          },
           available: false,
           unavailableReason: "conversion_wrong_context",
         },
@@ -106,5 +118,64 @@ describe("typed protocol seams", () => {
         options: [{ ...action.options[1], unavailableReason: undefined }],
       }).success,
     ).toBe(false);
+  });
+
+  it.each([
+    { kind: "none", minTargets: 0, maxTargets: 0 },
+    { kind: "fixed", minTargets: 0, maxTargets: 0, targetIds: ["p0", "p1"] },
+    {
+      kind: "independent",
+      minTargets: 1,
+      maxTargets: 3,
+      eligibleTargetIds: ["p1", "p2", "p3"],
+    },
+    {
+      kind: "dependent",
+      minTargets: 2,
+      maxTargets: 2,
+      firstTargetIds: ["p1"],
+      secondTargetIdsByFirst: { p1: ["p2"] },
+    },
+  ])("parses the $kind card-targeting variant", (targeting) => {
+    const action = {
+      kind: "playCard",
+      options: [
+        {
+          source: "literal",
+          typeKey: "sha",
+          selectableCardIds: ["spade_7_1"],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+          available: true,
+          targeting,
+        },
+      ],
+    };
+    expect(legalActionViewSchema.parse(action)).toEqual(action);
+  });
+
+  it("rejects target fields that belong to another targeting variant", () => {
+    const malformed = {
+      kind: "playCard",
+      options: [
+        {
+          source: "literal",
+          typeKey: "sha",
+          selectableCardIds: ["spade_7_1"],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+          available: true,
+          targeting: {
+            kind: "none",
+            minTargets: 0,
+            maxTargets: 0,
+            eligibleTargetIds: ["p1"],
+          },
+        },
+      ],
+    };
+    expect(legalActionViewSchema.safeParse(malformed).success).toBe(false);
   });
 });

@@ -22,58 +22,14 @@ import { resolveWithWuxieWindow } from "./wuxieWindow";
 import { canAttack, distanceNet } from "./distance";
 import { useActiveSkill } from "./activeSkill";
 import { countsAsType, mainActionUnavailableReason, shaUsageLimitFor } from "./cardChecks";
-
-// Cards that may never name their own player as the target. Deliberately NOT
-// every single-target card: the delayedTrick branch further down
-// intentionally allows self-targeting (shandian is always self; a bot may
-// legitimately still send a non-self target for it, which that branch
-// overrides regardless).
-const NO_SELF_TARGET = new Set(["sha", "guohe", "shunshou"]);
-// Cards whose whole effect is taking a card off the target — a target with
-// nothing at all to take (no hand, no equipment) is not a legal target.
-const NEEDS_A_TAKEABLE_CARD = new Set(["guohe", "shunshou"]);
-
-function holdsATakeableCard(state: GameState, id: string): boolean {
-  const p = getPlayer(state, id);
-  // judgmentZone deliberately excluded — house rule, see cards/_shared.ts.
-  return p.hand.length > 0 || Object.values(p.equipment).some(Boolean);
-}
-
-/** Shared สังหาร-style target validation: no duplicates, no self, alive, in
- *  range, and not vetoed by a canBeTargetedBy skill (ลกซุน's empty-hand
- *  immunity, ขงเบ้ง's กลเมืองว่าง). Used by both the normal singleInRange path
- *  and ทวนงูจั้งปา's 2-card substitute, so the two can't drift apart. */
-function assertShaTargets(
-  state: GameState,
-  playerId: string,
-  typeKey: string,
-  targetIds: string[],
-): void {
-  if (new Set(targetIds).size !== targetIds.length) {
-    throw new Error(`${playerId}: duplicate target id for ${typeKey}`);
-  }
-  for (const targetId of targetIds) {
-    if (targetId === playerId) {
-      throw new Error(`${playerId}: cannot target themselves with ${typeKey}`);
-    }
-    if (!getPlayer(state, targetId).alive) {
-      throw new Error(`${playerId}: target ${targetId} is not alive`);
-    }
-    if (!canAttack(state, playerId, targetId)) {
-      throw new Error(`${playerId}: target ${targetId} is out of range for ${typeKey}`);
-    }
-    const allowed = queryHook<boolean>(
-      state,
-      "canBeTargetedBy",
-      { cardTypeKey: typeKey, sourceId: playerId, targetId },
-      (rs) => rs.every(Boolean),
-      true,
-    );
-    if (!allowed) {
-      throw new Error(`${playerId}: ${targetId} cannot be targeted by ${typeKey}`);
-    }
-  }
-}
+import {
+  assertShaTargets,
+  canBeTargetedByCard,
+  forbidsSelfTarget,
+  holdsATakeableCard,
+  jiedaoVictimsByArmed,
+  requiresTakeableCard,
+} from "./cardTargets";
 
 function activePlayerId(ctx: Ctx): string {
   const p = ctx.state.players.find((pp) => pp.seat === ctx.state.currentSeat);
@@ -257,8 +213,7 @@ function* playZhangbaSha(
     throw new Error(`${playerId}: สังหาร usage limit reached`);
   }
 
-  const isLastCards = p.hand.length === cardIds.length;
-  const maxTargets = isLastCards ? 3 : 1;
+  const maxTargets = 1;
   if (targetIds.length < 1 || targetIds.length > maxTargets) {
     throw new Error(`${playerId}: สังหาร needs 1-${maxTargets} target(s), got ${targetIds.length}`);
   }
@@ -360,7 +315,7 @@ function* playCard(
   }
   if (def.targetRule === "singleArmed") {
     const [armedId, victimId] = targetIds;
-    if (!armedId || !getPlayer(state, armedId).equipment.weapon) {
+    if (!armedId || !getPlayer(state, armedId).alive || !getPlayer(state, armedId).equipment.weapon) {
       throw new Error(`${playerId}: ${card.typeKey} target must have a weapon equipped`);
     }
     if (armedId === playerId) {
@@ -378,16 +333,22 @@ function* playCard(
     if (!getPlayer(state, victimId).alive) {
       throw new Error(`${playerId}: victim ${victimId} is not alive`);
     }
+    if (!canAttack(state, armedId, victimId)) {
+      throw new Error(`${playerId}: victim ${victimId} is out of range for ${armedId}`);
+    }
+    if (!(jiedaoVictimsByArmed(state, playerId)[armedId] ?? []).includes(victimId)) {
+      throw new Error(`${playerId}: victim ${victimId} cannot be targeted by ${armedId}`);
+    }
   }
   if (def.targetRule === "single") {
     const targetId = targetIds[0];
     if (!targetId || !getPlayer(state, targetId).alive) {
       throw new Error(`${playerId}: ${card.typeKey} needs exactly 1 living target`);
     }
-    if (NO_SELF_TARGET.has(card.typeKey) && targetId === playerId) {
+    if (forbidsSelfTarget(card.typeKey) && targetId === playerId) {
       throw new Error(`${playerId}: cannot target themselves with ${card.typeKey}`);
     }
-    if (NEEDS_A_TAKEABLE_CARD.has(card.typeKey) && !holdsATakeableCard(state, targetId)) {
+    if (requiresTakeableCard(card.typeKey) && !holdsATakeableCard(state, targetId)) {
       throw new Error(`${playerId}: ${targetId} has no card ${card.typeKey} can take`);
     }
   }
@@ -406,13 +367,7 @@ function* playCard(
     targetIds[0]
   ) {
     // ลกซุน's "ถ่อมตน" (immune to shunshou/lebusishu) hooks in here.
-    const allowed = queryHook<boolean>(
-      state,
-      "canBeTargetedBy",
-      { cardTypeKey: card.typeKey, sourceId: playerId, targetId: targetIds[0] },
-      (rs) => rs.every(Boolean),
-      true,
-    );
+    const allowed = canBeTargetedByCard(state, card.typeKey, playerId, targetIds[0]);
     if (!allowed) {
       throw new Error(`${playerId}: ${targetIds[0]} cannot be targeted by ${card.typeKey}`);
     }

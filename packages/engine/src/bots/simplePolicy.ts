@@ -1,5 +1,5 @@
-// A deliberately dumb bot. It only ever looks at projectFor(state, viewerId)
-// — never raw GameState — so it can't accidentally "cheat" by reading
+// A deliberately dumb bot. It only looks at projectFor(state, viewerId) and
+// viewer-safe legal actions — never raw hidden zones — so it can't accidentally "cheat" by reading
 // hidden roles/hands, which is what makes the headless fuzz-run (1000s of
 // games) a meaningful integrity check rather than just a happy-path smoke
 // test. Every choice is a plain deterministic heuristic (no RNG) so TC-6
@@ -8,6 +8,7 @@ import type { GameSession } from "../core/decisions";
 import type { EquipSlot, PlayerAnswer } from "../types";
 import { projectFor, type ProjectedGameState, type ProjectedPlayer } from "../core/view";
 import { cardDef } from "../core/cardData";
+import { cardPlayOptionsFor } from "../core/legalActions";
 
 function seatDistance(view: ProjectedGameState, aId: string, bId: string): number {
   const alive = view.players.filter((p) => p.alive).sort((x, y) => x.seat - y.seat);
@@ -162,10 +163,20 @@ export function simpleBotAnswer(session: GameSession): PlayerAnswer {
         return { ...base, choice: "playCard", cardIds: [guohe.id], targetIds: [guoheTarget.id] };
       }
       const jiedao = find("jiedao");
-      const armed = others.find((p) => p.equipment.weapon);
-      const victim = others.find((p) => p.id !== armed?.id);
-      if (jiedao && armed && victim) {
-        return { ...base, choice: "playCard", cardIds: [jiedao.id], targetIds: [armed.id, victim.id] };
+      const jiedaoTargeting = jiedao
+        ? cardPlayOptionsFor(session.state, me.id).find(
+            (option) =>
+              option.available &&
+              option.typeKey === "jiedao" &&
+              option.selectableCardIds.includes(jiedao.id),
+          )?.targeting
+        : undefined;
+      if (jiedao && jiedaoTargeting?.kind === "dependent") {
+        const armedId = jiedaoTargeting.firstTargetIds[0];
+        const victimId = armedId ? jiedaoTargeting.secondTargetIdsByFirst[armedId]?.[0] : undefined;
+        if (armedId && victimId) {
+          return { ...base, choice: "playCard", cardIds: [jiedao.id], targetIds: [armedId, victimId] };
+        }
       }
       const delayed = find("lebusishu") ?? find("shandian");
       if (delayed) {

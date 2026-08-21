@@ -127,6 +127,37 @@ const cardPlayUnavailableReasonSchema = z.enum([
   "sha_usage_limit",
   "conversion_wrong_context",
   "insufficient_cards",
+  "no_legal_target",
+]);
+const targetCountSchema = z.number().int().min(0);
+const cardTargetingSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("none"), minTargets: z.literal(0), maxTargets: z.literal(0) }).strict(),
+  z
+    .object({
+      kind: z.literal("fixed"),
+      minTargets: z.literal(0),
+      maxTargets: z.literal(0),
+      targetIds: z.array(z.string()),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("independent"),
+      minTargets: targetCountSchema,
+      maxTargets: targetCountSchema,
+      eligibleTargetIds: z.array(z.string()),
+      implicitTargetId: z.string().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("dependent"),
+      minTargets: z.literal(2),
+      maxTargets: z.literal(2),
+      firstTargetIds: z.array(z.string()),
+      secondTargetIdsByFirst: z.record(z.string(), z.array(z.string())),
+    })
+    .strict(),
 ]);
 const cardPlayOptionBaseSchema = z.object({
   source: z.enum(["literal", "conversion", "zhangba"]),
@@ -136,6 +167,7 @@ const cardPlayOptionBaseSchema = z.object({
   maxCards: z.number().int().min(0),
   exactCards: z.number().int().min(0),
   asType: z.string().optional(),
+  targeting: cardTargetingSchema,
 });
 const cardPlayOptionSchema = z.discriminatedUnion("available", [
   cardPlayOptionBaseSchema.extend({ available: z.literal(true) }).strict(),
