@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `FX-002` complete; combat timelines are ordered, bounded, source/target-readable, and sound-synchronized
+Overall status: `FX-003` complete; Phase 4 presentation hardening is complete through the planned FX milestone
 
 ## Next task
 
-- `FX-002` — Combat and skill sequences
+- `ROOM-001` — Typed room settings and presets
 - Owner: Codex
-- Status: `completed`
+- Status: `backlog`
 
 ## Completed in this cycle
 
@@ -28,6 +28,7 @@ Overall status: `FX-002` complete; combat timelines are ordered, bounded, source
 - `SFX-001` — Centralized synthesized playback, autoplay recovery, bounded logical-effect concurrency, and resilient preferences.
 - `FX-001` — Typed card/equipment movement, semantic anchors, anonymous hidden-card cues, reduced motion, and bounded lifecycle.
 - `FX-002` — Ordered combat/skill timelines, per-player pose arbitration, route labels, burst bounds, and phase-aligned SFX.
+- `FX-003` — Public judgment/Wuxie sequencing, reconnect-safe turn/phase cues, and explicit urgent timer semantics.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -42,17 +43,16 @@ Overall status: `FX-002` complete; combat timelines are ordered, bounded, source
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 40 | 1,114 | Passed |
+| Engine | 40 | 1,116 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 29 | 232 | Passed |
-| Total | 72 | 1,404 | Passed |
+| Client | 31 | 236 | Passed |
+| Total | 74 | 1,410 | Passed |
 
 ## Next actions
 
-1. Commit and push the verified FX-002 implementation and documentation checkpoints.
-2. Expand FX-003 into judgment replacement, nested Wuxie, turn/phase, and urgent-timer tracer slices.
-3. Preserve non-blocking interaction, reduced motion, reconnect baselines, and mobile overlay ordering.
-4. Run full verification and commit/push FX-003.
+1. Start `ROOM-001` by defining typed beginner, standard, fast, and bounded custom room-setting contracts.
+2. Preserve current room timing as the standard preset and add shared/server validation before UI.
+3. Continue one RED→GREEN behavior at a time and keep `App.tsx` outside task staging.
 
 ## Checkpoints
 
@@ -72,6 +72,7 @@ Overall status: `FX-002` complete; combat timelines are ordered, bounded, source
 - `SFX-001`: `50f7f9e` (`SFX-001-centralize-audio-lifecycle`).
 - `FX-001`: `cbf5007` (`FX-001-add-card-equipment-motion`).
 - `FX-002`: `a911816` (`FX-002-sequence-combat-feedback`).
+- `FX-003`: `1e742d8` (`FX-003-add-table-state-feedback`).
 
 ## Known workspace notes
 
@@ -81,5 +82,6 @@ Overall status: `FX-002` complete; combat timelines are ordered, bounded, source
 
 ## Blockers
 
-- No code or verification blocker for `FX-003`.
+- No code or verification blocker for `ROOM-001`.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.
+- FX-003 changed-state capture hit the same browser-plugin trusted-service failure; focused visual-contract and full Table tests passed, and no screenshot was fabricated.
