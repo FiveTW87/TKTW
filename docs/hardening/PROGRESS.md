@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor resolution are being hardened
+Overall status: `PRES-002` complete; reconnect baselines, bounded anchor retry, and reduced-motion meaning are verified
 
 ## Next task
 
-- `PRES-002` — Anchor retry, reconnect, and reduced motion
+- `SFX-001` — Audio manager and preferences
 - Owner: Codex
-- Status: `in_progress`
+- Status: `backlog`
 
 ## Completed in this cycle
 
@@ -24,6 +24,7 @@ Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor r
 - `TABLE-003` — Typed controls/action states, ordered overlays, SFX preferences, and recovery presentation extracted from `Table.tsx`.
 - `ASSET-001` — Explicit typed artwork manifest for 25 generals, 125 selected files, and four known unmapped inventory files.
 - `PRES-001` — Typed presentation-event model, silent-baseline queue, combat adapter migration, and failure isolation.
+- `PRES-002` — Reconnect-safe presentation baseline, bounded target/source anchor retry, and reduced-motion outcome verification.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -40,15 +41,15 @@ Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor r
 |---|---:|---:|---|
 | Engine | 40 | 1,114 | Passed |
 | Server | 3 | 58 | Passed |
-| Client | 27 | 201 | Passed |
-| Total | 70 | 1,373 | Passed |
+| Client | 27 | 210 | Passed |
+| Total | 70 | 1,382 | Passed |
 
 ## Next actions
 
-1. Add reconnect lifecycle coverage to the typed presentation queue.
-2. Add bounded target/source anchor retry inside the combat adapter.
-3. Prove reduced-motion outcome meaning and preserve first-usable desktop/mobile placement.
-4. Run the full verification matrix before commit and push.
+1. Push the verified `PRES-002` code and documentation checkpoints to `origin/main`.
+2. Start `SFX-001` by inventorying playback categories, preload/fallback, and browser autoplay behavior.
+3. Centralize mute/volume/concurrency without changing gameplay or presentation-event ordering.
+4. Keep audio failure non-blocking and retain reconnect-safe sound routing.
 
 ## Checkpoints
 
@@ -64,6 +65,7 @@ Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor r
 - `TABLE-003`: `d737611` (`TABLE-003-extract-table-presentation`).
 - `ASSET-001`: `da0f7ad` (`ASSET-001-add-typed-general-art-manifest`).
 - `PRES-001`: `5259d14` (`PRES-001-add-presentation-event-queue`).
+- `PRES-002`: `e3f0525` (`PRES-002-harden-presentation-lifecycle`).
 
 ## Known workspace notes
 
@@ -73,4 +75,4 @@ Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor r
 
 ## Blockers
 
-- None for `PRES-002`.
+- None for `SFX-001`.

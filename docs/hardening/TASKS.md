@@ -44,7 +44,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | completed | Codex | 1.5d | LEGAL-004, ASSET-001 |
-| PRES-002 | Anchor retry, reconnect, and reduced motion | in_progress | Codex | 1d | PRES-001 |
+| PRES-002 | Anchor retry, reconnect, and reduced motion | completed | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | backlog | Codex | 2.5d | FX-001, SFX-001 |
@@ -931,7 +931,7 @@ Limitations and follow-up:
 
 ## PRES-002 — Anchor retry, reconnect, and reduced motion
 
-Status: in_progress | Owner: Codex | Reviewer: Claude | Branch: main | Dependencies: PRES-001 | Estimate: 1 day | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude | Branch: main | Dependencies: PRES-001 | Estimate: 1 day | Risk: Medium
 
 ### Objective
 
@@ -1017,7 +1017,50 @@ Make presentation reliable across layout mounts, reconnects, compact/desktop anc
 
 ### Completion report
 
-Pending implementation and verification.
+Changed files:
+
+- Deepened `usePresentationQueue.ts` with connection lifecycle: disconnect cancellation/reset, stale-snapshot waiting, and silent first-fresh baselining by logs-array identity.
+- Deepened `useCombatPresentation.ts` with a grouped options interface and private target/source anchor retry policy: initial lookup plus four 50 ms retries.
+- Kept first usable nonzero connected anchor selection, existing desktop/mobile geometry, pose/art/timing policy, and reduced-motion output local to the combat adapter.
+- Passed `connected` from Table without changing its rendered markup or gameplay orchestration.
+- Expanded queue and combat tests for reconnect, bounded retry/fallback, duplicate/zero-area anchors, cleanup, and every reduced-motion outcome.
+
+Behavior and type results:
+
+- Pending and active presentation cancels once when connection drops; reconnecting against the retained stale `GameView` cannot replay or advance the queue.
+- The first different logs snapshot after reconnect establishes a silent baseline even when it contains exact-prefix appends; only later appends present.
+- Temporarily absent required target/source anchors are re-read through 200 ms; target absence drops harmlessly, while source absence degrades to one immediate target-only outcome.
+- Detached/zero-area matches are skipped, while duplicate mobile anchors retain current first-usable DOM order.
+- Reduced motion performs no source retry or travel and retains damage/heal numbers, dodge text, skill label, and death outcome through the existing effect model/CSS.
+- No generic anchor module, MutationObserver, store/socket change, sound change, DOM edit, or new effect was introduced.
+
+Tests added:
+
+- 2 queue reconnect tests covering pending cancellation, stale snapshot waiting, silent fresh baseline, later resume, and initial disconnected mount.
+- 7 combat cases covering delayed target, delayed source, source timeout fallback, reset/unmount cleanup, zero-area duplicate selection, and all reduced-motion outcomes.
+- Existing mapper, SFX reconnect, CombatEffectLayer, Table, desktop, and mobile regressions remain green.
+
+Verification results:
+
+- Focused presentation/SFX suite: 4 files and 34 tests passed.
+- Client suite: 27 files and 210 tests passed.
+- Engine suite: 40 files and 1,114 tests passed.
+- Server suite: 3 files and 58 tests passed.
+- Total: 70 files and 1,382 tests passed.
+- `pnpm typecheck`: passed for Engine, Shared, Server, and Client.
+- Client production build: passed with 206 modules transformed.
+- `git diff --cached --check`: passed before commit.
+- No UI, CSS, DOM, artwork, gameplay, protocol, or sound behavior changed; screenshots were intentionally omitted.
+
+Commit:
+
+- `e3f0525` (`PRES-002-harden-presentation-lifecycle`).
+
+Limitations and follow-up:
+
+- Duplicate mobile anchors deliberately retain first-usable DOM order; choosing focused/largest anchors would be a separate visual-layout decision.
+- The 200 ms retry bound is intentionally fixed and private; room presentation pacing settings may expose a broader policy only if later effect work proves a need.
+- Audio concurrency, preload/fallback, and autoplay recovery remain SFX-001.
 
 ---
 
