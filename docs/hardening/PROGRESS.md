@@ -32,7 +32,7 @@ Overall status: Phase 0 complete; `TS-001` complete
 
 ## Next actions
 
-1. Commit and push the `TS-001` checkpoint.
+1. Push the `TS-001` checkpoint.
 2. Review Claude's initial read-only audit if available.
 3. Start `TS-002` with explicit ID/action boundary inventory.
 4. Prefer derived string unions, `as const`, models, and discriminated unions; use enums only when a runtime namespace is required.
@@ -40,7 +40,7 @@ Overall status: Phase 0 complete; `TS-001` complete
 ## Checkpoints
 
 - `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
-- `TS-001`: pending commit.
+- `TS-001`: `e75d6d3` (`TS-001-add-root-typecheck-gate`).
 
 ## Known workspace notes
 

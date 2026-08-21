@@ -195,7 +195,7 @@ Root/package scripts, TypeScript configs, and typecheck documentation. No behavi
 ### Completion report
 
 Completed at: 2026-08-21
-Commit: pending
+Commit: `e75d6d3` (`TS-001-add-root-typecheck-gate`)
 Status: completed
 
 Changed:
