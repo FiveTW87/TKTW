@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 2 — Server-authoritative legal actions
-Overall status: `LEGAL-003` complete; card and target legality are authoritative, skill legality/client migration are next
+Overall status: `LEGAL-004` complete; main-action card, target, and active-skill affordances now consume authoritative legal actions
 
 ## Next task
 
-- `LEGAL-004` — Skills, projection, and client migration
+- `TABLE-001` — Decision and main-action controllers
 - Owner: Codex
 - Status: `backlog`
 
@@ -18,6 +18,7 @@ Overall status: `LEGAL-003` complete; card and target legality are authoritative
 - `LEGAL-001` — Legal-action discriminated union and strict schemas.
 - `LEGAL-002` — Literal/conversion card-play options, shared Sha quota, and stable unavailable reasons.
 - `LEGAL-003` — Target contracts for range, fixed/implicit effects, Fangtian, and dependent Jiedao selection.
+- `LEGAL-004` — Active-skill contracts, owner projection, atomic validation, and client migration off legality mirrors.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -32,17 +33,17 @@ Overall status: `LEGAL-003` complete; card and target legality are authoritative
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 39 | 1,109 | Passed |
-| Server | 3 | 57 | Passed |
-| Client | 19 | 162 | Passed |
-| Total | 61 | 1,328 | Passed |
+| Engine | 40 | 1,114 | Passed |
+| Server | 3 | 58 | Passed |
+| Client | 19 | 164 | Passed |
+| Total | 62 | 1,336 | Passed |
 
 ## Next actions
 
-1. Push the pending `LEGAL-001` through `LEGAL-003` checkpoints after explicit payload confirmation.
-2. Start `LEGAL-004` with active-skill legality and projection contracts.
+1. Push the pending `LEGAL-001` through `LEGAL-004` checkpoints after explicit destination confirmation.
+2. Start `TABLE-001` by extracting typed decision and main-action controllers without changing behavior.
 3. Review Claude's initial read-only audit if available.
-4. Keep client consumption deferred until `LEGAL-004`.
+4. Keep presentation-only distance calculations separate from gameplay legality.
 
 ## Checkpoints
 
@@ -52,6 +53,7 @@ Overall status: `LEGAL-003` complete; card and target legality are authoritative
 - `LEGAL-001`: `950699e` (`LEGAL-001-add-action-union-schemas`).
 - `LEGAL-002`: `5404729` (`LEGAL-002-add-card-play-options`).
 - `LEGAL-003`: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
+- `LEGAL-004`: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 
 ## Known workspace notes
 
@@ -61,5 +63,5 @@ Overall status: `LEGAL-003` complete; card and target legality are authoritative
 
 ## Blockers
 
-- None for `LEGAL-004`.
-- GitHub CLI is not installed, so this checkpoint is pushed with normal Git rather than a CLI-created pull request.
+- None for `TABLE-001`.
+- Local commits are ahead of `origin/main`; push still requires explicit destination approval.

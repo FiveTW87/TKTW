@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `LEGAL-003` complete; next task is `LEGAL-004`
+Current task: `LEGAL-004` complete; next task is `TABLE-001`
 
 ## Objective
 
@@ -23,8 +23,9 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Legal-action schema checkpoint: `950699e` (`LEGAL-001-add-action-union-schemas`).
 - Card-play legality checkpoint: `5404729` (`LEGAL-002-add-card-play-options`).
 - Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
+- Active-skill/client-migration checkpoint: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,109; server 57; client 162; total 1,328.
+- Automated tests passed: engine 1,114; server 58; client 164; total 1,336.
 - Production client build passed on 2026-08-21.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -35,17 +36,17 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after LEGAL-003
+## Immediate next task after LEGAL-004
 
-`LEGAL-004` — skills, projection, and client migration.
+`TABLE-001` — decision and main-action controllers.
 
 Before implementing:
 
-1. Add active-skill card/target counts, usage limits, and stable unavailable reasons.
-2. Preserve owner-only projection and verify all registered generals/skills.
-3. Migrate client card, target, and skill affordances from mirror calculations to legal actions.
-4. Keep cosmetic distance display client-derived only if explicitly documented.
-5. Preserve server revalidation and run the full verification gate.
+1. Extract decision routing and auto-answer behavior into a typed controller hook without changing UX.
+2. Extract main-action option/selection orchestration while continuing to consume `legalActions`.
+3. Preserve decision-key resets, double-submit protection, Thai copy, and responsive layouts.
+4. Keep cosmetic distance display presentation-only.
+5. Run targeted hook/Table tests, all package suites, typecheck, and production build.
 
 ## Claude coordination
 

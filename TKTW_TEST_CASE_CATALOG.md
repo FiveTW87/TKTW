@@ -1,6 +1,8 @@
 # TKTW Test Case Catalog
 
-<!-- catalog-sync: 256 pass / 0 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ a8d526b, 2026-08-06 -->
+<!-- catalog-sync: 256 pass / 0 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ c6f8f61, 2026-08-21 -->
+
+
 
 
 

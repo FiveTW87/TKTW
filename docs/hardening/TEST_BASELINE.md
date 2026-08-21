@@ -1,7 +1,7 @@
 # Test and Verification Baseline
 
 Baseline date: 2026-08-21
-Commands executed through `LEGAL-003`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`
+Commands executed through `LEGAL-004`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`
 
 ## Typecheck and build result
 
@@ -9,15 +9,18 @@ Commands executed through `LEGAL-003`: targeted Vitest, `pnpm typecheck`, full p
 - All four packages pass `tsc --noEmit`.
 - The production client build passes with 198 modules transformed.
 - Engine contract tests remain inside typechecking; no test or source directory was excluded to make the gate pass.
+- `pnpm catalog:check` reports 256 pass, 0 fail, 0 waived, and 0 pending.
 
 ## Automated test result
 
 | Package | Test files | Tests | Status |
 |---|---:|---:|---|
-| `@tktw/engine` | 39 | 1,109 | Passed |
-| `@tktw/server` | 3 | 57 | Passed |
-| `@tktw/client` | 19 | 162 | Passed |
-| Total | 61 | 1,328 | Passed |
+| `@tktw/engine` | 40 | 1,114 | Passed |
+| `@tktw/server` | 3 | 58 | Passed |
+| `@tktw/client` | 19 | 164 | Passed |
+| Total | 62 | 1,336 | Passed |
+
+The root parallel suite produced one 20-second quickstart-bot timeout while the client suite and engine fuzz suites were competing for resources. The same quickstart group then passed alone in 4.3 seconds, and the complete server suite passed separately with all 58 tests; no functional failure remained.
 
 The engine baseline includes deterministic replay, atomicity/retry safety, 3–10-player identity games, 1,000-game fuzz suites, all card/equipment contracts, all registered generals, death/forfeit, hidden information, and physical-deck integrity.
 

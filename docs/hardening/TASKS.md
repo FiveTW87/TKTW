@@ -38,7 +38,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | LEGAL-001 | Legal-action union and schemas | completed | Codex | 1d | TS-002 |
 | LEGAL-002 | Card play and conversion legality | completed | Codex | 1.5d | LEGAL-001 |
 | LEGAL-003 | Targets, range, and multi-step legality | completed | Codex | 1.5d | LEGAL-002 |
-| LEGAL-004 | Skills, projection, and client migration | backlog | Codex | 2d | LEGAL-003 |
+| LEGAL-004 | Skills, projection, and client migration | completed | Codex | 2d | LEGAL-003 |
 | TABLE-001 | Decision and main-action controllers | backlog | Codex | 1d | LEGAL-004 |
 | TABLE-002 | Selection, dialogs, and sound controllers | backlog | Codex | 1d | TABLE-001 |
 | TABLE-003 | Presentational extraction and cleanup | backlog | Codex | 1d | TABLE-002 |
@@ -446,7 +446,7 @@ Follow-up:
 
 ## LEGAL-004 — Skills, projection, and client migration
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 2 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 2 days | Risk: High
 
 ### Objective
 
@@ -468,6 +468,48 @@ Skill card/target counts, usage limits, projection, Table controllers, and remov
 - All 25 generals and 40 skills covered by contract or fuzz tests.
 - Client card/target/skill interaction tests.
 - Engine/server/client tests, typecheck, and build.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`)
+Status: completed
+
+Changed:
+
+- Added typed selection metadata to every registered active skill: card counts, target rule, usage counters, and stable unavailable reasons.
+- Centralized active-skill selection validation before handlers run, including duplicate/non-hand cards, exact target counts, target eligibility, and atomic rejection.
+- Published owner-only active-skill options through the strict shared `legalActions` schema.
+- Migrated Table and SelfDock card/target/skill affordances to server-projected options, including conversions, Zhangba, implicit Tao self-heal, dependent Jiedao selection, usage limits, and unavailable states.
+- Removed the replaced client active-skill spec table and card/target legality mirrors; client distance remains presentation-only for badges/inspection.
+- Updated deterministic bots to consume legal active-skill selections and kept server revalidation authoritative.
+
+Tests added or updated:
+
+- Added 5 engine contract tests covering all 7 active skills, owner-only projection, stable unavailable reasons, accepted advertised selections, and atomic rejection.
+- Added client regressions proving target highlighting and skill disabling obey explicit server contracts rather than visible-player inference.
+- Expanded strict protocol-schema tests for active-skill availability variants and malformed payload rejection.
+
+Verification:
+
+- Targeted Table suite: 67 passed.
+- Engine suite: 40 files and 1,114 tests passed.
+- Server suite: 3 files and 58 tests passed. The quickstart-bot test also passed alone after one parallel root-suite resource-contention timeout.
+- Client suite: 19 files and 164 tests passed.
+- Total clean package baseline: 62 files and 1,336 tests passed.
+- `pnpm typecheck`: engine, shared, server, and client passed.
+- Production client build: passed with 198 modules transformed.
+- Test catalog check: 256 pass, 0 fail, 0 waived, 0 pending.
+- `git diff --check`: passed.
+
+Known limitations:
+
+- Reactive response-card enumeration remains decision-specific and is not part of the main-action migration.
+- Cosmetic attack-distance badges remain client-derived and do not enable gameplay actions.
+
+Follow-up:
+
+- `TABLE-001` — Decision and main-action controllers.
 
 ---
 

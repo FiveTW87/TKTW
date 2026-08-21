@@ -83,3 +83,9 @@ Reason: A beginner-facing UI must distinguish “this ability exists but cannot 
 Date: 2026-08-21
 Decision: Card targets use a discriminated contract for no-selection, fixed automatic targets, independent selections, and dependent ordered selections. Jiedao publishes a public first-target list plus second targets keyed by the chosen armed player.
 Reason: A single flat target list cannot represent ordered dependent choices safely, while enumerating every permutation would inflate GameView payloads and complicate touch interaction. The explicit shapes remain compact for 3–10 players and preserve server revalidation.
+
+## DEC-015 — Active skills declare authoritative selection metadata
+
+Date: 2026-08-21
+Decision: Every player-initiated active skill declares its card-count and target-rule metadata beside the engine handler. The engine derives owner-only availability and validates the same contract atomically before the handler runs; clients only render the projected options.
+Reason: A separate client skill-spec table duplicated usage limits and eligibility rules, could drift from handlers, and allowed invalid no-op submissions such as empty Zhiheng selections.
