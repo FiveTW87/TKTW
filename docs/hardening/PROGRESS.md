@@ -37,7 +37,7 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 
 ## Next actions
 
-1. Commit and push the `LEGAL-001` checkpoint.
+1. Push the `LEGAL-001` checkpoint.
 2. Review Claude's initial read-only audit if available.
 3. Start `LEGAL-002` by enumerating literal and converted card plays with stable unavailable reason codes.
 4. Keep client consumption deferred until `LEGAL-004`.
@@ -47,7 +47,7 @@ Overall status: Phase 1 complete; typed legal-action work started with `LEGAL-00
 - `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
 - `TS-001`: `e75d6d3` (`TS-001-add-root-typecheck-gate`).
 - `TS-002`: `98410dc` (`TS-002-add-typed-protocol-seams`).
-- `LEGAL-001`: pending commit.
+- `LEGAL-001`: `950699e` (`LEGAL-001-add-action-union-schemas`).
 
 ## Known workspace notes
 

@@ -288,7 +288,7 @@ Engine legal-action model, shared schemas/views, projection tests. Client consum
 ### Completion report
 
 Completed at: 2026-08-21
-Commit: pending
+Commit: `950699e` (`LEGAL-001-add-action-union-schemas`)
 Status: completed
 
 Changed:

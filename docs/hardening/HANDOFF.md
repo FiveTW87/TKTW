@@ -2,7 +2,7 @@
 
 Date: 2026-08-21
 Integration owner: Codex
-Current task: `LEGAL-001` complete and awaiting checkpoint commit; next task is `LEGAL-002`
+Current task: `LEGAL-001` complete; next task is `LEGAL-002`
 
 ## Objective
 
@@ -20,7 +20,7 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Documentation checkpoint: `8dfb57e` (`DOC-001-hardening-execution-plan`)
 - TypeScript compiler checkpoint: `e75d6d3` (`TS-001-add-root-typecheck-gate`)
 - Typed protocol checkpoint: `98410dc` (`TS-002-add-typed-protocol-seams`).
-- Legal-action schema checkpoint: pending `LEGAL-001` commit.
+- Legal-action schema checkpoint: `950699e` (`LEGAL-001-add-action-union-schemas`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
 - Automated tests passed: engine 1,089; server 51; client 162; total 1,302.
 - Production client build passed on 2026-08-21.
