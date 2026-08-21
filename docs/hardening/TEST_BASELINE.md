@@ -1,7 +1,14 @@
 # Test and Verification Baseline
 
-Baseline date: 2026-08-18
-Command executed during repository review: `pnpm test`
+Baseline date: 2026-08-21
+Commands executed for `TS-001`: `pnpm typecheck`, `pnpm test`, `pnpm build:client`
+
+## Typecheck and build result
+
+- `pnpm typecheck` checks engine, shared, server, and client with their existing TypeScript include lists.
+- All four packages pass `tsc --noEmit`.
+- The production client build passes with 197 modules transformed.
+- Engine contract tests remain inside typechecking; no test or source directory was excluded to make the gate pass.
 
 ## Automated test result
 

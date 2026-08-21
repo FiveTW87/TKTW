@@ -13,6 +13,8 @@ export interface CardTypeDef {
   playableAnytime?: boolean;
 }
 
+export type CardTypeKey = keyof typeof cardsData.cardTypes;
+
 export const ALL_CARDS: Card[] = cardsData.cards as Card[];
 export const CARD_TYPES: Record<string, CardTypeDef> = cardsData.cardTypes as Record<
   string,

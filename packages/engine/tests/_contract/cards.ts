@@ -8,6 +8,7 @@
 import type { Card, Color, Suit } from "../../src/types";
 import { colorOf } from "../../src/types";
 import { ALL_CARDS, CARD_TYPES } from "../../src/core/cardData";
+import type { CardTypeKey } from "../../src/core/cardData";
 
 export { CID } from "../generals/_gh";
 
@@ -82,6 +83,6 @@ function suitTable(typeKey: string): SuitTable {
  * suit (e.g. there is exactly one wanjian) — tests must use `findCard` with a
  * different type in that case rather than asserting on undefined.
  */
-export const C: Record<string, SuitTable> = Object.fromEntries(
+export const C = Object.fromEntries(
   Object.keys(CARD_TYPES).map((k) => [k, suitTable(k)]),
-);
+) as Record<CardTypeKey, SuitTable>;

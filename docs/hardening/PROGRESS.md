@@ -1,18 +1,21 @@
 # Hardening Progress
 
-Last updated: 2026-08-18
+Last updated: 2026-08-21
 Current milestone: Phase 1 — TypeScript foundation
-Overall status: Phase 0 complete; implementation has not started
+Overall status: Phase 0 complete; `TS-001` complete
 
 ## Next task
 
-- `TS-001` — Compiler and command foundation
+- `TS-002` — Typed IDs and exhaustive decisions
 - Owner: Codex
-- Status: `backlog` until the user starts Core Hardening after usage reset
+- Status: `backlog`
 
 ## Completed in this cycle
 
 - `DOC-001` — Coordination foundation.
+- `TS-001` — Root compiler and command foundation.
+- Added one `pnpm typecheck` gate covering engine, shared, server, and client.
+- Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Scope confirmed: no Database/User/Score/C#/persistent match recovery.
 - Architecture ownership agreed: Codex integration owner; Claude receives bounded audit/test/content work after contracts stabilize.
 - Existing source architecture and test suites reviewed.
@@ -29,14 +32,15 @@ Overall status: Phase 0 complete; implementation has not started
 
 ## Next actions
 
-1. Push the `DOC-001` coordination checkpoint.
-2. Run and record fresh typecheck/build baseline at the start of `TS-001`.
-3. Review Claude's initial read-only audit if available.
-4. Start `TS-001`; do not begin legal-action implementation first.
+1. Commit and push the `TS-001` checkpoint.
+2. Review Claude's initial read-only audit if available.
+3. Start `TS-002` with explicit ID/action boundary inventory.
+4. Prefer derived string unions, `as const`, models, and discriminated unions; use enums only when a runtime namespace is required.
 
 ## Checkpoints
 
 - `DOC-001`: `8dfb57e` (`DOC-001-hardening-execution-plan`).
+- `TS-001`: pending commit.
 
 ## Known workspace notes
 
@@ -46,5 +50,5 @@ Overall status: Phase 0 complete; implementation has not started
 
 ## Blockers
 
-- None for documentation.
+- None for `TS-001`.
 - GitHub CLI is not installed, so this checkpoint is pushed with normal Git rather than a CLI-created pull request.

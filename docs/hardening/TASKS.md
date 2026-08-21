@@ -33,7 +33,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ID | Title | Status | Owner | Estimate | Depends on |
 |---|---|---|---|---:|---|
 | DOC-001 | Coordination foundation | completed | Codex | 1d | — |
-| TS-001 | Compiler and command foundation | backlog | Codex | 0.5d | DOC-001 |
+| TS-001 | Compiler and command foundation | completed | Codex | 0.5d | DOC-001 |
 | TS-002 | Typed IDs and exhaustive decisions | backlog | Codex | 1d | TS-001 |
 | LEGAL-001 | Legal-action union and schemas | backlog | Codex | 1d | TS-002 |
 | LEGAL-002 | Card play and conversion legality | backlog | Codex | 1.5d | LEGAL-001 |
@@ -171,7 +171,7 @@ Status: completed
 
 ## TS-001 — Compiler and command foundation
 
-Status: backlog | Owner: Codex | Reviewer: Claude audit | Estimate: 0.5 day | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude audit | Estimate: 0.5 day | Risk: Medium
 
 ### Objective
 
@@ -191,6 +191,26 @@ Root/package scripts, TypeScript configs, and typecheck documentation. No behavi
 
 - Add script/config assertions if available.
 - Run root typecheck, all package builds, and the full test suite.
+
+### Completion report
+
+Completed at: 2026-08-21
+Commit: pending
+Status: completed
+
+Changed:
+
+- Added `pnpm typecheck` as the single root gate for all four packages.
+- Added package-level `tsc --noEmit` scripts without changing existing include lists.
+- Added `CardTypeKey` derived from the canonical JSON catalog.
+- Typed the contract-suite card lookup with known catalog keys instead of weakening `noUncheckedIndexedAccess` or excluding tests.
+
+Verification:
+
+- `pnpm typecheck`: passed for engine, shared, server, and client.
+- `pnpm test`: 58 files and 1,290 tests passed.
+- `pnpm build:client`: production build passed.
+- No runtime behavior changes and no source/test files excluded from typechecking.
 
 ---
 

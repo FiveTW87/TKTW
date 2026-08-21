@@ -53,3 +53,9 @@ Reason: A duplicated tutorial rule implementation would drift from multiplayer b
 Date: 2026-08-18
 Decision: A task cannot start without scope, acceptance criteria, edge cases, and a test plan; it cannot complete without recorded verification and a completion report.
 Reason: The cycle spans multiple agents and long-lived context, so tests and durable records prevent silent scope loss.
+
+## DEC-010 — Prefer derived unions and models over blanket enums
+
+Date: 2026-08-21
+Decision: Reused values are modeled with shared types/interfaces, catalog-derived string unions, `as const` maps, or discriminated unions. TypeScript enums are reserved for cases that genuinely need a runtime namespace.
+Reason: JSON catalogs, Zod schemas, network payloads, and exhaustive action handling compose more directly with string unions while avoiding duplicated runtime values.
