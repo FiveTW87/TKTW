@@ -64,7 +64,9 @@ function anchorCenter(playerId: string): { x: number; y: number } | null {
   const nodes = document.querySelectorAll<HTMLElement>("[data-player-anchor]");
   for (const element of nodes) {
     if (element.dataset.playerAnchor !== playerId) continue;
+    if (!element.isConnected) continue;
     const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   }
   return null;
@@ -90,11 +92,22 @@ function posePosition(anchor: { x: number; y: number }): { poseLeft: number; pos
 
 type CombatPlayer = Pick<PlayerView, "id" | "generalId" | "faction">;
 
-export function useCombatPresentation(
-  matchId: string | undefined,
-  logs: readonly GameLogView[] | undefined,
-  players: readonly CombatPlayer[] | undefined = undefined,
-): CombatEffect[] {
+export interface CombatPresentationOptions {
+  connected: boolean;
+  matchId: string | undefined;
+  logs: readonly GameLogView[] | undefined;
+  players?: readonly CombatPlayer[] | undefined;
+}
+
+const ANCHOR_RETRY_INTERVAL_MS = 50;
+const ANCHOR_RETRY_COUNT = 4;
+
+export function useCombatPresentation({
+  connected,
+  matchId,
+  logs,
+  players,
+}: CombatPresentationOptions): CombatEffect[] {
   const [effects, setEffects] = useState<CombatEffect[]>([]);
   const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const mounted = useRef(true);
@@ -193,83 +206,90 @@ export function useCombatPresentation(
 
     if (event.kind === "draw" || event.kind === "hpLoss") return;
     const targetPlayerId = event.kind === "skill" ? event.actorId : event.targetId;
-    const target = anchorCenter(targetPlayerId);
-    if (!target) return;
+    const sourceId = event.kind === "damage" || event.kind === "dodge" ? event.sourceId : undefined;
 
-    if (event.kind === "death") {
-      schedule({
-        id: event.id,
-        kind: "death",
-        left: target.x,
-        top: target.y,
-        angleDeg: 0,
-      }, 0, reducedMotion ? 360 : 1250);
-      return;
-    }
+    const tryPresent = (retriesRemaining: number) => {
+      if (!mounted.current) return;
+      const target = anchorCenter(targetPlayerId);
+      const source = !reducedMotion && sourceId ? anchorCenter(sourceId) : null;
+      const waitingForTarget = !target;
+      const waitingForDeclaredSource = Boolean(target && !reducedMotion && sourceId && !source);
+      if ((waitingForTarget || waitingForDeclaredSource) && retriesRemaining > 0) {
+        const retryTimer = setTimeout(() => {
+          timers.current.delete(retryTimer);
+          tryPresent(retriesRemaining - 1);
+        }, ANCHOR_RETRY_INTERVAL_MS);
+        timers.current.add(retryTimer);
+        return;
+      }
+      if (!target) return;
 
-    if (event.kind === "skill") {
-      schedule({
-        id: event.id,
-        kind: "skill",
-        left: target.x,
-        top: target.y,
-        angleDeg: 0,
-        ...posePresentation(event.actorId, "skill", target),
-        label: event.skillId ? skillById(event.skillId)?.name ?? event.skillId : "ใช้สกิล",
-      }, 0, reducedMotion ? 360 : 920);
-      return;
-    }
+      if (event.kind === "death") {
+        schedule({ id: event.id, kind: "death", left: target.x, top: target.y, angleDeg: 0 }, 0, reducedMotion ? 360 : 1250);
+        return;
+      }
+      if (event.kind === "skill") {
+        schedule({
+          id: event.id,
+          kind: "skill",
+          left: target.x,
+          top: target.y,
+          angleDeg: 0,
+          ...posePresentation(event.actorId, "skill", target),
+          label: event.skillId ? skillById(event.skillId)?.name ?? event.skillId : "ใช้สกิล",
+        }, 0, reducedMotion ? 360 : 920);
+        return;
+      }
+      if (event.kind === "heal") {
+        schedule({
+          id: event.id,
+          kind: "heal",
+          left: target.x,
+          top: target.y,
+          angleDeg: 0,
+          amount: event.amount,
+        }, 0, reducedMotion ? 360 : 900);
+        return;
+      }
 
-    if (event.kind === "heal") {
-      schedule({
-        id: event.id,
-        kind: "heal",
-        left: target.x,
-        top: target.y,
-        angleDeg: 0,
-        amount: event.amount,
-      }, 0, reducedMotion ? 360 : 900);
-      return;
-    }
+      const angleDeg = source ? (Math.atan2(target.y - source.y, target.x - source.x) * 180) / Math.PI : -35;
+      if (source && !reducedMotion && sourceId) {
+        schedule({
+          id: `${event.id}:travel`,
+          kind: "travel",
+          left: source.x,
+          top: source.y,
+          angleDeg,
+          distance: Math.hypot(target.x - source.x, target.y - source.y),
+          ...posePresentation(sourceId, "attack", source),
+        }, 0, 1450);
+      }
+      if (event.kind === "damage") {
+        schedule({
+          id: `${event.id}:hit`,
+          kind: "hit",
+          left: target.x,
+          top: target.y,
+          angleDeg,
+          amount: event.amount,
+          ...posePresentation(event.targetId, "hit", target),
+        }, source && !reducedMotion ? 220 : 0, reducedMotion ? 520 : 1650);
+      } else {
+        schedule({
+          id: event.id,
+          kind: "dodge",
+          left: target.x,
+          top: target.y,
+          angleDeg,
+        }, source && !reducedMotion ? 220 : 0, reducedMotion ? 360 : 680);
+      }
+    };
 
-    const sourceId = event.sourceId ?? "";
-    const source = sourceId ? anchorCenter(sourceId) : null;
-    const angleDeg = source ? (Math.atan2(target.y - source.y, target.x - source.x) * 180) / Math.PI : -35;
-
-    if (source && !reducedMotion) {
-      schedule({
-        id: `${event.id}:travel`,
-        kind: "travel",
-        left: source.x,
-        top: source.y,
-        angleDeg,
-        distance: Math.hypot(target.x - source.x, target.y - source.y),
-        ...posePresentation(sourceId, "attack", source),
-      }, 0, 1450);
-    }
-
-    if (event.kind === "damage") {
-      schedule({
-        id: `${event.id}:hit`,
-        kind: "hit",
-        left: target.x,
-        top: target.y,
-        angleDeg,
-        amount: event.amount,
-        ...posePresentation(event.targetId, "hit", target),
-      }, source && !reducedMotion ? 220 : 0, reducedMotion ? 520 : 1650);
-    } else {
-      schedule({
-        id: event.id,
-        kind: "dodge",
-        left: target.x,
-        top: target.y,
-        angleDeg,
-      }, source && !reducedMotion ? 220 : 0, reducedMotion ? 360 : 680);
-    }
+    tryPresent(ANCHOR_RETRY_COUNT);
   }, [players]);
 
   usePresentationQueue({
+    connected,
     matchId,
     logs,
     present,

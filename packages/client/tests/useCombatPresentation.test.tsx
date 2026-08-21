@@ -50,14 +50,18 @@ describe("useCombatPresentation", () => {
 
   it("does not replay historical effects from the initial reconnect snapshot", () => {
     const historical = log({ actorId: "target", amount: 1, data: { sourceId: "attacker", hp: 3 } });
-    const { result } = renderHook(() => useCombatPresentation("match-1", [historical]));
+    const { result } = renderHook(() => useCombatPresentation({
+      connected: true,
+      matchId: "match-1",
+      logs: [historical],
+    }));
 
     expect(result.current).toEqual([]);
   });
 
   it("shows an attack travelling from source to target before the hit lands", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
 
@@ -85,7 +89,7 @@ describe("useCombatPresentation", () => {
     anchor("attacker", 20, 20);
     anchor("target", 1100, 40);
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
 
@@ -102,7 +106,7 @@ describe("useCombatPresentation", () => {
 
   it("lands on a distinct dodge cue instead of a hit", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs }),
       { initialProps: { logs: [] } },
     );
 
@@ -119,7 +123,7 @@ describe("useCombatPresentation", () => {
 
   it("shows healing as a positive cue on the healed player", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs }),
       { initialProps: { logs: [] } },
     );
 
@@ -132,7 +136,7 @@ describe("useCombatPresentation", () => {
 
   it("shows the public skill name over the player who activated it", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
 
@@ -153,7 +157,7 @@ describe("useCombatPresentation", () => {
     anchor("attacker", 20, 60);
     anchor("target", 810, 60);
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
 
@@ -176,7 +180,7 @@ describe("useCombatPresentation", () => {
 
   it("keeps only the newest pose visible for a player while preserving both effect cues", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
     const first = log({ id: "skill-1", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" });
@@ -194,7 +198,7 @@ describe("useCombatPresentation", () => {
 
   it("does not let follow-up attack travel immediately replace an active skill pose", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
     const skill = log({ id: "skill-priority", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" });
@@ -213,7 +217,7 @@ describe("useCombatPresentation", () => {
 
   it("clears active effects when the log stream is reset", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs, players),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
       { initialProps: { logs: [] } },
     );
 
@@ -225,7 +229,7 @@ describe("useCombatPresentation", () => {
 
   it("shows a defeat cue over a player when a public death log arrives", () => {
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs }),
       { initialProps: { logs: [] } },
     );
 
@@ -243,7 +247,7 @@ describe("useCombatPresentation", () => {
       value: vi.fn().mockReturnValue({ matches: true }),
     });
     const { result, rerender } = renderHook(
-      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation("match-1", logs),
+      ({ logs }: { logs: GameLogView[] }) => useCombatPresentation({ connected: true, matchId: "match-1", logs }),
       { initialProps: { logs: [] } },
     );
 
@@ -252,6 +256,122 @@ describe("useCombatPresentation", () => {
     });
 
     expect(result.current.map((effect) => effect.kind)).toEqual(["hit"]);
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
+  });
+
+  it("retries a temporarily missing target anchor and presents the cue exactly once", () => {
+    document.body.replaceChildren();
+    anchor("attacker", 100, 100);
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1, data: { sourceId: "attacker" } })] }));
+    expect(result.current).toEqual([]);
+
+    anchor("target", 500, 300);
+    act(() => vi.advanceTimersByTime(50));
+    expect(result.current.filter((effect) => effect.kind === "travel")).toHaveLength(1);
+    act(() => vi.advanceTimersByTime(250));
+    expect(result.current.filter((effect) => effect.kind === "hit")).toHaveLength(1);
+  });
+
+  it("waits briefly for a declared source, then degrades to one target-only outcome", () => {
+    document.body.replaceChildren();
+    anchor("target", 500, 300);
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1, data: { sourceId: "attacker" } })] }));
+    expect(result.current).toEqual([]);
+    act(() => vi.advanceTimersByTime(200));
+    expect(result.current.map((effect) => effect.kind)).toEqual(["hit"]);
+    expect(vi.getTimerCount()).toBeGreaterThan(0); // the visible hit still owns its removal timer
+  });
+
+  it("adds travel when a declared source anchor appears within the retry bound", () => {
+    document.body.replaceChildren();
+    anchor("target", 500, 300);
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1, data: { sourceId: "attacker" } })] }));
+    expect(result.current).toEqual([]);
+    anchor("attacker", 100, 100);
+    act(() => vi.advanceTimersByTime(50));
+    expect(result.current.filter((effect) => effect.kind === "travel")).toHaveLength(1);
+  });
+
+  it("drops an effect after bounded target retries and cancels retries on reset", () => {
+    document.body.replaceChildren();
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1 })] }));
+    act(() => rerender({ logs: [] }));
+    anchor("target", 500, 300);
+    act(() => vi.advanceTimersByTime(370));
+    expect(result.current).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("cancels anchor retries on unmount", () => {
+    document.body.replaceChildren();
+    const { rerender, unmount } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1 })] }));
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("skips zero-area duplicate anchors and keeps the first usable DOM match", () => {
+    document.body.replaceChildren();
+    const zero = document.createElement("div");
+    zero.dataset.playerAnchor = "target";
+    zero.getBoundingClientRect = () => ({
+      x: 0, y: 0, left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}),
+    });
+    document.body.appendChild(zero);
+    anchor("target", 500, 300);
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log({ actorId: "target", amount: 1 })] }));
+    expect(result.current.find((effect) => effect.kind === "hit")?.left).toBe(550);
+    expect(result.current.find((effect) => effect.kind === "hit")?.top).toBe(340);
+  });
+
+  it("preserves every semantic outcome without travel in reduced-motion mode", () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn().mockReturnValue({ matches: true }),
+    });
+    const { result, rerender } = renderHook(
+      ({ logs }) => useCombatPresentation({ connected: true, matchId: "match-1", logs, players }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [
+      log({ id: "damage", actorId: "target", amount: 2, data: { sourceId: "attacker" } }),
+      log({ id: "dodge", eventType: "dodge", actorId: "target", data: { sourceId: "attacker" } }),
+      log({ id: "heal", eventType: "heal", actorId: "target", amount: 1 }),
+      log({ id: "skill", eventType: "skillUse", actorId: "attacker", skillId: "caocao_jianxiong" }),
+      log({ id: "death", eventType: "death", actorId: "target" }),
+    ] }));
+    act(() => vi.advanceTimersByTime(370));
+    expect(result.current.some((effect) => effect.kind === "travel")).toBe(false);
+    expect(result.current.find((effect) => effect.kind === "hit")?.amount).toBe(2);
+    expect(result.current.some((effect) => effect.kind === "dodge")).toBe(true);
+    expect(result.current.find((effect) => effect.kind === "heal")?.amount).toBe(1);
+    expect(result.current.find((effect) => effect.kind === "skill")?.label).toBe("พลิกภัยเป็นกล");
+    expect(result.current.some((effect) => effect.kind === "death")).toBe(true);
     Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
   });
 });

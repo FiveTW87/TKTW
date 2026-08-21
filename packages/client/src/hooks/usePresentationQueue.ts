@@ -11,6 +11,7 @@ interface SnapshotBaseline {
 }
 
 export interface PresentationQueueOptions {
+  connected: boolean;
   matchId: string | undefined;
   logs: readonly GameLogView[] | undefined;
   present: (event: PresentationEvent) => void | Promise<void>;
@@ -27,6 +28,7 @@ function isExactPrefix(previous: readonly string[], next: readonly string[]): bo
  * Presenter promises are observed for errors but never awaited before the
  * cadence advances, so presentation cannot delay gameplay or networking. */
 export function usePresentationQueue({
+  connected,
   matchId,
   logs,
   present,
@@ -43,6 +45,8 @@ export function usePresentationQueue({
   const onResetRef = useRef(onReset);
   const onErrorRef = useRef(onError);
   const intervalRef = useRef(intervalMs);
+  const awaitingFreshLogsRef = useRef(false);
+  const disconnectedLogsRef = useRef<readonly GameLogView[] | undefined>(undefined);
   presentRef.current = present;
   onResetRef.current = onReset;
   onErrorRef.current = onError;
@@ -89,6 +93,35 @@ export function usePresentationQueue({
   }, []);
 
   useEffect(() => {
+    if (!connected) {
+      const enteringDisconnect = !awaitingFreshLogsRef.current;
+      awaitingFreshLogsRef.current = true;
+      disconnectedLogsRef.current = logs;
+      if (enteringDisconnect) {
+        const hadBaseline = baselineRef.current !== null;
+        clearPending();
+        if (hadBaseline) {
+          try {
+            onResetRef.current?.();
+          } catch {
+            // Reset presentation is best-effort.
+          }
+        }
+      }
+      return;
+    }
+
+    if (awaitingFreshLogsRef.current) {
+      if (!matchId || !logs || logs === disconnectedLogsRef.current) return;
+      awaitingFreshLogsRef.current = false;
+      disconnectedLogsRef.current = undefined;
+      const rawLogIds = logs.map((entry) => entry.id);
+      clearPending();
+      seenRef.current = new Set(mapGameLogsToPresentationEvents(matchId, logs).map((event) => event.id));
+      baselineRef.current = { matchId, rawLogIds };
+      return;
+    }
+
     if (!matchId || !logs) {
       const hadBaseline = baselineRef.current !== null;
       baselineRef.current = null;
@@ -137,5 +170,5 @@ export function usePresentationQueue({
     if (appendedEvents.length === 0) return;
     pendingRef.current.push(...appendedEvents);
     if (timerRef.current === null) dispatchNext();
-  }, [logs, matchId]);
+  }, [connected, logs, matchId]);
 }

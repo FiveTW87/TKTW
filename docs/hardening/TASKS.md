@@ -44,7 +44,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TABLE-003 | Presentational extraction and cleanup | completed | Codex | 1d | TABLE-002 |
 | ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | completed | Codex | 1.5d | LEGAL-004, ASSET-001 |
-| PRES-002 | Anchor retry, reconnect, and reduced motion | backlog | Codex | 1d | PRES-001 |
+| PRES-002 | Anchor retry, reconnect, and reduced motion | in_progress | Codex | 1d | PRES-001 |
 | SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | backlog | Codex | 2.5d | FX-001, SFX-001 |
@@ -931,11 +931,67 @@ Limitations and follow-up:
 
 ## PRES-002 — Anchor retry, reconnect, and reduced motion
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 1 day | Risk: Medium
+Status: in_progress | Owner: Codex | Reviewer: Claude | Branch: main | Dependencies: PRES-001 | Estimate: 1 day | Risk: Medium
 
 ### Objective
 
 Make presentation reliable across layout mounts, reconnects, compact/desktop anchors, and reduced motion.
+
+### Current behavior
+
+- `usePresentationQueue` handles initial/match/rebuilt snapshots but does not know connection lifecycle, so the first fresh view after a live reconnect can replay logs accumulated while disconnected.
+- `useCombatPresentation` resolves target/source DOM anchors once; a temporarily unmounted desktop/mobile anchor drops the effect permanently.
+- Reduced motion already omits travel and CSS particles while retaining outcome content, but only damage has focused hook coverage.
+- Mobile may expose duplicate anchors for a focused opponent or self; the current resolver uses the first DOM match.
+
+### Expected behavior
+
+- The existing queue owns disconnect/reset, waits through the same stale snapshot, silently baselines the first fresh snapshot, and emits only later appends.
+- The combat adapter retries required target anchors and declared non-reduced-motion source anchors on a bounded cadence, re-reading geometry every attempt.
+- A target appearing within the bound receives exactly one effect; a source that remains missing degrades to a target-only outcome; a missing target fails harmlessly.
+- Reduced motion never waits for or renders travel, yet preserves damage/heal numbers, dodge/skill/death text, and the existing approved pose/output behavior.
+- Existing first-usable anchor selection and all desktop/mobile DOM structures remain unchanged.
+
+### In scope / allowed files
+
+- `packages/client/src/hooks/usePresentationQueue.ts` and `packages/client/tests/usePresentationQueue.test.tsx`.
+- `packages/client/src/hooks/useCombatPresentation.ts` and `packages/client/tests/useCombatPresentation.test.tsx`.
+- Targeted integration edit to `packages/client/src/screens/Table.tsx`.
+- Narrow semantic-output regression additions to `CombatEffectLayer.test.tsx` only if needed; production `CombatEffectLayer.tsx`/CSS only if a proven meaning gap exists.
+- `docs/hardening/TASKS.md`, `docs/hardening/PROGRESS.md`, and a narrowly scoped decision record if required.
+
+### Out of scope / forbidden files
+
+- Engine, Shared, Server, store/socket/rejoin flow, gameplay, decisions, legal actions, and `packages/client/src/App.tsx`.
+- `useTableSfx`, sound behavior/preferences, the presentation-event union/mapper, artwork/assets, and new effects.
+- GameBoard, PlayerTile, SelfDock, compact/desktop anchor markup, anchor priority, layout, CSS, z-index, and responsive redesign.
+- Unbounded polling, MutationObserver infrastructure, generic anchor registries, or a new one-consumer anchor module.
+
+### Type or protocol changes
+
+- Add required connection state to the existing presentation-queue options interface.
+- Change the combat hook to one grouped options interface containing `connected`, `matchId`, `logs`, and `players`.
+- No wire, Engine, Shared schema, event-union, store, or DOM-attribute change.
+
+### Implementation steps
+
+1. Add red queue tests for disconnect cancellation/reset, same stale snapshot, silent first fresh snapshot, and later append delivery.
+2. Add red combat tests for delayed target/source anchors, bounded failure/fallback, timer cancellation, duplicate/zero-area anchor behavior, and reduced-motion meaning.
+3. Deepen queue reconnect lifecycle using snapshot identity rather than log count/IDs alone.
+4. Deepen combat presentation with a private bounded retry policy and shared existing timer ownership.
+5. Pass connection state from Table without changing rendered markup or gameplay orchestration.
+6. Run focused and full verification, inspect the scoped diff, record completion, commit, and push.
+
+### Edge cases
+
+- The board remains mounted under `ReconnectingOverlay`; reconnect may set `connected=true` before a fresh `GameView` arrives.
+- Initial disconnected mount must wait for fresh data; pending queue items and active/retry effects cancel once on disconnect.
+- First fresh reconnect logs may be an exact-prefix append and must still baseline silently.
+- Target/source nodes may be detached, zero-area, appear on the final retry, or disappear again between attempts.
+- Mobile duplicate anchors remain first-usable by DOM order; PRES-002 does not choose largest or focused anchors.
+- Source absent after the bound produces no travel but still one target outcome; target absent produces nothing.
+- Reduced motion does not retry an unused source and must not invent an amount for malformed events.
+- Match reset, log rollback, disconnect, StrictMode replay, and unmount must cancel retry/queue timers safely.
 
 ### Acceptance criteria
 
@@ -943,9 +999,25 @@ Make presentation reliable across layout mounts, reconnects, compact/desktop anc
 - Reconnect resumes from the new baseline.
 - Reduced motion preserves labels/numbers without travel particles.
 
-### Tests and verification
+### Tests to add
 
-- Fake-timer anchor tests, reconnect truncation tests, reduced-motion tests, desktop/mobile anchor tests.
+- Queue reconnect lifecycle tests with fake timers and snapshot identity.
+- Combat target/source retry, timeout fallback, reset/unmount cleanup, first-usable anchor, and desktop/mobile coordinate tests.
+- Reduced-motion regressions for damage, dodge, heal, skill, and death outcome meaning with no travel.
+- Retain existing presentation mapper/queue/combat/SFX/Table regressions.
+
+### Verification commands
+
+- `pnpm --filter @tktw/client exec vitest run tests/usePresentationQueue.test.tsx tests/useCombatPresentation.test.tsx tests/CombatEffectLayer.test.tsx tests/useTableSfx.test.tsx`.
+- `pnpm --filter @tktw/client test -- --run`.
+- `pnpm --filter @tktw/engine test -- --run`.
+- `pnpm --filter @tktw/server test -- --run`.
+- `pnpm typecheck`.
+- `pnpm --filter @tktw/client build`.
+
+### Completion report
+
+Pending implementation and verification.
 
 ---
 

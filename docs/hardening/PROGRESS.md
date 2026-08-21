@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-21
 Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `PRES-001` complete; combat presentation now consumes typed, ordered, deduplicated events through a non-blocking queue
+Overall status: `PRES-002` in progress; reconnect baselines and bounded anchor resolution are being hardened
 
 ## Next task
 
 - `PRES-002` — Anchor retry, reconnect, and reduced motion
 - Owner: Codex
-- Status: `backlog`
+- Status: `in_progress`
 
 ## Completed in this cycle
 
@@ -45,10 +45,10 @@ Overall status: `PRES-001` complete; combat presentation now consumes typed, ord
 
 ## Next actions
 
-1. Push the verified `PRES-001` code and documentation checkpoints to `origin/main`.
-2. Start `PRES-002` with bounded retry for temporarily missing desktop/mobile anchors.
-3. Preserve silent reconnect baselines and keep reduced-motion outcome cues meaningful.
-4. Retain presentation failure isolation from gameplay, answers, turns, and sockets.
+1. Add reconnect lifecycle coverage to the typed presentation queue.
+2. Add bounded target/source anchor retry inside the combat adapter.
+3. Prove reduced-motion outcome meaning and preserve first-usable desktop/mobile placement.
+4. Run the full verification matrix before commit and push.
 
 ## Checkpoints
 

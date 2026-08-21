@@ -43,7 +43,12 @@ export function Table() {
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const debug = useGameStore((s) => s.debug);
-  const combatEffects = useCombatPresentation(gameView?.matchId, gameView?.gameLogs, gameView?.players);
+  const combatEffects = useCombatPresentation({
+    connected,
+    matchId: gameView?.matchId,
+    logs: gameView?.gameLogs,
+    players: gameView?.players,
+  });
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
   const { compact } = useDeviceMode();

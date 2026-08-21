@@ -16,7 +16,7 @@ describe("usePresentationQueue", () => {
     const present = vi.fn<(event: PresentationEvent) => void>();
     const historical = log("log_2");
     const { rerender } = renderHook(
-      ({ logs }) => usePresentationQueue({ matchId: "m1", logs, present, intervalMs: 20 }),
+      ({ logs }) => usePresentationQueue({ connected: true, matchId: "m1", logs, present, intervalMs: 20 }),
       { initialProps: { logs: [historical] } },
     );
     expect(present).not.toHaveBeenCalled();
@@ -32,7 +32,7 @@ describe("usePresentationQueue", () => {
     const first = log("l0");
     const second = log("l1");
     const { rerender } = renderHook(
-      ({ logs }) => usePresentationQueue({ matchId: "m1", logs, present, intervalMs: 10 }),
+      ({ logs }) => usePresentationQueue({ connected: true, matchId: "m1", logs, present, intervalMs: 10 }),
       { initialProps: { logs: [first] } },
     );
     act(() => rerender({ logs: [first, second, second] }));
@@ -46,7 +46,7 @@ describe("usePresentationQueue", () => {
     const present = vi.fn<(event: PresentationEvent) => void>();
     const onReset = vi.fn();
     const { rerender } = renderHook(
-      ({ matchId, logs }) => usePresentationQueue({ matchId, logs, present, onReset }),
+      ({ matchId, logs }) => usePresentationQueue({ connected: true, matchId, logs, present, onReset }),
       { initialProps: { matchId: "m1", logs: [log("l0"), log("l1")] } },
     );
     act(() => rerender({ matchId: "m1", logs: [log("l0"), log("replacement")] }));
@@ -61,7 +61,7 @@ describe("usePresentationQueue", () => {
     const onReset = vi.fn();
     const { rerender } = renderHook(
       ({ matchId, logs }: { matchId: string | undefined; logs: GameLogView[] | undefined }) => (
-        usePresentationQueue({ matchId, logs, present, onReset })
+        usePresentationQueue({ connected: true, matchId, logs, present, onReset })
       ),
       { initialProps: { matchId: "m1", logs: [log("l0")] } },
     );
@@ -80,7 +80,7 @@ describe("usePresentationQueue", () => {
       return undefined;
     });
     const { rerender } = renderHook(
-      ({ logs }) => usePresentationQueue({ matchId: "m", logs, present, onError, intervalMs: 10 }),
+      ({ logs }) => usePresentationQueue({ connected: true, matchId: "m", logs, present, onError, intervalMs: 10 }),
       { initialProps: { logs: [] as GameLogView[] } },
     );
     act(() => rerender({ logs: [log("throw"), log("reject"), log("after")] }));
@@ -95,7 +95,7 @@ describe("usePresentationQueue", () => {
   it("cancels queued timers on unmount", () => {
     const present = vi.fn<(event: PresentationEvent) => void>();
     const { rerender, unmount } = renderHook(
-      ({ logs }) => usePresentationQueue({ matchId: "m", logs, present, intervalMs: 10 }),
+      ({ logs }) => usePresentationQueue({ connected: true, matchId: "m", logs, present, intervalMs: 10 }),
       { initialProps: { logs: [] as GameLogView[] } },
     );
     act(() => rerender({ logs: [log("first"), log("never")] }));
@@ -103,5 +103,45 @@ describe("usePresentationQueue", () => {
     unmount();
     act(() => vi.runAllTimers());
     expect(present).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels pending work on disconnect, ignores stale data, silently primes fresh data, then resumes", () => {
+    const present = vi.fn<(event: PresentationEvent) => void>();
+    const onReset = vi.fn();
+    const stale = [log("l0")];
+    const { rerender } = renderHook(
+      ({ connected, logs }) => usePresentationQueue({ connected, matchId: "m", logs, present, onReset, intervalMs: 20 }),
+      { initialProps: { connected: true, logs: stale } },
+    );
+    const beforeDrop = [...stale, log("l1"), log("cancelled")];
+    act(() => rerender({ connected: true, logs: beforeDrop }));
+    expect(present.mock.calls.map(([event]) => event.logId)).toEqual(["l1"]);
+
+    act(() => rerender({ connected: false, logs: beforeDrop }));
+    act(() => vi.runAllTimers());
+    expect(present.mock.calls.map(([event]) => event.logId)).toEqual(["l1"]);
+    expect(onReset).toHaveBeenCalledTimes(1);
+
+    act(() => rerender({ connected: true, logs: beforeDrop }));
+    const fresh = [...beforeDrop, log("fresh-silent")];
+    act(() => rerender({ connected: true, logs: fresh }));
+    expect(present.mock.calls.map(([event]) => event.logId)).toEqual(["l1"]);
+
+    act(() => rerender({ connected: true, logs: [...fresh, log("after-reconnect")] }));
+    expect(present.mock.calls.map(([event]) => event.logId)).toEqual(["l1", "after-reconnect"]);
+  });
+
+  it("waits for a fresh snapshot when initially mounted disconnected", () => {
+    const present = vi.fn<(event: PresentationEvent) => void>();
+    const stale = [log("l0")];
+    const { rerender } = renderHook(
+      ({ connected, logs }) => usePresentationQueue({ connected, matchId: "m", logs, present }),
+      { initialProps: { connected: false, logs: stale } },
+    );
+    act(() => rerender({ connected: true, logs: stale }));
+    const fresh = [...stale];
+    act(() => rerender({ connected: true, logs: fresh }));
+    act(() => rerender({ connected: true, logs: [...fresh, log("new")] }));
+    expect(present.mock.calls.map(([event]) => event.logId)).toEqual(["new"]);
   });
 });
