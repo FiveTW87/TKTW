@@ -45,7 +45,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ASSET-001 | Typed general-art manifest | completed | Codex | 1.5d | TS-002 |
 | PRES-001 | Presentation-event model and queue | completed | Codex | 1.5d | LEGAL-004, ASSET-001 |
 | PRES-002 | Anchor retry, reconnect, and reduced motion | completed | Codex | 1d | PRES-001 |
-| SFX-001 | Audio manager and preferences | backlog | Codex | 1.5d | PRES-001 |
+| SFX-001 | Audio manager and preferences | completed | Codex | 1.5d | PRES-001 |
 | FX-001 | Card and equipment motion | backlog | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | backlog | Codex | 2.5d | FX-001, SFX-001 |
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | backlog | Codex | 2d | FX-002 |
@@ -1066,11 +1066,67 @@ Limitations and follow-up:
 
 ## SFX-001 — Audio manager and preferences
 
-Status: backlog | Owner: Codex | Reviewer: Claude event inventory | Estimate: 1.5 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude event inventory | Branch: main | Dependencies: PRES-001 | Estimate: 1.5 days | Risk: Medium
 
 ### Objective
 
 Centralize sound categories, preload/fallback, volume, mute, and concurrency limiting.
+
+### Current behavior
+
+- `lib/sfx.ts` owns synthesized note definitions but uses module-level procedural helpers and a global raw `AudioContext`.
+- Context construction, node creation, connection, start/stop, and `resume()` failures can escape; rejected resume promises are not observed.
+- Playback schedules immediately even when the context remains suspended, and each repeated sequence can create two or three more voices without a cap.
+- There is no user-gesture recovery owner, logical-effect cleanup, or deterministic Web Audio test seam.
+- The preference store persists mute/volume and the existing Table control edits them, but storage writes and non-finite volume input can still throw/corrupt state.
+
+### Expected behavior
+
+- One deep SFX manager owns lazy context creation, logical-effect playback, autoplay recovery, concurrency/priority, cleanup, and all failure isolation.
+- One synthesized sequence counts as one logical effect even when it contains multiple oscillator notes.
+- Global and repeated-name limits bound overlap; high-importance result/death cues may evict older lower/equal-priority effects while low-priority cues cannot evict protected cues.
+- A blocked sound is dropped and never replayed later; pointer/keyboard interaction only unlocks the context for future sounds.
+- Unsupported Web Audio, context/node/resume/start/stop/listener failures, mute/zero volume, and storage failure remain harmless.
+- Existing Result, Table SFX routing, and utility-rail UI behavior remain unchanged.
+
+### In scope / allowed files
+
+- `packages/client/src/lib/sfx.ts` and `packages/client/tests/sfx.test.ts`.
+- `packages/client/src/store/sfxStore.ts` and `packages/client/tests/sfxStore.test.ts` for safe preference validation/persistence.
+- Narrow caller/test typing edits to `useTableSfx.ts`, `Result.tsx`, or their tests only if the manager seam requires them while preserving behavior.
+- `docs/hardening/TASKS.md`, `docs/hardening/PROGRESS.md`, and a narrowly scoped audio decision record.
+
+### Out of scope / forbidden files
+
+- New audio assets, licensing/downloads, music, spatial audio, voice chat, haptics, or changing synthesized melodies.
+- Engine, Shared, Server, game store/socket flow, presentation ordering, gameplay, legal actions, and `packages/client/src/App.tsx`.
+- Table controls markup/CSS/layout, preference UX redesign, mobile/desktop layout, new sound event categories, and reconnect-routing changes.
+- An audio queue that replays blocked history, an unbounded pending list, or multiple one-consumer preload/limiter modules.
+
+### Type or protocol changes
+
+- Replace raw helpers with a client-only `SfxManager` interface and narrow audio-driver/voice seam used by the real Web Audio adapter and deterministic fake tests.
+- Keep the existing `SfxName` union and `playSfx(name): void` caller interface stable.
+- Add no wire, Engine, Shared, store/socket, gameplay, or persisted-storage schema change.
+
+### Implementation steps
+
+1. Add red fake-driver tests for lazy creation, preference gating/scaling, logical sequences, global/per-name limits, priority eviction, and cleanup.
+2. Add red autoplay tests for suspended context, resume rejection, gesture unlock, no blocked replay, and listener disposal.
+3. Add red failure-isolation tests for unavailable/throwing context, node/play/stop failures, and storage errors/non-finite volume.
+4. Implement one manager with private synth definitions and a production Web Audio adapter; retain `playSfx` as the compatibility adapter.
+5. Harden preference persistence without changing control markup or stored field names.
+6. Run focused/full verification, inspect scoped diff, record completion/decision, commit, and push.
+
+### Edge cases
+
+- `AudioContext`/`webkitAudioContext` may be absent, throw on construction, be suspended/closed, or reject `resume()` asynchronously.
+- Rapid logs can request many multi-note effects in one render; each sequence must consume one logical slot and active counts must release exactly once.
+- `onended`, explicit eviction, dispose, partial node construction, and stop/disconnect exceptions may race; cleanup must be idempotent.
+- Multiple plays while one resume is pending must not create a blocked backlog or burst after unlock.
+- Pointerdown/keydown recovery listeners must arm at most once, remove after success/dispose, and tolerate document/listener failures.
+- Mute/zero volume must avoid context creation; volume must be finite and clamped before reaching gain values.
+- Local storage may be absent, contain malformed JSON/fields, or throw on read/write.
 
 ### Acceptance criteria
 
@@ -1078,9 +1134,31 @@ Centralize sound categories, preload/fallback, volume, mute, and concurrency lim
 - Repeated events cannot create unbounded overlapping audio.
 - Browser autoplay restrictions fail silently and recover after user interaction.
 
-### Tests and verification
+### Tests to add
 
-- Mock AudioContext/playback tests, preference persistence, concurrency, preload failure, mute/volume tests.
+- Fake audio-driver manager tests for all named sounds, note grouping, volume, limits, priority, end cleanup, dispose, and unsupported/throwing paths.
+- Fake interaction/resume tests for rejection, one armed listener, future-play recovery, and blocked-sound non-replay.
+- Preference-store tests for malformed/non-finite values and read/write failure fallback.
+- Retain Table SFX reconnect/routing, Result win/lose, Table controls, and full client regressions.
+
+### Verification commands
+
+- `pnpm --filter @tktw/client exec vitest run tests/sfx.test.ts tests/sfxStore.test.ts tests/useTableSfx.test.tsx tests/result.test.tsx tests/TableControls.test.tsx`.
+- `pnpm --filter @tktw/client test -- --run`.
+- `pnpm --filter @tktw/engine test -- --run`.
+- `pnpm --filter @tktw/server test -- --run`.
+- `pnpm typecheck`.
+- `pnpm --filter @tktw/client build`.
+
+### Completion report
+
+- Replaced module-level Web Audio helpers with one `SfxManager` that owns lazy driver creation, preference gating, autoplay recovery, logical-effect limits, priority eviction, and idempotent cleanup.
+- Retained all ten synthesized sound definitions and the stable `playSfx(name): void` caller seam; no audio assets, UI, gameplay, routing, or wire types changed.
+- Blocked sounds are discarded rather than queued. One pointer/keyboard listener unlocks the context for future sounds and observes both synchronous and asynchronous resume failures.
+- Added global/per-name logical-effect bounds. Multi-note sequences consume one slot, high-priority result/death sounds are protected from low-priority bursts, and ended/evicted effects release resources once.
+- Hardened preference loading/writing for malformed JSON, unavailable/quota-limited storage, non-finite volume, and finite clamping while retaining the `tktw_sfx` schema.
+- Added deterministic fake-driver coverage for 14 focused manager/store cases; the complete baseline is 70 files / 1,390 tests.
+- Verification passed: focused SFX tests, full client/engine/server regressions, root typecheck, and client production build (206 modules). No screenshot was required because markup, CSS, and visible controls did not change.
 
 ---
 

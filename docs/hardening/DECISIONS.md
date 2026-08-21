@@ -119,3 +119,9 @@ Reason: Filename inference and version globs can silently select the wrong appro
 Date: 2026-08-21
 Decision: Client presentation maps supported structured logs to a discriminated event union with match-scoped semantic IDs. A non-blocking queue preserves received array order, silently baselines initial/rebuilt history, deduplicates by semantic ID, and isolates each presenter failure. Visual adapters retain DOM, artwork, phase, and lifetime policy.
 Reason: Engine log suffixes cannot be sorted lexically, projected private logs may contain valid ID gaps, and count-only consumers cannot distinguish appends from rebuilt snapshots. One typed event seam gives future combat, card-motion, and sound work leverage without allowing presentation to delay gameplay.
+
+## DEC-021 — Audio is best-effort and bounded by logical effect
+
+Date: 2026-08-21
+Decision: One client SFX manager owns lazy Web Audio construction, autoplay recovery, preference gating, priority-aware concurrency, and cleanup. A multi-note sequence is one logical effect; blocked sounds are dropped rather than replayed after unlock, and every backend/storage failure is contained.
+Reason: Raw oscillator calls multiplied resources during event bursts and could leak browser policy or storage failures into React effects. One deep lifecycle owner keeps the existing sound vocabulary stable while making optional audio unable to delay or break gameplay.
