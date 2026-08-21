@@ -39,7 +39,7 @@ describe("typed protocol seams", () => {
   });
 
   it.each([
-    { kind: "playCard" },
+    { kind: "playCard", options: [] },
     { kind: "useSkill" },
     { kind: "endPhase" },
     { kind: "draw" },
@@ -64,5 +64,47 @@ describe("typed protocol seams", () => {
   it("rejects fields that do not belong to a legal-action variant", () => {
     expect(legalActionViewSchema.safeParse({ kind: "draw", selectableCardIds: ["secret"] }).success).toBe(false);
     expect(legalActionViewSchema.safeParse({ kind: "discard", decisionKind: "discardTo" }).success).toBe(false);
+  });
+
+  it("parses available and unavailable card-play options as a strict union", () => {
+    const action = {
+      kind: "playCard",
+      options: [
+        {
+          source: "literal",
+          typeKey: "sha",
+          selectableCardIds: ["spade_7_1"],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+          available: true,
+        },
+        {
+          source: "conversion",
+          typeKey: "tao",
+          asType: "tao",
+          selectableCardIds: ["heart_2_1"],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+          available: false,
+          unavailableReason: "conversion_wrong_context",
+        },
+      ],
+    } as const;
+
+    expect(legalActionViewSchema.parse(action)).toEqual(action);
+    expect(
+      legalActionViewSchema.safeParse({
+        kind: "playCard",
+        options: [{ ...action.options[0], unavailableReason: "sha_usage_limit" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      legalActionViewSchema.safeParse({
+        kind: "playCard",
+        options: [{ ...action.options[1], unavailableReason: undefined }],
+      }).success,
+    ).toBe(false);
   });
 });

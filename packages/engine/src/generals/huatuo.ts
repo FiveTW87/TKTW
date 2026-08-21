@@ -41,16 +41,17 @@ registerGeneral({
       id: "huatuo_jiuxing",
       queries: {
         canConvertCard: (ctx) => {
-          const { playerId, card, asType } = ctx.payload as {
+          const { playerId, card, asType, ignoreTiming } = ctx.payload as {
             playerId: string;
             card: Card;
             asType: string;
+            ignoreTiming?: boolean;
           };
           if (ctx.ownerId !== playerId) return false;
           if (asType !== "tao" || colorOf(card.suit) !== "red") return false;
           // Only when it isn't Hua Tuo's own turn.
           const activeId = ctx.state.players.find((p) => p.seat === ctx.state.currentSeat)?.id;
-          return activeId !== ctx.ownerId;
+          return ignoreTiming === true || activeId !== ctx.ownerId;
         },
       },
     },

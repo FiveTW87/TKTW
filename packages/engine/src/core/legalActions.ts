@@ -1,24 +1,38 @@
 // Phase 5 (SPEC §9.2/§9.3) — decision-scoped legal actions and in-flight
 // card views, derived from data the engine already computes/tracks. This is
-// deliberately NOT a full server-authoritative enumeration of every legal
-// card/target combination for an open mainAction — the client's existing
-// legality modules (cardMeta/distance/conversions/skillInteraction) already
-// do that from projected state, and the server re-validates every answer
-// atomically regardless. What this DOES give the client: the legal shape of
-// an answer to whatever decision is actually pending right now (how many
-// cards, which ids, which targets, which high-level choices) — real,
-// server-authoritative info without reimplementing the ruleset here.
-import type { DecisionKind, GameEvent, PendingDecision } from "../types";
+// LEGAL-002 adds server-authoritative card and conversion candidates for an
+// open mainAction. LEGAL-003 will add their target candidates; until then the
+// server still re-validates every submitted target atomically.
+import type { DecisionKind, GameEvent, GameState, PendingDecision } from "../types";
+import { CARD_TYPES } from "./cardData";
+import {
+  countsAsType,
+  hasCardConversion,
+  mainActionUnavailableReason,
+  type CardPlayUnavailableReason,
+} from "./cardChecks";
 
 export type ResponseDecisionKind = Exclude<
   DecisionKind,
   "mainAction" | "drawCard" | "discardTo" | "discardChosenBy"
 >;
 
+type CardPlayAvailability =
+  | { available: true }
+  | { available: false; unavailableReason: CardPlayUnavailableReason };
+
+export type CardPlayOptionView = {
+  source: "literal" | "conversion" | "zhangba";
+  typeKey: string;
+  selectableCardIds: string[];
+  minCards: number;
+  maxCards: number;
+  exactCards: number;
+  asType?: string;
+} & CardPlayAvailability;
+
 export type LegalActionView =
-  // LEGAL-002 and LEGAL-003 add the fine-grained card/skill candidates. These
-  // marker variants already let consumers route the action exhaustively.
-  | { kind: "playCard" }
+  | { kind: "playCard"; options: CardPlayOptionView[] }
   | { kind: "useSkill" }
   | { kind: "endPhase" }
   | { kind: "draw" }
@@ -53,6 +67,86 @@ function assertNever(value: never): never {
   throw new Error(`legalActionsFor: unhandled decision kind ${String(value)}`);
 }
 
+function withAvailability(
+  option: Omit<CardPlayOptionView, "available" | "unavailableReason">,
+  reason: CardPlayUnavailableReason | undefined,
+): CardPlayOptionView {
+  return reason ? { ...option, available: false, unavailableReason: reason } : { ...option, available: true };
+}
+
+/** Main-action card candidates only. Target ids/counts deliberately arrive in
+ * LEGAL-003; every option here is valid with some legal target set unless it
+ * carries a stable unavailable reason. */
+export function cardPlayOptionsFor(state: GameState, playerId: string): CardPlayOptionView[] {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return [];
+  const options: CardPlayOptionView[] = [];
+  const typeKeys = Object.keys(CARD_TYPES);
+
+  for (const card of player.hand) {
+    options.push(
+      withAvailability(
+        {
+          source: "literal",
+          typeKey: card.typeKey,
+          selectableCardIds: [card.id],
+          minCards: 1,
+          maxCards: 1,
+          exactCards: 1,
+        },
+        mainActionUnavailableReason(state, playerId, card.typeKey),
+      ),
+    );
+
+    for (const typeKey of typeKeys) {
+      if (typeKey === card.typeKey) continue;
+      const allowedNow = countsAsType(state, playerId, card.id, typeKey, "mainAction");
+      const belongsToPlayer = allowedNow || hasCardConversion(state, playerId, card.id, typeKey);
+      if (!belongsToPlayer) continue;
+      const reason = allowedNow
+        ? mainActionUnavailableReason(state, playerId, typeKey)
+        : "conversion_wrong_context";
+      options.push(
+        withAvailability(
+          {
+            source: "conversion",
+            typeKey,
+            asType: typeKey,
+            selectableCardIds: [card.id],
+            minCards: 1,
+            maxCards: 1,
+            exactCards: 1,
+          },
+          reason,
+        ),
+      );
+    }
+  }
+
+  if (player.equipment.weapon?.typeKey === "zhangba") {
+    const selectableCardIds = player.hand.filter((card) => card.typeKey !== "sha").map((card) => card.id);
+    const reason =
+      selectableCardIds.length < 2
+        ? "insufficient_cards"
+        : mainActionUnavailableReason(state, playerId, "sha");
+    options.push(
+      withAvailability(
+        {
+          source: "zhangba",
+          typeKey: "sha",
+          selectableCardIds,
+          minCards: 2,
+          maxCards: 2,
+          exactCards: 2,
+        },
+        reason,
+      ),
+    );
+  }
+
+  return options;
+}
+
 function stringArrayField(data: Record<string, unknown>, key: string): string[] | undefined {
   const v = data[key];
   return Array.isArray(v) && v.every((x) => typeof x === "string") ? (v as string[]) : undefined;
@@ -69,7 +163,11 @@ function stringArrayField(data: Record<string, unknown>, key: string): string[] 
  *  decision like discardTo carries the actor's own hand as
  *  `selectableCardIds`, which must never surface in anyone else's
  *  legalActions regardless of what projectDecision does with `data` itself. */
-export function legalActionsFor(pd: PendingDecision | undefined, viewerId: string): LegalActionView[] {
+export function legalActionsFor(
+  pd: PendingDecision | undefined,
+  viewerId: string,
+  state?: GameState,
+): LegalActionView[] {
   if (!pd || pd.playerId !== viewerId) return [];
   const data = pd.data as Record<string, unknown>;
 
@@ -82,7 +180,11 @@ export function legalActionsFor(pd: PendingDecision | undefined, viewerId: strin
 
   switch (pd.kind) {
     case "mainAction":
-      return [{ kind: "playCard" }, { kind: "useSkill" }, { kind: "endPhase" }];
+      return [
+        { kind: "playCard", options: state ? cardPlayOptionsFor(state, viewerId) : [] },
+        { kind: "useSkill" },
+        { kind: "endPhase" },
+      ];
     case "drawCard":
       return [{ kind: "draw" }];
     case "discardTo":

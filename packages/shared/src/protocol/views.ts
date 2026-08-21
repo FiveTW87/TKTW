@@ -122,7 +122,30 @@ const responseDecisionKindSchema = decisionKindSchema.exclude([
   "discardChosenBy",
 ]);
 
-const playCardLegalActionSchema = z.object({ kind: z.literal("playCard") }).strict();
+const cardPlayUnavailableReasonSchema = z.enum([
+  "response_only",
+  "sha_usage_limit",
+  "conversion_wrong_context",
+  "insufficient_cards",
+]);
+const cardPlayOptionBaseSchema = z.object({
+  source: z.enum(["literal", "conversion", "zhangba"]),
+  typeKey: z.string(),
+  selectableCardIds: z.array(z.string()),
+  minCards: z.number().int().min(0),
+  maxCards: z.number().int().min(0),
+  exactCards: z.number().int().min(0),
+  asType: z.string().optional(),
+});
+const cardPlayOptionSchema = z.discriminatedUnion("available", [
+  cardPlayOptionBaseSchema.extend({ available: z.literal(true) }).strict(),
+  cardPlayOptionBaseSchema
+    .extend({ available: z.literal(false), unavailableReason: cardPlayUnavailableReasonSchema })
+    .strict(),
+]);
+const playCardLegalActionSchema = z
+  .object({ kind: z.literal("playCard"), options: z.array(cardPlayOptionSchema) })
+  .strict();
 const useSkillLegalActionSchema = z.object({ kind: z.literal("useSkill") }).strict();
 const endPhaseLegalActionSchema = z.object({ kind: z.literal("endPhase") }).strict();
 const drawLegalActionSchema = z.object({ kind: z.literal("draw") }).strict();

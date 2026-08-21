@@ -96,7 +96,7 @@ export function assembleGameView(room: GameRoom, lobbyIndex: number): GameView |
     // legalActionsFor is viewer-gated internally (empty unless it's this
     // viewer's own decision) — the RAW state.pendingDecision, not the
     // already-redacted `projected` one, since the gating happens here.
-    legalActions: legalActionsFor(session.state.pendingDecision, viewerId),
+    legalActions: legalActionsFor(session.state.pendingDecision, viewerId, session.state),
     drawPileCount: projected.drawPile.count,
     discardPileCount: projected.discardPile.length,
     ...(projected.discardPile.length > 0 ? { discardPileTop: projected.discardPile.at(-1)! } : {}),

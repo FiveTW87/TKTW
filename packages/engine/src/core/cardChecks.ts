@@ -1,6 +1,40 @@
 import type { GameState } from "../types";
 import { cardById } from "./state";
 import { queryHook } from "./triggers";
+import { cardDef } from "./cardData";
+
+export type CardPlayUnavailableReason =
+  | "response_only"
+  | "sha_usage_limit"
+  | "conversion_wrong_context"
+  | "insufficient_cards";
+
+export function shaUsageLimitFor(state: GameState, playerId: string): number {
+  const bonus = queryHook<number>(
+    state,
+    "shaUsageLimit",
+    { playerId },
+    (rs) => rs.reduce((a, b) => a + b, 0),
+    0,
+  );
+  return 1 + bonus;
+}
+
+export function mainActionUnavailableReason(
+  state: GameState,
+  playerId: string,
+  typeKey: string,
+): CardPlayUnavailableReason | undefined {
+  const def = cardDef(typeKey);
+  if (def.targetRule === "respondOnly" || def.playableAnytime) return "response_only";
+  if (typeKey === "sha") {
+    const player = state.players.find((candidate) => candidate.id === playerId);
+    if (!player || player.shaUsedThisTurn >= shaUsageLimitFor(state, playerId)) {
+      return "sha_usage_limit";
+    }
+  }
+  return undefined;
+}
 
 /** True if `cardId` is legal for `playerId` to submit as `wanted` — either
  *  literally that typeKey, or convertible via a registered canConvertCard
@@ -29,6 +63,27 @@ export function countsAsType(
     state,
     "canConvertCard",
     { playerId, cardId, card, asType: wanted, context },
+    (rs) => rs.some(Boolean),
+    false,
+  );
+}
+
+/** Whether a conversion belongs to this player/card at all, independent of
+ * a temporal restriction such as Hua Tuo's "outside your own turn" rule.
+ * This is presentation metadata only: command validation must continue to
+ * use countsAsType with the real context. */
+export function hasCardConversion(
+  state: GameState,
+  playerId: string,
+  cardId: string,
+  wanted: string,
+): boolean {
+  const card = cardById(cardId);
+  if (card.typeKey === wanted) return false;
+  return queryHook<boolean>(
+    state,
+    "canConvertCard",
+    { playerId, cardId, card, asType: wanted, context: "reactive", ignoreTiming: true },
     (rs) => rs.some(Boolean),
     false,
   );

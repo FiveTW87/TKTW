@@ -9,10 +9,10 @@ describe("legalActionsFor", () => {
     expect(legalActionsFor(undefined, "p0")).toEqual([]);
   });
 
-  it("mainAction: high-level choices only, no card/target enumeration", () => {
+  it("mainAction without state keeps a safe empty card-option fallback", () => {
     const pd: PendingDecision = { id: "d1", kind: "mainAction", playerId: "p0", data: {} };
     expect(legalActionsFor(pd, "p0")).toEqual([
-      { kind: "playCard" },
+      { kind: "playCard", options: [] },
       { kind: "useSkill" },
       { kind: "endPhase" },
     ]);
