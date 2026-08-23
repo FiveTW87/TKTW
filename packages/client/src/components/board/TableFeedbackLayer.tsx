@@ -1,3 +1,4 @@
+import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { cardDisplay } from "../../data/cardNames";
 import type { TableFeedbackCue } from "../../hooks/useTableFeedbackPresentation";
@@ -50,9 +51,46 @@ function copy(cue: TableFeedbackCue): { title: string; detail?: string; tone: st
   }
 }
 
+function LightningJudgmentEffect({ playerId }: { playerId: string }) {
+  const [point, setPoint] = useState(() => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 }));
+  useLayoutEffect(() => {
+    const anchors = Array.from(document.querySelectorAll<HTMLElement>("[data-player-anchor]"));
+    for (const anchor of anchors) {
+      if (anchor.dataset.playerAnchor !== playerId || !anchor.isConnected) continue;
+      const rect = anchor.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      setPoint({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+      break;
+    }
+  }, [playerId]);
+  return (
+    <div
+      className="table-lightning-impact"
+      data-testid="shandian-lightning"
+      aria-label="อสนีบาตฟาดใส่ผู้เล่น"
+      style={{ left: point.x, top: point.y, pointerEvents: "none" }}
+    >
+      <div className="table-lightning-sky-flash" />
+      <svg className="table-lightning-bolt" viewBox="0 0 160 360" aria-hidden="true">
+        <path className="table-lightning-glow" d="M105 0 61 127l34-10-47 100 31-8-52 151 93-177-36 9 52-111-38 12z" />
+        <path className="table-lightning-core" d="M105 0 61 127l34-10-47 100 31-8-52 151 93-177-36 9 52-111-38 12z" />
+      </svg>
+      <span className="table-lightning-ring" />
+      <span className="table-lightning-spark spark-a" />
+      <span className="table-lightning-spark spark-b" />
+      <span className="table-lightning-spark spark-c" />
+      <span className="table-lightning-spark spark-d" />
+    </div>
+  );
+}
+
 export function TableFeedbackLayer({ cues }: { cues: readonly TableFeedbackCue[] }) {
   if (cues.length === 0) return null;
   return createPortal(
+    <>
+    {cues.map((cue) => cue.kind === "judgmentResult" && cue.cardType === "shandian" && cue.outcome === "hit"
+      ? <LightningJudgmentEffect key={`${cue.id}:lightning`} playerId={cue.playerId} />
+      : null)}
     <div className="table-feedback-layer" data-testid="table-feedback-layer" style={{ pointerEvents: "none" }} aria-live="polite" aria-atomic="false">
       {cues.map((cue) => {
         const content = copy(cue);
@@ -63,7 +101,8 @@ export function TableFeedbackLayer({ cues }: { cues: readonly TableFeedbackCue[]
           </div>
         );
       })}
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 }

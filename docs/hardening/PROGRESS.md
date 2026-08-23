@@ -1,6 +1,6 @@
 # Hardening Progress
 
-Last updated: 2026-08-21
+Last updated: 2026-08-23
 Current milestone: Phase 4 — Asset and presentation hardening
 Overall status: `FX-003` complete; Phase 4 presentation hardening is complete through the planned FX milestone
 
@@ -29,6 +29,7 @@ Overall status: `FX-003` complete; Phase 4 presentation hardening is complete th
 - `FX-001` — Typed card/equipment movement, semantic anchors, anonymous hidden-card cues, reduced motion, and bounded lifecycle.
 - `FX-002` — Ordered combat/skill timelines, per-player pose arbitration, route labels, burst bounds, and phase-aligned SFX.
 - `FX-003` — Public judgment/Wuxie sequencing, reconnect-safe turn/phase cues, and explicit urgent timer semantics.
+- `FX-003` follow-up — Target-anchored Shandian lightning impact with miss/reduced-motion guards.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.

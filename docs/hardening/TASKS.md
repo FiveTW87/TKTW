@@ -1398,6 +1398,7 @@ Give judgment replacement, nested Wuxie, turn start, phase change, and urgent ti
 - Client presentation maps those logs to typed events and one reconnect-safe lifecycle owner. Initial/rebuilt/reconnected history remains silent; active cues are timer-bounded, capped, pointer-transparent, and reduced-motion aware.
 - The central table layer distinguishes reveal, replacement, result, Wuxie depth/final state, new turn, and later phase changes. A simultaneous new-turn/prepare snapshot produces only the turn cue.
 - TurnPanel exposes `.is-urgent`, a visible assertive `ด่วน` label, and the existing red countdown at five seconds without replacing or restarting the authoritative deadline.
+- Follow-up polish gives a successful Shandian judgment a dedicated target-anchored sky flash, bolt, impact ring, and sparks; misses stay banner-only and reduced-motion keeps a short static strike.
 - Verification passed: client 31 files / 236 tests (including the 67-case Table integration suite), engine 40 / 1,116, server 3 / 58, root typecheck, client production build (210 modules), and diff check.
 - Changed-state screenshot capture was attempted, but the in-app browser plugin rejected its own trusted service before connecting to the local page; no screenshot was fabricated. Component, mobile Table, portal, pointer-event, reduced-motion, and fake-clock tests passed.
 
