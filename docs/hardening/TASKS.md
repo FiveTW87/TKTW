@@ -1470,7 +1470,7 @@ Define server-authoritative beginner, standard, fast, and bounded custom pacing 
 - One server adapter converts seconds to milliseconds and supplies the same effective values to decision timeouts, reconnect forfeits, reveal timing, bot answers, and explicit leave continuation.
 - Added schema boundary, room lifecycle, precedence, invalid socket mutation, legacy compatibility, quickstart, and Fast reveal E2E coverage. No client UI, gameplay rule, engine state, database, CSS, asset, or audio code changed.
 - Verification passed: focused ROOM tests 3 files / 33 tests, server E2E 34 tests, full engine 40 files / 1,116 tests, server 4 / 67, client 32 / 241, root typecheck, production client build (211 modules), and diff check.
-- No screenshot was required because ROOM-001 changes protocol/server behavior only and does not change rendered UI. The implementation commit is recorded in `PROGRESS.md` after commit creation.
+- No screenshot was required because ROOM-001 changes protocol/server behavior only and does not change rendered UI. Implementation commit: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
 
 ---
 

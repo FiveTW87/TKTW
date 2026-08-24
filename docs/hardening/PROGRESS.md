@@ -75,6 +75,7 @@ Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is ne
 - `FX-001`: `cbf5007` (`FX-001-add-card-equipment-motion`).
 - `FX-002`: `a911816` (`FX-002-sequence-combat-feedback`).
 - `FX-003`: `1e742d8` (`FX-003-add-table-state-feedback`).
+- `ROOM-001`: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
 
 ## Known workspace notes
 
