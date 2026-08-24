@@ -1,8 +1,56 @@
 import { describe, expect, it } from "vitest";
 import { DECISION_KINDS } from "@tktw/engine";
-import { answerSchema, decisionKindSchema, legalActionViewSchema } from "@tktw/shared";
+import {
+  ROOM_PACING_PRESETS,
+  answerSchema,
+  createRoomSchema,
+  decisionKindSchema,
+  legalActionViewSchema,
+  quickstartWithBotsSchema,
+  roomSettingsSelectionSchema,
+} from "@tktw/shared";
 
 describe("typed protocol seams", () => {
+  it("accepts named room pacing presets and keeps Standard equal to current production timing", () => {
+    expect(roomSettingsSelectionSchema.parse({ preset: "beginner" })).toEqual({ preset: "beginner" });
+    expect(roomSettingsSelectionSchema.parse({ preset: "standard" })).toEqual({ preset: "standard" });
+    expect(roomSettingsSelectionSchema.parse({ preset: "fast" })).toEqual({ preset: "fast" });
+    expect(ROOM_PACING_PRESETS.standard).toEqual({
+      decisionTimeoutSec: 30,
+      reconnectGraceSec: 45,
+      revealDurationSec: 8,
+      botAnswerDelayMs: 600,
+    });
+    expect(createRoomSchema.parse({ playerName: "Alice", settings: { preset: "beginner" } })).toEqual({
+      playerName: "Alice",
+      settings: { preset: "beginner" },
+    });
+    expect(quickstartWithBotsSchema.parse({ playerName: "Solo", botCount: 2, settings: { preset: "fast" } })).toMatchObject({
+      settings: { preset: "fast" },
+    });
+  });
+
+  it("accepts only complete bounded custom pacing and rejects ambiguous legacy input", () => {
+    const custom = {
+      preset: "custom",
+      decisionTimeoutSec: 75,
+      reconnectGraceSec: 120,
+      revealDurationSec: 12,
+      botAnswerDelayMs: 750,
+    } as const;
+    expect(roomSettingsSelectionSchema.parse(custom)).toEqual(custom);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, decisionTimeoutSec: 14 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, reconnectGraceSec: 301 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, revealDurationSec: 2 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, botAnswerDelayMs: 2_001 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, revealDurationSec: 3.5 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ ...custom, extra: true }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ preset: "custom", decisionTimeoutSec: 30 }).success).toBe(false);
+    expect(roomSettingsSelectionSchema.safeParse({ preset: "unknown" }).success).toBe(false);
+    expect(createRoomSchema.safeParse({ playerName: "Alice", settings: custom, decisionTimeoutSec: 30 }).success).toBe(false);
+    expect(quickstartWithBotsSchema.safeParse({ playerName: "Solo", botCount: 2, settings: custom, decisionTimeoutSec: 30 }).success).toBe(false);
+  });
+
   it("keeps the engine decision vocabulary and Zod runtime schema in lockstep", () => {
     expect(decisionKindSchema.options).toEqual(DECISION_KINDS);
     for (const kind of DECISION_KINDS) {

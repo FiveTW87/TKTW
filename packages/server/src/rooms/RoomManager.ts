@@ -10,7 +10,16 @@
 // that harder problem but isn't wired in here; see gameFlow.ts.
 import { randomUUID } from "node:crypto";
 import { createIdentityGame, createRng, type GameSession } from "@tktw/engine";
-import { ROOM_CODE_ALPHABET, type RoomPhase, type ConnectionStatus, type MatchResult, type ChatMessageView } from "@tktw/shared";
+import {
+  ROOM_CODE_ALPHABET,
+  resolveRoomSettings,
+  type ChatMessageView,
+  type ConnectionStatus,
+  type MatchResult,
+  type ResolvedRoomSettings,
+  type RoomPhase,
+  type RoomSettingsSelection,
+} from "@tktw/shared";
 
 export type { RoomPhase };
 
@@ -78,12 +87,12 @@ export interface GameRoom {
    *  CHAT_LOG_LIMIT) so a reconnecting player can see recent history; not
    *  full persistence, rooms stay purely in-memory per spec. */
   chatLog: ChatMessageView[];
-  /** Host-chosen "time to think" per decision, set once at create/quickstart
-   *  time. Absent = use the server-wide DECISION_TIMEOUT_MS default. This is
-   *  a room-level setting (unlike matchId/seatAssignment/etc.), so it
-   *  deliberately survives returnToLobby — a rematch in the same room keeps
-   *  whatever timeout the host picked. */
-  decisionTimeoutMs?: number;
+  /** Complete room-level pacing, retained through rejoin and rematch. */
+  pacing: ResolvedRoomSettings;
+  /** False only when neither the new settings envelope nor the legacy
+   *  decision-only field was supplied. Server test/deployment overrides may
+   *  replace default Standard values, but never an explicit host choice. */
+  pacingExplicit: boolean;
 }
 
 export const CHAT_LOG_LIMIT = 50;
@@ -114,7 +123,8 @@ export class RoomManager {
 
   createRoom(
     hostName: string,
-    decisionTimeoutMs?: number,
+    pacingSelection?: RoomSettingsSelection,
+    legacyDecisionTimeoutSec?: number,
   ): { room: GameRoom; sessionToken: string; seatIndex: number } {
     let code = generateRoomCode();
     while (this.rooms.has(code)) code = generateRoomCode();
@@ -126,9 +136,8 @@ export class RoomManager {
       createdAt: Date.now(),
       emptySince: null,
       chatLog: [],
-      // exactOptionalPropertyTypes: only set the key when a value was given,
-      // never assign an explicit `undefined` to it.
-      ...(decisionTimeoutMs !== undefined ? { decisionTimeoutMs } : {}),
+      pacing: resolveRoomSettings(pacingSelection, legacyDecisionTimeoutSec),
+      pacingExplicit: pacingSelection !== undefined || legacyDecisionTimeoutSec !== undefined,
     };
     this.rooms.set(code, room);
     return { room, sessionToken, seatIndex: 0 };
@@ -156,9 +165,10 @@ export class RoomManager {
   quickstartWithBots(
     hostName: string,
     botCount: number,
-    decisionTimeoutMs?: number,
+    pacingSelection?: RoomSettingsSelection,
+    legacyDecisionTimeoutSec?: number,
   ): { room: GameRoom; sessionToken: string; seatIndex: number } {
-    const { room, sessionToken, seatIndex } = this.createRoom(hostName, decisionTimeoutMs);
+    const { room, sessionToken, seatIndex } = this.createRoom(hostName, pacingSelection, legacyDecisionTimeoutSec);
     for (let i = 1; i <= botCount; i++) {
       room.seats.push({
         name: `บอท ${i}`,

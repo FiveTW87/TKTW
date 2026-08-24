@@ -189,6 +189,57 @@ afterEach(async () => {
 });
 
 describe("room lifecycle", () => {
+  it("stores an explicit named pacing preset at room:create while legacy timeout stays compatible", async () => {
+    const beginnerHost = await connectClient();
+    const beginnerAck = await emitAck<{ ok: boolean; roomCode: string }>(beginnerHost, "room:create", {
+      playerName: "Beginner Host",
+      settings: { preset: "beginner" },
+    });
+    expect(beginnerAck.ok).toBe(true);
+    expect(server.rooms.getRoom(beginnerAck.roomCode)?.pacing).toEqual({
+      preset: "beginner",
+      decisionTimeoutSec: 60,
+      reconnectGraceSec: 90,
+      revealDurationSec: 10,
+      botAnswerDelayMs: 900,
+    });
+    expect(server.rooms.getRoom(beginnerAck.roomCode)?.pacingExplicit).toBe(true);
+
+    const legacyHost = await connectClient();
+    const legacyAck = await emitAck<{ ok: boolean; roomCode: string }>(legacyHost, "room:create", {
+      playerName: "Legacy Host",
+      decisionTimeoutSec: 90,
+    });
+    expect(legacyAck.ok).toBe(true);
+    expect(server.rooms.getRoom(legacyAck.roomCode)?.pacing).toMatchObject({ preset: "custom", decisionTimeoutSec: 90 });
+  });
+
+  it("rejects malformed create/quickstart settings before a room is created", async () => {
+    const socket = await connectClient();
+    const before = server.rooms.size();
+    const malformed = { preset: "custom", decisionTimeoutSec: 30 };
+    const createAck = await emitAck<{ ok: boolean }>(socket, "room:create", { playerName: "Alice", settings: malformed });
+    const quickAck = await emitAck<{ ok: boolean }>(socket, "room:quickstartWithBots", { playerName: "Alice", botCount: 2, settings: malformed });
+    expect(createAck.ok).toBe(false);
+    expect(quickAck.ok).toBe(false);
+    expect(server.rooms.size()).toBe(before);
+  });
+
+  it("quickstart applies explicit Fast reveal/bot/grace pacing instead of server test overrides", async () => {
+    const socket = await connectClient();
+    const before = Date.now();
+    const ack = await emitAck<{ ok: boolean; roomCode: string }>(socket, "room:quickstartWithBots", {
+      playerName: "Solo",
+      botCount: 2,
+      settings: { preset: "fast" },
+    });
+    expect(ack.ok).toBe(true);
+    const room = server.rooms.getRoom(ack.roomCode)!;
+    expect(room.pacing).toEqual({ preset: "fast", decisionTimeoutSec: 15, reconnectGraceSec: 30, revealDurationSec: 4, botAnswerDelayMs: 250 });
+    expect(room.revealExpiresAt).toBeGreaterThanOrEqual(before + 3_900);
+    expect(room.revealExpiresAt).toBeLessThanOrEqual(Date.now() + 4_100);
+  });
+
   it("create + join populates seats and broadcasts room:state to everyone already in the room", async () => {
     const alice = await connectClient();
     const bob = await connectClient();

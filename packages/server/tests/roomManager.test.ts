@@ -58,6 +58,36 @@ describe("RoomManager.startGame (SPEC 8.2)", () => {
   });
 });
 
+describe("RoomManager room pacing (ROOM-001)", () => {
+  it("resolves default, named, and legacy selections into complete room settings", () => {
+    const rooms = new RoomManager();
+    const standard = rooms.createRoom("Standard").room;
+    const beginner = rooms.createRoom("Beginner", { preset: "beginner" }).room;
+    const legacy = rooms.createRoom("Legacy", undefined, 90).room;
+
+    expect(standard.pacing).toEqual({ preset: "standard", decisionTimeoutSec: 30, reconnectGraceSec: 45, revealDurationSec: 8, botAnswerDelayMs: 600 });
+    expect(standard.pacingExplicit).toBe(false);
+    expect(beginner.pacing).toEqual({ preset: "beginner", decisionTimeoutSec: 60, reconnectGraceSec: 90, revealDurationSec: 10, botAnswerDelayMs: 900 });
+    expect(beginner.pacingExplicit).toBe(true);
+    expect(legacy.pacing).toMatchObject({ preset: "custom", decisionTimeoutSec: 90, reconnectGraceSec: 45, revealDurationSec: 8, botAnswerDelayMs: 600 });
+    expect(legacy.pacingExplicit).toBe(true);
+  });
+
+  it("preserves the same pacing through return-to-lobby and rematch", () => {
+    const rooms = new RoomManager();
+    const { room } = rooms.createRoom("Alice", { preset: "fast" });
+    rooms.joinRoom(room.code, "Bob");
+    rooms.joinRoom(room.code, "Carol");
+    const expected = { ...room.pacing };
+    rooms.startGame(room, 0);
+    room.phase = "ended";
+    rooms.returnToLobby(room);
+    rooms.startGame(room, 0);
+    expect(room.pacing).toEqual(expected);
+    expect(room.pacingExplicit).toBe(true);
+  });
+});
+
 describe("RoomManager.returnToLobby (SPEC 8.5)", () => {
   it("throws unless the match has actually finished", () => {
     const rooms = new RoomManager();

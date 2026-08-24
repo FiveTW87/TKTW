@@ -1,12 +1,12 @@
 # Hardening Progress
 
-Last updated: 2026-08-23
-Current milestone: Phase 4 — Asset and presentation hardening
-Overall status: `FX-003` complete; Phase 4 presentation hardening is complete through the planned FX milestone
+Last updated: 2026-08-24
+Current milestone: Phase 5 — Room setup and beginner assistance
+Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is next
 
 ## Next task
 
-- `ROOM-001` — Typed room settings and presets
+- `ROOM-002` — Create/lobby UI and lifecycle preservation
 - Owner: Codex
 - Status: `backlog`
 
@@ -30,6 +30,7 @@ Overall status: `FX-003` complete; Phase 4 presentation hardening is complete th
 - `FX-002` — Ordered combat/skill timelines, per-player pose arbitration, route labels, burst bounds, and phase-aligned SFX.
 - `FX-003` — Public judgment/Wuxie sequencing, reconnect-safe turn/phase cues, and explicit urgent timer semantics.
 - `FX-003` follow-up — Target-anchored Shandian lightning impact with miss/reduced-motion guards.
+- `ROOM-001` — Strict named/custom pacing contracts, complete room-lifetime settings, legacy compatibility, and server-authoritative decision/grace/reveal/bot timing.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -45,15 +46,15 @@ Overall status: `FX-003` complete; Phase 4 presentation hardening is complete th
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
 | Engine | 40 | 1,116 | Passed |
-| Server | 3 | 58 | Passed |
-| Client | 31 | 236 | Passed |
-| Total | 74 | 1,410 | Passed |
+| Server | 4 | 67 | Passed |
+| Client | 32 | 241 | Passed |
+| Total | 76 | 1,424 | Passed |
 
 ## Next actions
 
-1. Start `ROOM-001` by defining typed beginner, standard, fast, and bounded custom room-setting contracts.
-2. Preserve current room timing as the standard preset and add shared/server validation before UI.
-3. Continue one RED→GREEN behavior at a time and keep `App.tsx` outside task staging.
+1. Start `ROOM-002` by migrating create/quickstart UI from the legacy decision-only value to the typed room settings envelope.
+2. Broadcast the resolved host selection so lobby members can review the same server-authoritative rules across reconnect/rematch.
+3. Keep settings immutable after room creation in this phase, continue one RED→GREEN behavior at a time, and keep the unrelated `App.tsx` worktree diff outside task staging.
 
 ## Checkpoints
 
@@ -83,6 +84,6 @@ Overall status: `FX-003` complete; Phase 4 presentation hardening is complete th
 
 ## Blockers
 
-- No code or verification blocker for `ROOM-001`.
+- No code or verification blocker for `ROOM-002`.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.
 - FX-003 changed-state capture hit the same browser-plugin trusted-service failure; focused visual-contract and full Table tests passed, and no screenshot was fabricated.

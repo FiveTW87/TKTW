@@ -17,6 +17,7 @@ import {
   type ChatMessageView,
 } from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom, CHAT_LOG_LIMIT } from "./rooms/RoomManager";
+import { resolveEffectiveRoomPacing } from "./rooms/roomPacing";
 import {
   afterRespond,
   beginRevealPhase,
@@ -97,24 +98,18 @@ export function registerSocketHandlers(
   rooms: RoomManager,
   opts: SocketHandlerOptions = {},
 ): void {
-  const { decisionTimeoutMs, gracePeriodMs, revealDurationMs, botAnswerDelayMs } = opts;
-  // A per-room decisionTimeoutMs (host-chosen at create/quickstart time, see
-  // RoomManager.createRoom) overrides this server-wide SocketHandlerOptions
-  // default, which itself overrides gameFlow.ts's own DECISION_TIMEOUT_MS
-  // fallback. Resolved per-call (not once) since it depends on which room.
-  const effectiveTimeout = (room: GameRoom): number | undefined =>
-    room.decisionTimeoutMs ?? decisionTimeoutMs;
-  const runAfterRespond = (room: GameRoom): void =>
-    afterRespond(io, room, effectiveTimeout(room), botAnswerDelayMs);
-  const runBeginRevealPhase = (room: GameRoom): void =>
-    beginRevealPhase(io, room, revealDurationMs, effectiveTimeout(room), botAnswerDelayMs);
-  const graceOptsFor = (room: GameRoom): { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } => {
-    const timeout = effectiveTimeout(room);
-    return {
-      ...(gracePeriodMs !== undefined ? { graceMs: gracePeriodMs } : {}),
-      ...(timeout !== undefined ? { decisionTimeoutMs: timeout } : {}),
-      ...(botAnswerDelayMs !== undefined ? { botDelayMs: botAnswerDelayMs } : {}),
-    };
+  const effectivePacing = (room: GameRoom) => resolveEffectiveRoomPacing(room, opts);
+  const runAfterRespond = (room: GameRoom): void => {
+    const pacing = effectivePacing(room);
+    afterRespond(io, room, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
+  };
+  const runBeginRevealPhase = (room: GameRoom): void => {
+    const pacing = effectivePacing(room);
+    beginRevealPhase(io, room, pacing.revealDurationMs, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
+  };
+  const graceOptsFor = (room: GameRoom) => {
+    const pacing = effectivePacing(room);
+    return { graceMs: pacing.gracePeriodMs, decisionTimeoutMs: pacing.decisionTimeoutMs, botDelayMs: pacing.botAnswerDelayMs };
   };
 
   io.on("connection", (socket: Socket) => {
@@ -124,9 +119,11 @@ export function registerSocketHandlers(
       const parsed = createRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
-      const roomTimeoutMs =
-        parsed.data.decisionTimeoutSec !== undefined ? parsed.data.decisionTimeoutSec * 1000 : undefined;
-      const { room, sessionToken, seatIndex } = rooms.createRoom(parsed.data.playerName, roomTimeoutMs);
+      const { room, sessionToken, seatIndex } = rooms.createRoom(
+        parsed.data.playerName,
+        parsed.data.settings,
+        parsed.data.decisionTimeoutSec,
+      );
       rooms.attachSocket(room, seatIndex, socket.id);
       data.roomCode = room.code;
       data.seatIndex = seatIndex;
@@ -140,11 +137,14 @@ export function registerSocketHandlers(
       const parsed = quickstartWithBotsSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
 
-      const roomTimeoutMs =
-        parsed.data.decisionTimeoutSec !== undefined ? parsed.data.decisionTimeoutSec * 1000 : undefined;
       let result: ReturnType<RoomManager["quickstartWithBots"]>;
       try {
-        result = rooms.quickstartWithBots(parsed.data.playerName, parsed.data.botCount, roomTimeoutMs);
+        result = rooms.quickstartWithBots(
+          parsed.data.playerName,
+          parsed.data.botCount,
+          parsed.data.settings,
+          parsed.data.decisionTimeoutSec,
+        );
       } catch (err) {
         return fail(ack, err, "failed to start");
       }
@@ -234,7 +234,8 @@ export function registerSocketHandlers(
         delete data.roomCode;
         delete data.seatIndex;
         ok(ack);
-        forfeitAndContinue(io, rooms, room, seatIndex, effectiveTimeout(room), botAnswerDelayMs);
+        const pacing = effectivePacing(room);
+        forfeitAndContinue(io, rooms, room, seatIndex, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
       }
     });
 

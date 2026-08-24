@@ -143,3 +143,9 @@ Reason: Playing all appended log sounds immediately made multi-target actions no
 Date: 2026-08-21
 Decision: Judgment and Wuxie feedback derives from ordered public structured logs, while new-turn and phase feedback derives from authoritative GameView snapshot transitions. One reconnect-safe lifecycle owner silently baselines initial/rebuilt history, caps and expires cues, suppresses a redundant prepare-phase cue on a new turn, and feeds one pointer-transparent central layer. Countdown urgency remains in TurnPanel and exposes explicit visible/accessibility semantics.
 Reason: Judgment replacement and Wuxie parity need durable event order, but turn and phase already exist authoritatively in every snapshot and do not need synthetic engine logs. Keeping both inputs behind one presentation owner prevents replay after reconnect and avoids allowing optional feedback to affect decisions, rules, or timers.
+
+## DEC-025 — Room pacing resolves once and explicit host choice is authoritative
+
+Date: 2026-08-24
+Decision: Create and quickstart accept one strict named/custom pacing selection that resolves into a complete room-lifetime object covering decisions, reconnect grace, role reveal, and bot answers. Explicit host selection overrides server-wide timing; an omitted selection resolves to Standard while retaining server overrides for deterministic tests and deployments. The legacy decision-only field remains a temporary mutually exclusive input until ROOM-002 migrates the client.
+Reason: Independent optional timing fields create ambiguous partial states and can drift across reconnect/rematch paths. Resolving once gives every lifecycle consumer the same validated values, preserves existing production defaults, and keeps compatibility without allowing test configuration to silently replace a host's stated room rules.

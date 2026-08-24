@@ -49,7 +49,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | FX-001 | Card and equipment motion | completed | Codex | 2d | PRES-002 |
 | FX-002 | Combat and skill sequences | completed | Codex | 2.5d | FX-001, SFX-001 |
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | complete | Codex | 2d | FX-002 |
-| ROOM-001 | Typed room settings and presets | backlog | Codex | 1.5d | LEGAL-001 |
+| ROOM-001 | Typed room settings and presets | completed | Codex | 1.5d | LEGAL-001 |
 | ROOM-002 | Create/lobby UI and lifecycle preservation | backlog | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | backlog | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | backlog | Codex | 3d | LEGAL-004, ASSIST-001 |
@@ -1406,11 +1406,51 @@ Give judgment replacement, nested Wuxie, turn start, phase change, and urgent ti
 
 ## ROOM-001 — Typed room settings and presets
 
-Status: backlog | Owner: Codex | Reviewer: Claude server tests | Estimate: 1.5 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude server tests | Estimate: 1.5 days | Risk: Medium
 
 ### Objective
 
 Define server-authoritative beginner, standard, fast, and bounded custom pacing settings.
+
+### Current behavior
+
+- Create/quickstart accepts only an optional 15–180 second decision timeout; the lobby currently hard-codes 30/60/90 second buttons.
+- Grace (45s), role reveal (8s), and bot response delay (600ms) are server constants or server-wide test overrides, not one room-level contract.
+- Only decision timeout is retained on `GameRoom`; there is no typed named preset or single resolved settings object for later lobby display.
+
+### Expected behavior
+
+- One strict shared discriminated union accepts `beginner`, `standard`, `fast`, or fully bounded `custom` pacing.
+- Named presets resolve to complete immutable values for decision timeout, reconnect grace, role reveal, and bot response delay; Standard is byte-for-byte equivalent to current production pacing.
+- A room stores one complete resolved selection for its whole lifetime. Explicit host selection wins over server defaults; absent selection continues to respect server test/deployment overrides.
+- The legacy `decisionTimeoutSec` request remains accepted during ROOM-001 so the existing client keeps working until ROOM-002 migrates the UI.
+
+### In scope / allowed files
+
+- Shared room-setting types/Zod schemas/exports, server room settings storage/resolution, create/quickstart boundary wiring, timing lifecycle adapters, focused shared/server tests, and hardening docs.
+
+### Out of scope / forbidden files
+
+- Lobby/create UI, broadcasting settings to room members, changing settings after room creation, gameplay rules, engine timers, database/persistence, scoring/users, tutorial/assistance, CSS/assets/audio, and `packages/client/src/App.tsx`.
+
+### Type or protocol changes
+
+- Add `RoomPacingPreset`, strict `RoomSettingsSelection`, and resolved room pacing values.
+- Add optional `settings` to create/quickstart input while retaining optional legacy `decisionTimeoutSec`; sending both is rejected.
+- No game answer/action schema or Engine state change.
+
+### Implementation steps
+
+1. Red→Green strict preset/custom schema boundaries and canonical values.
+2. Red→Green room storage/default/legacy resolution and rematch preservation.
+3. Red→Green effective decision/reveal/grace/bot timing with explicit-room precedence and server-override fallback.
+4. Run focused/full verification, document compatibility, commit, and push.
+
+### Edge cases
+
+- Unknown preset, missing/extra custom fields, NaN/fractional/out-of-range values, both new and legacy fields, and prototype-like unknown keys.
+- Default room under server test overrides, explicit Standard under the same overrides, legacy decision-only override, quickstart, reconnect grace, reveal transition, and rematch.
+- Exact optional-property typing, in-memory room lifecycle, invalid socket input before room mutation, and no client/UI migration in this task.
 
 ### Acceptance criteria
 
@@ -1421,6 +1461,16 @@ Define server-authoritative beginner, standard, fast, and bounded custom pacing 
 ### Tests and verification
 
 - Schema boundary tests, create/quickstart invalid-input tests, timeout/bot/grace preset tests, server typecheck.
+
+### Completion report
+
+- Added one strict shared pacing contract with `beginner`, `standard`, `fast`, and complete bounded `custom` selections. Named presets resolve to immutable decision, reconnect-grace, reveal, and bot-delay values; Standard preserves the prior 30s/45s/8s/600ms production behavior.
+- Create and quickstart now accept the typed `settings` envelope, reject ambiguous new-plus-legacy input before room mutation, and continue accepting legacy `decisionTimeoutSec` until ROOM-002 migrates the client.
+- Every room stores a complete resolved pacing object plus whether the host selected it explicitly. The object survives return-to-lobby/rematch, and explicit selections override server-wide test/deployment timing while implicit Standard still permits those overrides.
+- One server adapter converts seconds to milliseconds and supplies the same effective values to decision timeouts, reconnect forfeits, reveal timing, bot answers, and explicit leave continuation.
+- Added schema boundary, room lifecycle, precedence, invalid socket mutation, legacy compatibility, quickstart, and Fast reveal E2E coverage. No client UI, gameplay rule, engine state, database, CSS, asset, or audio code changed.
+- Verification passed: focused ROOM tests 3 files / 33 tests, server E2E 34 tests, full engine 40 files / 1,116 tests, server 4 / 67, client 32 / 241, root typecheck, production client build (211 modules), and diff check.
+- No screenshot was required because ROOM-001 changes protocol/server behavior only and does not change rendered UI. The implementation commit is recorded in `PROGRESS.md` after commit creation.
 
 ---
 

@@ -9,6 +9,7 @@ import {
   matchIdSchema,
   playerIdSchema,
 } from "./ids";
+import { roomSettingsSelectionSchema } from "../roomSettings";
 
 // 6 chars, uppercase, no 0/O/1/I — avoids the pairs people misread out loud.
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -33,6 +34,11 @@ export const decisionTimeoutSecSchema = z.number().int().min(15).max(180).option
 export const createRoomSchema = z.object({
   playerName: playerNameSchema,
   decisionTimeoutSec: decisionTimeoutSecSchema,
+  settings: roomSettingsSelectionSchema.optional(),
+}).superRefine((value, ctx) => {
+  if (value.settings !== undefined && value.decisionTimeoutSec !== undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "send settings or decisionTimeoutSec, not both" });
+  }
 });
 
 export const joinRoomSchema = z.object({
@@ -65,6 +71,11 @@ export const quickstartWithBotsSchema = z.object({
   playerName: playerNameSchema,
   botCount: z.number().int().min(2).max(9),
   decisionTimeoutSec: decisionTimeoutSecSchema,
+  settings: roomSettingsSelectionSchema.optional(),
+}).superRefine((value, ctx) => {
+  if (value.settings !== undefined && value.decisionTimeoutSec !== undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "send settings or decisionTimeoutSec, not both" });
+  }
 });
 
 // Mirrors engine's PlayerAnswer (types.ts) minus playerId/decisionId, which
