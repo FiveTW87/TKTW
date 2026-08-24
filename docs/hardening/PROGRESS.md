@@ -77,6 +77,7 @@ Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time on
 - `FX-002`: `a911816` (`FX-002-sequence-combat-feedback`).
 - `FX-003`: `1e742d8` (`FX-003-add-table-state-feedback`).
 - `ROOM-001`: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
+- `ROOM-002`: `89164b7` (`ROOM-002-add-lobby-pacing-ui`).
 
 ## Known workspace notes
 

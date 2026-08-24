@@ -1540,7 +1540,7 @@ Expose presets in room creation and show the selected pacing to every lobby memb
 - Added compact 740×360 coverage proving the expanded create dialog remains scrollable with all preset/custom controls, plus default payload, custom payload, invalid draft, quickstart, waiting-summary, join, rejoin, and rematch tests.
 - Verification passed: focused Lobby 5 tests, server E2E 34, engine 40 files / 1,116 tests, server 4 / 67, client 32 / 244, root typecheck, production client build (212 modules), and diff check. One combined parallel `pnpm test` run starved the existing bot quickstart E2E past its 20s observation window; the complete server suite immediately passed alone with that case at 1.2s, and the complete client suite passed alone.
 - Changed-state screenshot capture was attempted because UI changed, but the browser plugin again rejected its trusted service before connecting to the local page; no screenshot was fabricated. Semantic dialog/disclosure, compact scroll, resolved-summary, and full Lobby regressions passed.
-- No settings editing after room creation, gameplay rule, engine, database, table UI, CSS, sound, effect, or asset behavior changed. `packages/client/src/App.tsx` remains outside task staging. Implementation commit is recorded in `PROGRESS.md` after creation.
+- No settings editing after room creation, gameplay rule, engine, database, table UI, CSS, sound, effect, or asset behavior changed. `packages/client/src/App.tsx` remains outside task staging. Implementation commit: `89164b7` (`ROOM-002-add-lobby-pacing-ui`).
 
 ---
 
