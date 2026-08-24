@@ -79,7 +79,7 @@ Overall status: `ASSIST-001` completed locally; ready for explicit push approval
 - `FX-003`: `1e742d8` (`FX-003-add-table-state-feedback`).
 - `ROOM-001`: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
 - `ROOM-002`: `89164b7` (`ROOM-002-add-lobby-pacing-ui`).
-- `ASSIST-001`: pending local implementation commit.
+- `ASSIST-001`: `9027eba` (`ASSIST-001-add-player-onboarding`).
 
 ## Known workspace notes
 
