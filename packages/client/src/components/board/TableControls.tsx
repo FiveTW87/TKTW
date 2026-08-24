@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { RulesButton } from "../RulesModal";
 import { useSfxStore } from "../../store/sfxStore";
+import { AssistPreferencesButton } from "../AssistPreferences";
 
 export type TableActionViewModel =
   | { kind: "hidden" }
@@ -88,6 +89,7 @@ export function TableUtilityRail({ onRequestLeave }: { onRequestLeave: () => voi
       <div title="วิธีเล่นและกติกา">
         <RulesButton label="วิธีเล่น & กติกา" iconOnly style={{ width: 44, height: 44, padding: 0, fontSize: 17 }} />
       </div>
+      <AssistPreferencesButton iconOnly style={{ width: 44, height: 44, padding: 0, fontSize: 17 }} />
       <SfxControl />
       <button className="table-utility-leave" onClick={onRequestLeave} aria-label="ออกจากเกม" title="ออกจากเกม">
         退

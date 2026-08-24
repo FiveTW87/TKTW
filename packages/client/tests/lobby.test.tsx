@@ -35,6 +35,7 @@ vi.mock("socket.io-client", () => ({ io: () => fakeSocket }));
 
 import App from "../src/App";
 import { useGameStore } from "../src/store/gameStore";
+import { useAssistStore } from "../src/store/assistStore";
 
 // The zustand store is a module-level singleton — it survives across `it()`
 // blocks in the same file even though each block mounts a fresh <App/>, so
@@ -56,6 +57,7 @@ beforeEach(() => {
     error: null,
     answeringId: null,
   });
+  useAssistStore.setState({ level: "basic", walkthrough: { status: "new", step: 0 } });
 });
 
 describe("Lobby -> waiting room -> start", () => {
@@ -92,6 +94,11 @@ describe("Lobby -> waiting room -> start", () => {
     expect(within(pacing).getByText("มือใหม่")).toBeInTheDocument();
     expect(within(pacing).getByText("ตัดสินใจ 60 วิ")).toBeInTheDocument();
     expect(within(pacing).getByText("กลับเข้าเกม 90 วิ")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "ตั้งค่าคำแนะนำ" }));
+    expect(screen.getByText(/ห้องผู้เริ่มต้นแนะนำระดับ “ละเอียด”/)).toBeInTheDocument();
+    expect(useAssistStore.getState().level).toBe("basic");
+    await user.click(screen.getByRole("button", { name: "เสร็จสิ้น" }));
 
     const startBtn = await screen.findByRole("button", { name: /เริ่มศึก/ });
     await waitFor(() => expect(startBtn).toBeEnabled());

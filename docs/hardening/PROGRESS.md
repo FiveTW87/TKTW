@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-24
 Current milestone: Phase 5 — Room setup and beginner assistance
-Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time onboarding are next
+Overall status: `ASSIST-001` completed locally; ready for explicit push approval and `ASSIST-002`
 
 ## Next task
 
-- `ASSIST-001` — Preferences and first-time onboarding
+- `ASSIST-002` — Context help and unavailable-action reasons
 - Owner: Codex
 - Status: `backlog`
 
@@ -32,6 +32,7 @@ Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time on
 - `FX-003` follow-up — Target-anchored Shandian lightning impact with miss/reduced-motion guards.
 - `ROOM-001` — Strict named/custom pacing contracts, complete room-lifetime settings, legacy compatibility, and server-authoritative decision/grace/reveal/bot timing.
 - `ROOM-002` — Typed create/quickstart preset UI, collapsed bounded Custom editor, and server-resolved lobby settings preserved through join/rejoin/rematch.
+- `ASSIST-001` — Resilient per-player Off/Basic/Detailed preferences, reusable Lobby/Table settings, Beginner recommendation, and a skippable/replayable first-table orientation with semantic highlights.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -48,14 +49,14 @@ Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time on
 |---|---:|---:|---|
 | Engine | 40 | 1,116 | Passed |
 | Server | 4 | 67 | Passed |
-| Client | 32 | 244 | Passed |
-| Total | 76 | 1,427 | Passed |
+| Client | 35 | 259 | Passed |
+| Total | 79 | 1,442 | Passed |
 
 ## Next actions
 
-1. Expand and activate `ASSIST-001` before implementation, defining the first-visit boundary separately from the later scripted tutorial.
-2. Add durable preferences and a dismissible beginner orientation that points players toward room presets, roles, and contextual help without duplicating game legality.
-3. Continue one RED→GREEN behavior at a time and keep the unrelated `App.tsx` worktree diff outside task staging.
+1. Commit the completed `ASSIST-001` implementation while keeping the unrelated `App.tsx` worktree diff outside task staging.
+2. Request explicit approval before pushing the three local room/assistance commits to `origin/main`.
+3. Expand `ASSIST-002` before implementation: friendly current-decision help and server-safe unavailable reasons without strategy or hidden-information leaks.
 
 ## Checkpoints
 
@@ -78,6 +79,7 @@ Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time on
 - `FX-003`: `1e742d8` (`FX-003-add-table-state-feedback`).
 - `ROOM-001`: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
 - `ROOM-002`: `89164b7` (`ROOM-002-add-lobby-pacing-ui`).
+- `ASSIST-001`: pending local implementation commit.
 
 ## Known workspace notes
 
@@ -87,7 +89,8 @@ Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time on
 
 ## Blockers
 
-- No code or verification blocker for `ASSIST-001`.
+- No code or verification blocker for `ASSIST-002` planning.
+- ASSIST-001 changed-state screenshot capture hit the existing browser-plugin trusted-service failure before connecting; focused compact/resize/reduced-motion/accessibility tests and the complete Table/client suites passed, and no screenshot was fabricated.
 - ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.
 - FX-003 changed-state capture hit the same browser-plugin trusted-service failure; focused visual-contract and full Table tests passed, and no screenshot was fabricated.

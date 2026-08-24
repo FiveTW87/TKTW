@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../src/components/board/TableControls";
 import { useSfxStore } from "../src/store/sfxStore";
+import { useAssistStore } from "../src/store/assistStore";
 
 describe("TableActionCluster", () => {
   it("renders nothing for the hidden variant", () => {
@@ -55,6 +56,7 @@ describe("TableActionCluster", () => {
 describe("TableUtilityRail", () => {
   beforeEach(() => {
     useSfxStore.setState({ muted: false, volume: 0.6 });
+    useAssistStore.setState({ level: "basic", walkthrough: { status: "new", step: 0 } });
   });
 
   it("preserves the rail shape and routes leave and sound preferences", () => {
@@ -62,7 +64,11 @@ describe("TableUtilityRail", () => {
     const { container } = render(<TableUtilityRail onRequestLeave={onRequestLeave} />);
     const rail = container.querySelector("nav.table-utility-rail");
     expect(rail).not.toBeNull();
-    expect(rail?.children).toHaveLength(3);
+    expect(rail?.children).toHaveLength(4);
+
+    fireEvent.click(screen.getByRole("button", { name: "ตั้งค่าคำแนะนำ" }));
+    expect(screen.getByRole("dialog", { name: "ตั้งค่าคำแนะนำ" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "เสร็จสิ้น" }));
 
     fireEvent.click(screen.getByRole("button", { name: "ตั้งค่าเสียง" }));
     fireEvent.click(screen.getByRole("button", { name: "ปิดเสียง" }));

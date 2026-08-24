@@ -6,6 +6,7 @@ import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
 import { useDeviceMode } from "../lib/useDeviceMode";
 import { RoomPacingPicker, RoomPacingSummary } from "../components/RoomPacingControls";
 import type { RoomSettingsSelection } from "@tktw/shared";
+import { AssistPreferencesButton } from "../components/AssistPreferences";
 
 function LeaveConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -82,6 +83,7 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
           </button>
         </div>
         <RulesButton label="วิธีเล่น & กติกา" style={{ marginTop: compact ? 4 : 10, padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%" }} />
+        <AssistPreferencesButton style={{ padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%" }} />
       </div>
     </div>
   );
@@ -366,6 +368,10 @@ function WaitingRoom() {
           <div style={{ color: "var(--ink-faint)", fontSize: 12 }}>ต้องมีผู้เล่นอย่างน้อย 3 คน</div>
         )}
         <RulesButton label="วิธีเล่น & กติกา" style={{ padding: "9px 20px", fontSize: 12 }} />
+        <AssistPreferencesButton
+          recommendedDetailed={roomState?.settings?.preset === "beginner"}
+          style={{ padding: "9px 20px", fontSize: 12 }}
+        />
       </div>
 
       {confirmingLeave && (

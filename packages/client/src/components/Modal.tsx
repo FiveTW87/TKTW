@@ -26,16 +26,19 @@ export function ModalPanel({
   children,
   width = 420,
   onClick,
+  ariaLabel,
 }: {
   children: ReactNode;
   width?: number;
   onClick?: (e: React.MouseEvent) => void;
+  ariaLabel?: string;
 }) {
   const { compact } = useDeviceMode();
   return (
     <div
       role="dialog"
       aria-modal="true"
+      aria-label={ariaLabel}
       className="anim-pop"
       onClick={(e) => {
         e.stopPropagation();

@@ -51,7 +51,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | complete | Codex | 2d | FX-002 |
 | ROOM-001 | Typed room settings and presets | completed | Codex | 1.5d | LEGAL-001 |
 | ROOM-002 | Create/lobby UI and lifecycle preservation | completed | Codex | 1.5d | ROOM-001 |
-| ASSIST-001 | Preferences and first-time onboarding | backlog | Codex | 2d | TABLE-003, ROOM-002 |
+| ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | backlog | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | backlog | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | backlog | Codex + Claude content | 3d | TUT-001 |
@@ -1546,11 +1546,50 @@ Expose presets in room creation and show the selected pacing to every lobby memb
 
 ## ASSIST-001 — Preferences and first-time onboarding
 
-Status: backlog | Owner: Codex | Reviewer: Claude accessibility | Estimate: 2 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude accessibility | Estimate: 2 days | Risk: Medium
 
 ### Objective
 
 Add per-player assistance levels and a skippable first-table walkthrough stored locally.
+
+### Current behavior
+
+- Sound has resilient local preferences, but assistance has no typed level, storage owner, or settings entry point.
+- First-time players enter a live table without an orientation to the action area, opponents, hand/self area, or persistent rules/settings controls.
+- Rules can be opened manually, but there is no durable first-run/repeat-run distinction, pause/resume state, or immediate opt-out for experienced players.
+
+### Expected behavior
+
+- One resilient local preference owner exposes `off | basic | detailed` and durable walkthrough progress/status. Malformed, blocked, or quota-limited storage never breaks rendering.
+- Assistance settings are reachable before play in Lobby and during play from the existing utility rail. Experienced players can choose Off immediately; Beginner rooms visibly recommend Detailed without changing a player's preference automatically.
+- The first live Table opens a short informational orientation when assistance is enabled. Steps highlight stable semantic table regions, preserve keyboard focus, support touch, pause/resume, skip permanently, replay, compact landscape, and reduced motion.
+- This task explains where controls live only. It does not explain current legality/reasons, reveal hidden information, recommend strategy, submit actions, or create tutorial-only engine branches.
+
+### In scope / allowed files
+
+- New client assistance store, preference modal/button, first-table walkthrough component/hook, narrow integration in Lobby/Table/TableControls, focused CSS if required, client tests, and hardening docs.
+
+### Out of scope / forbidden files
+
+- Engine/shared/server/protocol/gameStore changes, action/target legality or copy, hidden-information inference, automated choices, tutorial scenarios/bots/progress, database/accounts/cloud sync, new audio/effects/assets, package dependencies, and unrelated `App.tsx` content/line endings.
+
+### Type or protocol changes
+
+- Add client-only `AssistanceLevel = "off" | "basic" | "detailed"` and a discriminated walkthrough status (`new | active | paused | completed | skipped`) behind one persisted Zustand store.
+- No network, GameView, legal-action, room-setting, or engine type changes.
+
+### Implementation steps
+
+1. Red→Green safe preference load/save, invalid storage, level changes, step progress, pause/resume, skip, complete, and replay transitions.
+2. Add one accessible preferences modal/button reused in Lobby and the Table utility rail, including Beginner-room recommendation and immediate Off.
+3. Red→Green first-Table auto-start, semantic-region highlight, next/back, pause, skip, completion, replay, focus, Escape, compact, resize, and reduced-motion behavior.
+4. Run full verification, attempt changed-state screenshots, document the ASSIST-002/TUT boundary, commit, and request explicit push approval.
+
+### Edge cases
+
+- Missing/malformed/null/old-version/non-finite storage, get/set/quota exceptions, module reload, Off while walkthrough is open, switching back on, completed/skipped replay, paused browser refresh, and repeated StrictMode effects.
+- Target selector absent/detached/zero-size, resize/orientation change, compact duplicate regions, walkthrough mounted during another gameplay modal, disconnect/reconnect, Table remount, and match/rematch changes.
+- Keyboard focus entry/step advance/return, Escape pause rather than permanent skip, touch-sized controls, reduced-motion without animated travel, and no mutation/submission of gameplay state.
 
 ### Acceptance criteria
 
@@ -1560,7 +1599,17 @@ Add per-player assistance levels and a skippable first-table walkthrough stored 
 
 ### Tests and verification
 
-- Preference storage, first-run/repeat-run, skip/resume, keyboard focus, compact viewport, reduced-motion tests.
+- Assistance-store tests; preference modal level/recommendation/replay tests; first-run/repeat-run/pause/resume/skip/complete/focus/Escape/target-missing/resize/compact/reduced-motion tests; Lobby/TableControls/Table regressions; root typecheck; all package suites; production build; diff check; and changed-state screenshots when browser runtime is available.
+
+### Completion report
+
+- Added one typed, resilient local Zustand owner for `off | basic | detailed` and durable `new | active | paused | completed | skipped` walkthrough progress. Valid versioned data restores; malformed/old/blocked/quota-limited storage safely falls back or remains non-blocking.
+- Added one reusable accessible assistance preference panel to Home, the waiting room, and the Table utility rail. Beginner rooms recommend Detailed without overriding the player's current level; Off is immediate; completed/skipped guidance can be replayed explicitly.
+- Added a four-step first-Table orientation for the central action area, clockwise opponents, self/hand/equipment area, and utility controls. It supports next/back, focus entry, Escape pause, permanent skip, replay, missing anchors, mobile-first duplicate-anchor selection, resize/orientation updates, and reduced-motion transitions.
+- The guide is an informational live region rather than a second modal dialog: its panel remains interactive while pointer events outside it reach the real table, so gameplay Decision/Death dialogs retain their unique semantics and existing tests.
+- No engine/shared/server/protocol/gameStore, legality, hidden information, action submission, tutorial scenario, database, sound, effect, asset, dependency, or unrelated `App.tsx` behavior changed.
+- Verification passed: focused ASSIST suite 5 files / 25 tests; Table + walkthrough 74 tests; full Client 35 files / 259 tests; Engine 40 / 1,116; Server 4 / 67; root typecheck; production client build (215 modules); and catalog check (256/256).
+- Changed-state screenshot capture was attempted, but the browser plugin rejected its trusted service before connecting to the local page. No screenshot was fabricated; semantic UI, 740/844/932 compact Table regressions, resize, focus, reduced-motion, and full production gates passed.
 
 ---
 

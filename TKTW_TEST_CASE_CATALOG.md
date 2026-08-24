@@ -1,6 +1,6 @@
 # TKTW Test Case Catalog
 
-<!-- catalog-sync: 256 pass / 0 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ c6f8f61, 2026-08-21 -->
+<!-- catalog-sync: 256 pass / 0 fail / 0 waived / 0 pending — 256 checkboxes, vitest @ 7ae9d08, 2026-08-24 -->
 
 
 
@@ -588,4 +588,3 @@ describe("physical deck contract", () => {
 - full engine suite ผ่านอย่างน้อยสอง seed sets
 - focused suites ผ่านพร้อม atomicity invariant
 - fuzz 1,000 เกมและ identity 3–10 players ผ่านหลังเพิ่ม tests
-

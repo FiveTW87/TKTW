@@ -20,6 +20,7 @@ import { useCardMotionPresentation } from "../hooks/useCardMotionPresentation";
 import { useTableFeedbackPresentation } from "../hooks/useTableFeedbackPresentation";
 import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../components/board/TableControls";
 import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from "../components/board/TableOverlays";
+import { FirstTableWalkthrough } from "../components/FirstTableWalkthrough";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -367,6 +368,7 @@ export function Table() {
       <TableActionCluster action={tableAction} />
 
       <TableOverlays model={overlayModel} />
+      <FirstTableWalkthrough />
     </div>
   );
 }
