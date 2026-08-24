@@ -136,6 +136,7 @@ export function broadcastRoomState(io: Server, room: GameRoom): void {
     code: room.code,
     phase: room.phase,
     seats: room.seats.map(roomStateSeat),
+    settings: room.pacing,
     ...(room.matchId ? { matchId: room.matchId } : {}),
     ...(room.revealExpiresAt ? { revealExpiresAt: room.revealExpiresAt } : {}),
   };

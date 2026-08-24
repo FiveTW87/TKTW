@@ -13,6 +13,7 @@ import {
   type PlayerAnswer,
   type MatchResult,
   type ChatMessageView,
+  type RoomSettingsSelection,
 } from "@tktw/shared";
 
 const STORAGE_KEY = "tktw_session";
@@ -93,9 +94,9 @@ interface GameStoreState {
    *  unmounting, so a badge can show "unread" even after closing it. */
   chatSeenCount: number;
 
-  createRoom: (playerName: string, decisionTimeoutSec?: number) => Promise<void>;
+  createRoom: (playerName: string, settings?: RoomSettingsSelection) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
-  quickstartWithBots: (playerName: string, botCount: number, decisionTimeoutSec?: number) => Promise<void>;
+  quickstartWithBots: (playerName: string, botCount: number, settings?: RoomSettingsSelection) => Promise<void>;
   startGame: () => Promise<void>;
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
   leaveRoom: () => Promise<void>;
@@ -205,10 +206,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     chatMessages: [],
     chatSeenCount: 0,
 
-    createRoom: async (playerName, decisionTimeoutSec) => {
+    createRoom: async (playerName, settings) => {
       const ack = await emitAck<CreateRoomAck>(ClientEvents.RoomCreate, {
         playerName,
-        ...(decisionTimeoutSec !== undefined ? { decisionTimeoutSec } : {}),
+        ...(settings ? { settings } : {}),
       });
       if (!ack.ok) {
         set({ error: ack.error });
@@ -228,11 +229,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ roomCode, sessionToken: ack.sessionToken, seatIndex: ack.seatIndex, error: null });
     },
 
-    quickstartWithBots: async (playerName, botCount, decisionTimeoutSec) => {
+    quickstartWithBots: async (playerName, botCount, settings) => {
       const ack = await emitAck<QuickstartWithBotsAck>(ClientEvents.RoomQuickstartWithBots, {
         playerName,
         botCount,
-        ...(decisionTimeoutSec !== undefined ? { decisionTimeoutSec } : {}),
+        ...(settings ? { settings } : {}),
       });
       if (!ack.ok) {
         set({ error: ack.error });

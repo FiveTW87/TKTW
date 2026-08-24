@@ -2,11 +2,11 @@
 
 Last updated: 2026-08-24
 Current milestone: Phase 5 — Room setup and beginner assistance
-Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is next
+Overall status: `ROOM-002` completed; `ASSIST-001` preferences and first-time onboarding are next
 
 ## Next task
 
-- `ROOM-002` — Create/lobby UI and lifecycle preservation
+- `ASSIST-001` — Preferences and first-time onboarding
 - Owner: Codex
 - Status: `backlog`
 
@@ -31,6 +31,7 @@ Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is ne
 - `FX-003` — Public judgment/Wuxie sequencing, reconnect-safe turn/phase cues, and explicit urgent timer semantics.
 - `FX-003` follow-up — Target-anchored Shandian lightning impact with miss/reduced-motion guards.
 - `ROOM-001` — Strict named/custom pacing contracts, complete room-lifetime settings, legacy compatibility, and server-authoritative decision/grace/reveal/bot timing.
+- `ROOM-002` — Typed create/quickstart preset UI, collapsed bounded Custom editor, and server-resolved lobby settings preserved through join/rejoin/rematch.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -47,14 +48,14 @@ Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is ne
 |---|---:|---:|---|
 | Engine | 40 | 1,116 | Passed |
 | Server | 4 | 67 | Passed |
-| Client | 32 | 241 | Passed |
-| Total | 76 | 1,424 | Passed |
+| Client | 32 | 244 | Passed |
+| Total | 76 | 1,427 | Passed |
 
 ## Next actions
 
-1. Start `ROOM-002` by migrating create/quickstart UI from the legacy decision-only value to the typed room settings envelope.
-2. Broadcast the resolved host selection so lobby members can review the same server-authoritative rules across reconnect/rematch.
-3. Keep settings immutable after room creation in this phase, continue one RED→GREEN behavior at a time, and keep the unrelated `App.tsx` worktree diff outside task staging.
+1. Expand and activate `ASSIST-001` before implementation, defining the first-visit boundary separately from the later scripted tutorial.
+2. Add durable preferences and a dismissible beginner orientation that points players toward room presets, roles, and contextual help without duplicating game legality.
+3. Continue one RED→GREEN behavior at a time and keep the unrelated `App.tsx` worktree diff outside task staging.
 
 ## Checkpoints
 
@@ -85,6 +86,7 @@ Overall status: `ROOM-001` completed; `ROOM-002` create/lobby UI migration is ne
 
 ## Blockers
 
-- No code or verification blocker for `ROOM-002`.
+- No code or verification blocker for `ASSIST-001`.
+- ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.
 - FX-003 changed-state capture hit the same browser-plugin trusted-service failure; focused visual-contract and full Table tests passed, and no screenshot was fabricated.

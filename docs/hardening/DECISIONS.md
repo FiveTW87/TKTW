@@ -149,3 +149,9 @@ Reason: Judgment replacement and Wuxie parity need durable event order, but turn
 Date: 2026-08-24
 Decision: Create and quickstart accept one strict named/custom pacing selection that resolves into a complete room-lifetime object covering decisions, reconnect grace, role reveal, and bot answers. Explicit host selection overrides server-wide timing; an omitted selection resolves to Standard while retaining server overrides for deterministic tests and deployments. The legacy decision-only field remains a temporary mutually exclusive input until ROOM-002 migrates the client.
 Reason: Independent optional timing fields create ambiguous partial states and can drift across reconnect/rematch paths. Resolving once gives every lifecycle consumer the same validated values, preserves existing production defaults, and keeps compatibility without allowing test configuration to silently replace a host's stated room rules.
+
+## DEC-026 — Lobby settings display is server-resolved and immutable
+
+Date: 2026-08-24
+Decision: The create UI emits one named/custom selection, but every waiting-room display reads the complete resolved object from `room:state`. The room broadcasts that object to all members on ordinary joins, reconnects, and return-to-lobby; settings cannot be edited after creation in this phase. Named presets remain visible while the full Custom editor is behind a collapsed advanced disclosure.
+Reason: Local form state exists only for the host and disappears on navigation, so it cannot prove what joiners or rejoined players will actually play. Broadcasting the server's immutable resolved values provides one trustworthy lifecycle view, while progressive disclosure keeps beginner creation approachable without removing expert control.

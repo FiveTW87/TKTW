@@ -2,7 +2,7 @@
 // against a fake (but protocol-shaped) socket — proves the buttons are wired
 // up and emit exactly what the server expects, not just that they typecheck.
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const { fakeSocket, sentEvents, respondTo, clearSent } = vi.hoisted(() => {
@@ -40,6 +40,8 @@ import { useGameStore } from "../src/store/gameStore";
 // blocks in the same file even though each block mounts a fresh <App/>, so
 // without this reset the 2nd test would inherit the 1st test's room/session.
 beforeEach(() => {
+  Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1024 });
+  Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: 768 });
   clearSent();
   useGameStore.setState({
     connected: false,
@@ -69,9 +71,7 @@ describe("Lobby -> waiting room -> start", () => {
 
     await waitFor(() => expect(sentEvents.some((e) => e.event === "room:create")).toBe(true));
     const createCall = sentEvents.find((e) => e.event === "room:create")!;
-    // decisionTimeoutSec now always rides along (the dialog's own default
-    // preset, 30s — see Lobby.tsx's TIMEOUT_PRESETS).
-    expect(createCall.payload).toEqual({ playerName: "Alice", decisionTimeoutSec: 30 });
+    expect(createCall.payload).toEqual({ playerName: "Alice", settings: { preset: "standard" } });
 
     respondTo("room:create", { ok: true, roomCode: "ABCDEF", sessionToken: "a".repeat(20), seatIndex: 0 });
 
@@ -80,12 +80,18 @@ describe("Lobby -> waiting room -> start", () => {
     fakeSocket.fire("room:state", {
       code: "ABCDEF",
       phase: "lobby",
+      settings: { preset: "beginner", decisionTimeoutSec: 60, reconnectGraceSec: 90, revealDurationSec: 10, botAnswerDelayMs: 900 },
       seats: [
         { name: "Alice", connected: true, isHost: true },
         { name: "Bob", connected: true, isHost: false },
         { name: "Carol", connected: true, isHost: false },
       ],
     });
+
+    const pacing = await screen.findByRole("region", { name: "กติกาห้อง" });
+    expect(within(pacing).getByText("มือใหม่")).toBeInTheDocument();
+    expect(within(pacing).getByText("ตัดสินใจ 60 วิ")).toBeInTheDocument();
+    expect(within(pacing).getByText("กลับเข้าเกม 90 วิ")).toBeInTheDocument();
 
     const startBtn = await screen.findByRole("button", { name: /เริ่มศึก/ });
     await waitFor(() => expect(startBtn).toBeEnabled());
@@ -112,10 +118,69 @@ describe("Lobby -> waiting room -> start", () => {
     fakeSocket.fire("room:state", {
       code: "GHIJKL",
       phase: "lobby",
+      settings: { preset: "standard", decisionTimeoutSec: 30, reconnectGraceSec: 45, revealDurationSec: 8, botAnswerDelayMs: 600 },
       seats: [{ name: "Alice", connected: true, isHost: true }],
     });
 
     const startBtn = await screen.findByRole("button", { name: /เริ่มศึก/ });
     expect(startBtn).toBeDisabled();
+  });
+
+  it("keeps advanced custom settings collapsed and emits a complete bounded custom selection", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    fakeSocket.fire("connect");
+
+    await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+    const advanced = await screen.findByRole("button", { name: "ตั้งค่าขั้นสูง" });
+    expect(advanced).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("spinbutton", { name: "เวลาตัดสินใจ (วินาที)" })).not.toBeInTheDocument();
+
+    await user.click(advanced);
+    expect(advanced).toHaveAttribute("aria-expanded", "true");
+    const decision = screen.getByRole("spinbutton", { name: "เวลาตัดสินใจ (วินาที)" });
+    await user.clear(decision);
+    expect(screen.getByRole("button", { name: "สร้างห้อง" })).toBeDisabled();
+    await user.type(decision, "75");
+    await user.type(screen.getByPlaceholderText("ใส่ชื่อของคุณ"), "Custom Host");
+    await user.click(screen.getByRole("button", { name: "สร้างห้อง" }));
+
+    await waitFor(() => expect(sentEvents.some((event) => event.event === "room:create")).toBe(true));
+    expect(sentEvents.find((event) => event.event === "room:create")?.payload).toEqual({
+      playerName: "Custom Host",
+      settings: { preset: "custom", decisionTimeoutSec: 75, reconnectGraceSec: 45, revealDurationSec: 8, botAnswerDelayMs: 600 },
+    });
+  });
+
+  it("uses the same selected named preset for bot quickstart", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    fakeSocket.fire("connect");
+
+    await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+    await user.click(await screen.findByRole("button", { name: /รวดเร็ว/ }));
+    await user.click(screen.getByRole("button", { name: "เล่นกับบอท (ทดสอบคนเดียว)" }));
+
+    await waitFor(() => expect(sentEvents.some((event) => event.event === "room:quickstartWithBots")).toBe(true));
+    expect(sentEvents.find((event) => event.event === "room:quickstartWithBots")?.payload).toEqual({
+      playerName: "ผู้เล่นทดสอบ",
+      botCount: 2,
+      settings: { preset: "fast" },
+    });
+  });
+
+  it("keeps preset and advanced controls scrollable at the 740x360 compact gate", async () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 740 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: 360 });
+    const user = userEvent.setup();
+    render(<App />);
+    fakeSocket.fire("connect");
+
+    await user.click(await screen.findByRole("button", { name: "สร้างห้องใหม่" }));
+    const dialog = await screen.findByRole("dialog", { name: "สร้างห้องใหม่" });
+    expect(dialog).toHaveStyle({ maxHeight: "94vh", overflowY: "auto" });
+    expect(within(dialog).getAllByRole("button", { pressed: false }).length).toBe(2);
+    await user.click(within(dialog).getByRole("button", { name: "ตั้งค่าขั้นสูง" }));
+    expect(within(dialog).getAllByRole("spinbutton")).toHaveLength(4);
   });
 });

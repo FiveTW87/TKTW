@@ -4,6 +4,8 @@ import { RulesButton } from "../components/RulesModal";
 import { lobbyRingPosition } from "../lib/seatLayout";
 import { ModalOverlay, ModalPanel, ModalGlyph } from "../components/Modal";
 import { useDeviceMode } from "../lib/useDeviceMode";
+import { RoomPacingPicker, RoomPacingSummary } from "../components/RoomPacingControls";
+import type { RoomSettingsSelection } from "@tktw/shared";
 
 function LeaveConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -88,16 +90,6 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
 // R0D — the create/join entry dialog (name + room code), shown once the
 // player picks a path from Home. Keeps the "เล่นกับบอท" quickstart button
 // even though the source mockup omits it — real dev/test value.
-// Decision-timeout presets shown to the host at create/quickstart time —
-// three plain choices rather than a free-form input, since the only real
-// decision is "normal / a bit more / a lot more" (SPEC never asked for finer
-// control, and the schema still accepts 15-180s if that ever changes).
-const TIMEOUT_PRESETS: { label: string; seconds: number }[] = [
-  { label: "ปกติ (30 วิ)", seconds: 30 },
-  { label: "ยาวขึ้น (60 วิ)", seconds: 60 },
-  { label: "ยาวมาก (90 วิ)", seconds: 90 },
-];
-
 const MIN_TOTAL_PLAYERS = 3;
 const MAX_TOTAL_PLAYERS = 10;
 
@@ -109,13 +101,13 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   const [roomCode, setRoomCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [totalPlayers, setTotalPlayers] = useState(3);
-  const [timeoutSec, setTimeoutSec] = useState(30);
+  const [settings, setSettings] = useState<RoomSettingsSelection | null>({ preset: "standard" });
   const { compact } = useDeviceMode();
 
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !settings) return;
     setBusy(true);
-    await createRoom(name.trim(), timeoutSec);
+    await createRoom(name.trim(), settings);
     setBusy(false);
   };
   const handleJoin = async () => {
@@ -125,8 +117,9 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
     setBusy(false);
   };
   const handleQuickstart = async () => {
+    if (!settings) return;
     setBusy(true);
-    await quickstartWithBots(name.trim() || "ผู้เล่นทดสอบ", totalPlayers - 1, timeoutSec);
+    await quickstartWithBots(name.trim() || "ผู้เล่นทดสอบ", totalPlayers - 1, settings);
     setBusy(false);
   };
 
@@ -145,7 +138,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
   };
 
   const panelBoxStyle: React.CSSProperties = {
-    width: compact ? 280 : 360,
+    width: compact ? 300 : 380,
     maxHeight: compact ? "94vh" : undefined,
     overflowY: compact ? "auto" : undefined,
     background: "linear-gradient(#241a11,#160f09)",
@@ -161,7 +154,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
       style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(12,8,5,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}
     >
       {initialTab === "create" ? (
-        <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
+        <div role="dialog" aria-modal="true" aria-label="สร้างห้องใหม่" onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, marginBottom: 4 }}>
             <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 18 : 24, color: "var(--gold)" }}>創</span>
             <span style={{ fontSize: compact ? 15 : 20, fontWeight: 700, color: "var(--ink)" }}>สร้างห้องใหม่</span>
@@ -175,20 +168,8 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
             placeholder="ใส่ชื่อของคุณ"
             style={{ ...inputStyle, marginBottom: compact ? 12 : 18 }}
           />
-          <label style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: 1 }}>เวลาตัดสินใจต่อตา</label>
-          <div style={{ display: "flex", gap: 6, marginTop: 6, marginBottom: compact ? 14 : 22 }}>
-            {TIMEOUT_PRESETS.map((preset) => (
-              <button
-                key={preset.seconds}
-                onClick={() => setTimeoutSec(preset.seconds)}
-                className={timeoutSec === preset.seconds ? "btn-primary" : "btn-secondary"}
-                style={{ flex: 1, padding: compact ? "7px 4px" : "9px 6px", fontSize: compact ? 11 : 12.5, borderRadius: 8 }}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <button onClick={handleCreate} disabled={busy || !name.trim()} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
+          <RoomPacingPicker value={settings} onChange={setSettings} compact={compact} />
+          <button onClick={handleCreate} disabled={busy || !name.trim() || !settings} className="btn-primary" style={{ width: "100%", padding: compact ? 10 : 14, fontSize: compact ? 14 : 16, borderRadius: 10 }}>
             สร้างห้อง
           </button>
 
@@ -219,7 +200,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
               +
             </button>
           </div>
-          <button onClick={handleQuickstart} disabled={busy} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
+          <button onClick={handleQuickstart} disabled={busy || !settings} className="btn-secondary" style={{ width: "100%", padding: compact ? 9 : 12, fontSize: compact ? 12.5 : 14, borderColor: "var(--gold)" }}>
             เล่นกับบอท (ทดสอบคนเดียว)
           </button>
           <div style={{ fontSize: compact ? 9.5 : 10.5, color: "var(--ink-faint)", textAlign: "center", marginTop: 8 }}>
@@ -227,7 +208,7 @@ function EntryDialog({ initialTab, onClose }: { initialTab: "create" | "join"; o
           </div>
         </div>
       ) : (
-        <div onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
+        <div role="dialog" aria-modal="true" aria-label="เข้าร่วมห้อง" onClick={(e) => e.stopPropagation()} style={panelBoxStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, marginBottom: 4 }}>
             <span style={{ fontFamily: "var(--font-glyph)", fontSize: compact ? 18 : 24, color: "var(--gold)" }}>入</span>
             <span style={{ fontSize: compact ? 15 : 20, fontWeight: 700, color: "var(--ink)" }}>เข้าร่วมห้อง</span>
@@ -260,6 +241,7 @@ function WaitingRoom() {
   const startGame = useGameStore((s) => s.startGame);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
   const [starting, setStarting] = useState(false);
+  const { compact } = useDeviceMode();
 
   const seats = roomState?.seats ?? [];
   const mySeat = seatIndex !== null ? seats[seatIndex] : undefined;
@@ -367,6 +349,7 @@ function WaitingRoom() {
 
       {/* footer — normal flow, below the ring area; never overlaps the self seat tile */}
       <div style={{ position: "relative", flexShrink: 0, display: "flex", gap: 10, flexDirection: "column", alignItems: "center", padding: "16px 20px 26px" }}>
+        {roomState?.settings && <RoomPacingSummary settings={roomState.settings} compact={compact} />}
         <div style={{ display: "flex", gap: 14 }}>
           <button onClick={() => setConfirmingLeave(true)} className="btn-danger" style={{ padding: "13px 26px", fontSize: 14, borderRadius: 11 }}>
             ออกจากห้อง

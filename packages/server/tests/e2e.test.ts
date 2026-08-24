@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import type { AddressInfo } from "node:net";
-import type { RoomStatePayload, MatchResult } from "@tktw/shared";
+import type { RoomSettingsSelection, RoomStatePayload, MatchResult } from "@tktw/shared";
 import { gameViewSchema } from "@tktw/shared";
 import { createTktwServer, type TktwServer } from "../src/server";
 
@@ -91,14 +91,14 @@ function findOwnerLobbySeat(views: { viewerPlayerId: string }[], engineId: strin
   return idx;
 }
 
-async function createAndFillRoom(names: string[]) {
+async function createAndFillRoom(names: string[], settings?: RoomSettingsSelection) {
   const sockets: ClientSocket[] = [];
   for (const name of names) sockets.push(await connectClient());
 
   const hostAck = await emitAck<{ ok: true; roomCode: string; sessionToken: string; seatIndex: number }>(
     sockets[0]!,
     "room:create",
-    { playerName: names[0] },
+    { playerName: names[0], ...(settings ? { settings } : {}) },
   );
   expect(hostAck.ok).toBe(true);
   const roomCode = hostAck.roomCode;
@@ -247,20 +247,22 @@ describe("room lifecycle", () => {
 
     const hostAck = await emitAck<{ ok: true; roomCode: string }>(alice, "room:create", {
       playerName: "Alice",
+      settings: { preset: "beginner" },
     });
     const roomCode = hostAck.roomCode;
 
     // Attach each listener before the join that triggers its broadcast —
     // bob's own "room:state" (2 seats) arrives at Alice on its own network
     // timing, independent of when bob's join ack resolves.
-    const afterBobJoins = waitForEvent<{ seats: Array<{ name: string }> }>(alice, "room:state");
+    const afterBobJoins = waitForEvent<RoomStatePayload>(alice, "room:state");
     await emitAck(bob, "room:join", { roomCode, playerName: "Bob" });
     await afterBobJoins;
 
-    const afterCarolJoins = waitForEvent<{ seats: Array<{ name: string }> }>(alice, "room:state");
+    const afterCarolJoins = waitForEvent<RoomStatePayload>(alice, "room:state");
     await emitAck(carol, "room:join", { roomCode, playerName: "Carol" });
     const state = await afterCarolJoins;
     expect(state.seats.map((s) => s.name)).toEqual(["Alice", "Bob", "Carol"]);
+    expect(state.settings).toEqual({ preset: "beginner", decisionTimeoutSec: 60, reconnectGraceSec: 90, revealDurationSec: 10, botAnswerDelayMs: 900 });
   });
 
   it("rejects starting with fewer than 3 players", async () => {
@@ -409,7 +411,7 @@ describe("answer authorization and validation", () => {
 
 describe("reconnect via session token", () => {
   it("rejoining with the stored token re-attaches the same seat and resends the current view", async () => {
-    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob", "Carol"]);
+    const { sockets, roomCode, tokens } = await createAndFillRoom(["Alice", "Bob", "Carol"], { preset: "fast" });
     await emitAck(sockets[0]!, "room:start", { roomCode });
     // Let seat 1's view arrive before disconnecting it — SPEC 8.2's seat
     // permutation means lobby seat 1 isn't necessarily engine "p1" anymore,
@@ -421,6 +423,7 @@ describe("reconnect via session token", () => {
 
     const reconnected = await connectClient();
     const viewPromise = waitForEvent<{ viewerPlayerId: string }>(reconnected, "game:view");
+    const roomStatePromise = waitForEvent<RoomStatePayload>(reconnected, "room:state");
     const ack = await emitAck<{ ok: boolean; seatIndex: number; phase: string }>(
       reconnected,
       "room:rejoin",
@@ -428,9 +431,10 @@ describe("reconnect via session token", () => {
     );
     expect(ack.ok).toBe(true);
     expect(ack.seatIndex).toBe(1);
-    expect(ack.phase).toBe("playing");
+    expect(ack.phase).toBe("revealing");
     const view = await viewPromise;
     expect(view.viewerPlayerId).toBe(seat1View.viewerPlayerId);
+    expect((await roomStatePromise).settings).toEqual({ preset: "fast", decisionTimeoutSec: 15, reconnectGraceSec: 30, revealDurationSec: 4, botAnswerDelayMs: 250 });
   });
 
   it("rejects an unknown session token", async () => {
@@ -886,8 +890,12 @@ describe("SPEC 8: match lifecycle, result & rematch", () => {
     const seenMatchIds = new Set<string>([matchId.current]);
 
     for (let round = 0; round < 3; round++) {
+      const lobbyStatePromise = waitForRoomState(socket, (state) => state.phase === "lobby");
       const returnAck = await emitAck<{ ok: boolean }>(socket, "room:returnToLobby", { roomCode });
       expect(returnAck.ok).toBe(true);
+
+      const lobbyState = await lobbyStatePromise;
+      expect(lobbyState.settings).toEqual({ preset: "standard", decisionTimeoutSec: 30, reconnectGraceSec: 45, revealDurationSec: 8, botAnswerDelayMs: 600 });
 
       const resultPromise = waitForEvent<MatchResult>(socket, "game:result");
       const startAck = await emitAck<{ ok: boolean }>(socket, "room:start", { roomCode });

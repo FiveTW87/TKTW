@@ -2,6 +2,7 @@
 // distinct from GameView (Phase 5's unified, Zod-typed view-model in
 // ./protocol/views.ts).
 import type { MatchResultView } from "./protocol/views";
+import type { ResolvedRoomSettings } from "./roomSettings";
 // "abandoned" = the match ended early because everyone else forfeited/left —
 // distinct from "ended" (a real win/loss result) so the client can say so.
 // "revealing" = SPEC 7.2's brief role-reveal screen: roles are already
@@ -26,6 +27,9 @@ export interface RoomStatePayload {
   code: string;
   phase: RoomPhase;
   seats: RoomStateSeat[];
+  /** Complete server-resolved pacing shown to every room member. It is
+   *  immutable for the room lifetime and therefore survives rejoin/rematch. */
+  settings: ResolvedRoomSettings;
   /** The recipient's own seat index — survives a lobby re-index so a client
    *  can always find itself without trusting a locally-cached seatIndex. */
   yourSeatIndex?: number;

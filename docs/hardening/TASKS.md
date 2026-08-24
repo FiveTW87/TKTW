@@ -50,7 +50,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | FX-002 | Combat and skill sequences | completed | Codex | 2.5d | FX-001, SFX-001 |
 | FX-003 | Judgment, Wuxie, turn, and timer feedback | complete | Codex | 2d | FX-002 |
 | ROOM-001 | Typed room settings and presets | completed | Codex | 1.5d | LEGAL-001 |
-| ROOM-002 | Create/lobby UI and lifecycle preservation | backlog | Codex | 1.5d | ROOM-001 |
+| ROOM-002 | Create/lobby UI and lifecycle preservation | completed | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | backlog | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | backlog | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | backlog | Codex | 2d | ASSIST-002, PRES-002 |
@@ -1476,11 +1476,51 @@ Define server-authoritative beginner, standard, fast, and bounded custom pacing 
 
 ## ROOM-002 — Create/lobby UI and lifecycle preservation
 
-Status: backlog | Owner: Codex | Reviewer: Claude copy | Estimate: 1.5 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude copy | Estimate: 1.5 days | Risk: Medium
 
 ### Objective
 
 Expose presets in room creation and show the selected pacing to every lobby member while preserving it through rejoin/rematch.
+
+### Current behavior
+
+- Create/quickstart still sends the temporary legacy `decisionTimeoutSec` field from three 30/60/90 buttons, so the UI cannot select the complete ROOM-001 pacing contract.
+- The create dialog does not distinguish beginner/standard/fast intent and has no bounded advanced editor for reconnect, reveal, or bot timing.
+- `room:state` does not include the server-resolved selection, so joined/rejoined players cannot review the host's rules and the waiting room cannot prove rematch preservation.
+
+### Expected behavior
+
+- Create and quickstart send one typed `RoomSettingsSelection`; Standard is selected by default and matches current production timing.
+- Beginner, Standard, and Fast are always visible with concise beginner-friendly timing summaries. A fully bounded Custom editor exists behind an explicitly collapsed advanced-settings disclosure.
+- Every `room:state` contains the complete server-resolved settings. The waiting room shows the preset and key timings to hosts, joiners, and rejoined players before start and after return-to-lobby.
+- Room settings remain immutable after creation in this phase; the server broadcast, not local form state, is the display authority.
+
+### In scope / allowed files
+
+- Shared room-state payload, server room-state assembly, client store create/quickstart signatures, Lobby create/waiting UI, a focused pacing presentation component/data helper if it earns reuse, narrow CSS, shared/server/client tests, and hardening docs.
+
+### Out of scope / forbidden files
+
+- Mid-lobby settings editing, host transfer policy, gameplay/engine rules, database/persistence, score/users, tutorial/onboarding flow, table/gameplay UI, sounds/effects/assets, package dependencies, and the unrelated `packages/client/src/App.tsx` worktree diff.
+
+### Type or protocol changes
+
+- Add required resolved `settings: ResolvedRoomSettings` to `RoomStatePayload`.
+- Change client `createRoom` and `quickstartWithBots` commands from legacy decision seconds to optional typed `RoomSettingsSelection`; production UI always supplies a selection.
+- Keep server legacy request parsing during this task for compatibility with older deployed clients, but remove legacy emission from the current client.
+
+### Implementation steps
+
+1. Red→Green room-state contract/broadcast tests for host, join, rejoin, and return-to-lobby/rematch preservation.
+2. Red→Green store payload tests proving create and quickstart emit the typed envelope and never the legacy field.
+3. Build named preset selector plus collapsed bounded custom controls with semantic labels and compact-safe layout.
+4. Render one server-authoritative waiting-room summary for every member, then run focused responsive and full verification.
+
+### Edge cases
+
+- Default Standard, all named presets, custom min/max values, numeric empty/NaN/fraction input, switching named↔custom, repeated submissions while busy, and advanced disclosure toggling without silently changing selection.
+- Joiner never saw the create form, rejoin during lobby, rejoin during reveal/play, return-to-lobby after result, host transfer after a finished match, and legacy-created rooms resolving to a complete Custom display.
+- 360px-class compact dialog height/scrolling, long Thai labels, keyboard/accessible disclosure semantics, exact optional-property typing, stale local state, and no room mutation after invalid input.
 
 ### Acceptance criteria
 
@@ -1490,7 +1530,17 @@ Expose presets in room creation and show the selected pacing to every lobby memb
 
 ### Tests and verification
 
-- Lobby component tests, server rejoin/rematch E2E, mobile layout, typecheck, and build.
+- Shared/server type contract tests, room-state broadcast/rejoin/rematch E2E, client store/Lobby integration tests for preset/custom/quickstart/disclosure/waiting summary, compact viewport assertions, root typecheck, all package tests, production client build, diff check, and changed-state screenshots when browser runtime is available.
+
+### Completion report
+
+- Migrated current create and bot-quickstart commands from the temporary decision-only field to the typed ROOM-001 `settings` envelope. Standard is the production default; Beginner and Fast use the same shared canonical data as the server.
+- Added an accessible preset selector with concise Thai intent copy. Fully bounded four-field Custom timing remains behind a collapsed `aria-expanded` advanced disclosure; incomplete/out-of-range drafts disable both create and quickstart rather than emitting partial settings.
+- Added required resolved settings to every server `room:state`. The waiting room renders one server-authoritative summary for host/joiners, and E2E proves the same values survive explicit Fast rejoin plus three Standard return-to-lobby/rematch cycles.
+- Added compact 740×360 coverage proving the expanded create dialog remains scrollable with all preset/custom controls, plus default payload, custom payload, invalid draft, quickstart, waiting-summary, join, rejoin, and rematch tests.
+- Verification passed: focused Lobby 5 tests, server E2E 34, engine 40 files / 1,116 tests, server 4 / 67, client 32 / 244, root typecheck, production client build (212 modules), and diff check. One combined parallel `pnpm test` run starved the existing bot quickstart E2E past its 20s observation window; the complete server suite immediately passed alone with that case at 1.2s, and the complete client suite passed alone.
+- Changed-state screenshot capture was attempted because UI changed, but the browser plugin again rejected its trusted service before connecting to the local page; no screenshot was fabricated. Semantic dialog/disclosure, compact scroll, resolved-summary, and full Lobby regressions passed.
+- No settings editing after room creation, gameplay rule, engine, database, table UI, CSS, sound, effect, or asset behavior changed. `packages/client/src/App.tsx` remains outside task staging. Implementation commit is recorded in `PROGRESS.md` after creation.
 
 ---
 
