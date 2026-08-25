@@ -53,7 +53,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ROOM-002 | Create/lobby UI and lifecycle preservation | completed | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
-| TUT-001 | Tutorial scenario/controller foundation | backlog | Codex | 2d | ASSIST-002, PRES-002 |
+| TUT-001 | Tutorial scenario/controller foundation | in_progress | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | backlog | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
@@ -1687,21 +1687,73 @@ Explain the current decision and why visible actions/targets are unavailable wit
 
 ## TUT-001 — Tutorial scenario/controller foundation
 
-Status: backlog | Owner: Codex | Reviewer: Claude scenario audit | Estimate: 2 days | Risk: High
+Status: in_progress | Owner: Codex | Reviewer: Claude scenario audit | Estimate: 2 days | Risk: High
 
 ### Objective
 
 Create typed tutorial scenarios, steps, completion conditions, highlights, and local progress without embedding tutorial branches in the engine.
+
+### Current behavior
+
+- The first-table walkthrough explains the existing layout, but there is no reusable playable-scenario contract.
+- The client receives server-projected `LegalActionView[]` and sends real `PlayerAnswer` payloads; no tutorial layer consumes that authoritative boundary yet.
+- Tutorial completion/reset state and scenario validation do not exist.
+
+### Expected behavior
+
+- A client-only, pure tutorial controller starts from a strictly validated typed scenario and exposes the active prompt, semantic highlight, progress, and completion state.
+- Each observation combines the player's real submitted answer with the same server-projected legal actions that enabled it. The controller matches teaching intent without calculating game legality.
+- Wrong actions are reported as retryable tutorial outcomes and never advance a step. A scenario whose expected action is unavailable in the supplied authoritative actions fails loudly.
+- Serializable local progress can resume only a valid step boundary; reset always returns to the first step.
+
+### Allowed files
+
+- `packages/client/src/tutorial/**`
+- `packages/client/tests/tutorial*.test.ts`
+- `docs/hardening/TASKS.md`
+- `docs/hardening/PROGRESS.md`
+
+### Forbidden changes
+
+- No tutorial branches, state, actions, bot policy, or rule exceptions in `packages/engine`, `packages/shared`, or `packages/server`.
+- No protocol, `gameStore`, multiplayer Table flow, card/general rule, dependency, sound, effect, asset, or unrelated `App.tsx` changes.
+- No lesson content, scripted bot, tutorial navigation UI, or advanced resume polish assigned to `TUT-002`/`TUT-003`.
+
+### Type contracts
+
+- Scenario, step, highlight, expected-action, progress, observation, transition, and public snapshot use discriminated unions or readonly typed records.
+- Expected actions reference stable public vocabulary (`draw`, `playCard` type/source, `useSkill` skill ID, `response` decision kind, `discard`, `endPhase`) rather than private engine state.
+- Persistence accepts unknown data through a strict decoder and never restores an out-of-range or completed scenario into a half-applied step.
+
+### Implementation steps
+
+1. Add strict scenario construction/validation and the smallest public controller snapshot.
+2. Match real submitted answers against projected legal-action options and implement retry/advance/complete transitions.
+3. Add strict reset/resume progress handling with scenario/version identity.
+4. Prove import isolation from engine/server production sources and preserve the existing multiplayer path unchanged.
+
+### Edge cases
+
+- Empty scenarios, duplicate step IDs, duplicate/out-of-order positions, invalid highlights, and malformed persisted progress fail or reset deterministically.
+- Expected card/skill/response actions absent from current `LegalActionView[]` throw an explicit scripted-step error.
+- A valid but unexpected player action does not advance and carries no hidden card, role, or strategy data in the public snapshot.
+- Observations received after completion are stable no-ops; reset is always available.
 
 ### Acceptance criteria
 
 - Tutorial controller consumes real engine state/actions.
 - Invalid scripted steps fail loudly in tests.
 - Multiplayer production flow imports no tutorial-specific rule behavior.
+- Completion/progress snapshots contain no players, roles, hands, draw-pile order, or engine-private state.
 
 ### Tests and verification
 
-- Scenario schema, step transition, invalid action, reset/resume, and isolation tests.
+- RED→GREEN scenario schema, initial snapshot, expected transition, retry, unavailable scripted action, completion, reset/resume, strict persistence, privacy/type-boundary, and source-import isolation tests.
+- Full Client, Engine, and Server suites; root typecheck; production client build; catalog check; scoped diff review.
+
+### Completion evidence
+
+- Pending implementation and verification.
 
 ---
 
