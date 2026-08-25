@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-25
 Current milestone: Phase 9 — Interactive tutorial foundation
-Overall status: `ASSIST-002` pushed; `TUT-001` specification and RED→GREEN implementation in progress
+Overall status: `TUT-001` completed and committed locally; ready for explicit push approval
 
 ## Next task
 
-- `TUT-001` — Tutorial scenario/controller foundation
-- Owner: Codex
-- Status: `in_progress`
+- `TUT-002` — Basic lessons and scripted bot
+- Owner: Codex + Claude content
+- Status: `backlog`
 
 ## Completed in this cycle
 
@@ -34,6 +34,7 @@ Overall status: `ASSIST-002` pushed; `TUT-001` specification and RED→GREEN imp
 - `ROOM-002` — Typed create/quickstart preset UI, collapsed bounded Custom editor, and server-resolved lobby settings preserved through join/rejoin/rematch.
 - `ASSIST-001` — Resilient per-player Off/Basic/Detailed preferences, reusable Lobby/Table settings, Beginner recommendation, and a skippable/replayable first-table orientation with semantic highlights.
 - `ASSIST-002` — Exhaustive safe reason copy, narrow context-help model, and compact Basic/Detailed Table help with hidden-information and responsive verification.
+- `TUT-001` — Strict client-only tutorial scenario/controller contracts, real accepted-action matching, fail-fast script validation, safe local progress, and production import isolation.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -50,14 +51,14 @@ Overall status: `ASSIST-002` pushed; `TUT-001` specification and RED→GREEN imp
 |---|---:|---:|---|
 | Engine | 40 | 1,116 | Passed |
 | Server | 4 | 67 | Passed |
-| Client | 37 | 267 | Passed |
-| Total | 81 | 1,450 | Passed |
+| Client | 40 | 279 | Passed |
+| Total | 84 | 1,462 | Passed |
 
 ## Next actions
 
-1. Implement strict client-only tutorial scenario/controller contracts one RED→GREEN slice at a time.
-2. Prove reset/resume, privacy, invalid-step failure, and production engine/server import isolation.
-3. Run the complete verification gate, record completion, and request explicit push approval.
+1. Commit the TUT-001 completion record while keeping the unrelated `App.tsx` line-ending status outside staging.
+2. Request explicit approval before pushing the two local TUT-001 commits to `origin/main`.
+3. Expand `TUT-002` before implementation: deterministic basic lesson fixtures, accepted-action integration, and scripted bot inputs around the real engine.
 
 ## Checkpoints
 
@@ -83,6 +84,7 @@ Overall status: `ASSIST-002` pushed; `TUT-001` specification and RED→GREEN imp
 - `ASSIST-001`: `9027eba` (`ASSIST-001-add-player-onboarding`).
 - `ASSIST-002`: `c65bc71` (`ASSIST-002-add-contextual-action-help`).
 - `ASSIST-002` completion record: `0a3dae2` (`ASSIST-002-record-completion`), pushed to `origin/main`.
+- `TUT-001`: `b8d57ca` (`TUT-001-add-tutorial-controller-foundation`).
 
 ## Known workspace notes
 
@@ -92,7 +94,7 @@ Overall status: `ASSIST-002` pushed; `TUT-001` specification and RED→GREEN imp
 
 ## Blockers
 
-- No code or verification blocker for `TUT-001` implementation.
+- No code or verification blocker for `TUT-001`; push awaits explicit approval.
 - ASSIST-001 changed-state screenshot capture hit the existing browser-plugin trusted-service failure before connecting; focused compact/resize/reduced-motion/accessibility tests and the complete Table/client suites passed, and no screenshot was fabricated.
 - ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.

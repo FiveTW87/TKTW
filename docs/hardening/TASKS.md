@@ -53,7 +53,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ROOM-002 | Create/lobby UI and lifecycle preservation | completed | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
-| TUT-001 | Tutorial scenario/controller foundation | in_progress | Codex | 2d | ASSIST-002, PRES-002 |
+| TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | backlog | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
@@ -1687,7 +1687,7 @@ Explain the current decision and why visible actions/targets are unavailable wit
 
 ## TUT-001 — Tutorial scenario/controller foundation
 
-Status: in_progress | Owner: Codex | Reviewer: Claude scenario audit | Estimate: 2 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude scenario audit | Estimate: 2 days | Risk: High
 
 ### Objective
 
@@ -1753,7 +1753,13 @@ Create typed tutorial scenarios, steps, completion conditions, highlights, and l
 
 ### Completion evidence
 
-- Pending implementation and verification.
+- Added a strict client-only scenario decoder, exhaustive typed tutorial action vocabulary, semantic highlights, immutable controller snapshots/transitions, explicit retry/advanced/completed outcomes, and fail-fast `TutorialScriptError` handling when authored expectations disagree with authoritative projected actions.
+- Added versioned serializable progress with strict resume validation, deterministic reset, and an injected local-storage adapter that degrades safely when storage is corrupt, blocked, or full.
+- The controller accepts only an accepted real `PlayerAnswer` plus `LegalActionView[]`; public snapshots exclude players, roles, hands, draw-pile order, strategy, and engine-private state. Source-isolation tests prove engine/shared/server production sources import no tutorial behavior and the client tutorial boundary imports no engine/gameStore/GameState.
+- Focused TUT-001 verification passed: 3 files / 12 tests. Full verification passed: Client 40 files / 279 tests; Engine 40 / 1,116; Server 4 / 67; total 84 files / 1,462 tests; root typecheck; production client build (217 modules); catalog check (256/256); and diff check.
+- No UI was added in this foundation task, so there is no changed-state screenshot; playable lesson UI and scripted bot content remain scoped to `TUT-002`.
+- No engine/shared/server/protocol/gameStore, multiplayer Table flow, rules, dependency, sound, effect, asset, or unrelated `App.tsx` content changed.
+- Implementation commit: `b8d57ca` (`TUT-001-add-tutorial-controller-foundation`).
 
 ---
 
