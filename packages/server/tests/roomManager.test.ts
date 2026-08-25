@@ -15,6 +15,26 @@ function fillRoom(rooms: RoomManager, names: string[]): { roomCode: string; seat
   return { roomCode: room.code, seatIndexes };
 }
 
+describe("RoomManager.startTutorial", () => {
+  it("creates an isolated three-seat playing room mapped to the lesson's human decision", () => {
+    const rooms = new RoomManager();
+    const { room, seatIndex, sessionToken } = rooms.startTutorial("ผู้ฝึก", "basic-dodge");
+
+    expect(seatIndex).toBe(0);
+    expect(sessionToken.length).toBeGreaterThan(15);
+    expect(room.phase).toBe("playing");
+    expect(room.seats.map((seat) => ({ isBot: seat.isBot, connected: seat.connected }))).toEqual([
+      { isBot: false, connected: true },
+      { isBot: true, connected: true },
+      { isBot: true, connected: true },
+    ]);
+    expect(room.tutorial?.scenarioId).toBe("basic-dodge");
+    expect(room.seatAssignment?.[0]).toBe(1);
+    expect(room.session?.state.pendingDecision).toMatchObject({ kind: "respondShan", playerId: "p1" });
+    expect(room.matchId).toBeTruthy();
+  });
+});
+
 describe("RoomManager.startGame (SPEC 8.2)", () => {
   it("mints a fresh seatAssignment that's a valid permutation of every engine seat", () => {
     const rooms = new RoomManager();

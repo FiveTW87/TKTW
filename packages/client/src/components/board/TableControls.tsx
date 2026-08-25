@@ -152,7 +152,7 @@ export function TableActionCluster({ action }: { action: TableActionViewModel })
             ทิ้ง {action.selectedCount}/{action.requiredCount}
           </button>
         ) : (
-          <button onClick={action.onSubmit} disabled={action.busy} className="btn-primary table-action-primary table-end-turn" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
+          <button data-tutorial-anchor="endPhase" onClick={action.onSubmit} disabled={action.busy} className="btn-primary table-action-primary table-end-turn" style={{ width: 92, height: 92, borderRadius: "50%", fontSize: 15, fontWeight: 700, boxShadow: "0 10px 30px rgba(0,0,0,.6)" }}>
             จบเทิร์น
           </button>
         )}

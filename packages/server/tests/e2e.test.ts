@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import type { AddressInfo } from "node:net";
-import type { RoomSettingsSelection, RoomStatePayload, MatchResult } from "@tktw/shared";
+import type { RoomSettingsSelection, RoomStatePayload, MatchResult, GameView } from "@tktw/shared";
 import { gameViewSchema } from "@tktw/shared";
 import { createTktwServer, type TktwServer } from "../src/server";
 
@@ -591,6 +591,40 @@ describe("quickstart with bots", () => {
       botCount: 0,
     });
     expect(ack.ok).toBe(false);
+  });
+});
+
+describe("tutorial start", () => {
+  it("starts a validated lesson directly at the learner's deterministic real decision", async () => {
+    const socket = await connectClient();
+    const viewPromise = waitUntilView<GameView>(
+      socket,
+      (view) => view.viewerPlayerId === "p1" && view.pendingDecision?.kind === "respondShan",
+    );
+    const roomStatePromise = waitForRoomState(socket, (state) => state.tutorialScenarioId === "basic-dodge");
+
+    const ack = await emitAck<{ ok: boolean; roomCode: string; seatIndex: number }>(socket, "tutorial:start", {
+      playerName: "ผู้ฝึก",
+      scenarioId: "basic-dodge",
+    });
+
+    expect(ack.ok).toBe(true);
+    expect(ack.seatIndex).toBe(0);
+    const [view, roomState] = await Promise.all([viewPromise, roomStatePromise]);
+    expect(view.legalActions).toContainEqual(expect.objectContaining({ kind: "response", decisionKind: "respondShan" }));
+    expect(roomState.phase).toBe("playing");
+    expect(roomState.tutorialScenarioId).toBe("basic-dodge");
+  });
+
+  it("rejects an unknown lesson without creating a room", async () => {
+    const socket = await connectClient();
+    const before = server.rooms.size();
+    const ack = await emitAck<{ ok: boolean }>(socket, "tutorial:start", {
+      playerName: "ผู้ฝึก",
+      scenarioId: "unknown",
+    });
+    expect(ack.ok).toBe(false);
+    expect(server.rooms.size()).toBe(before);
   });
 });
 

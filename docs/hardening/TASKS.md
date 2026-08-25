@@ -54,7 +54,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
-| TUT-002 | Basic lessons and scripted bot | backlog | Codex + Claude content | 3d | TUT-001 |
+| TUT-002 | Basic lessons and scripted bot | in_progress | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
@@ -1765,20 +1765,70 @@ Create typed tutorial scenarios, steps, completion conditions, highlights, and l
 
 ## TUT-002 — Basic lessons and scripted bot
 
-Status: backlog | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 3 days | Risk: Medium
+Status: in_progress | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 3 days | Risk: Medium
 
 ### Objective
 
 Teach draw/attack/target/end turn and dodge/damage/heal through deterministic playable scenarios.
 
+### Current behavior
+
+- `TUT-001` supplies strict client scenario/controller and local-progress contracts, but there is no server-started tutorial room, deterministic lesson setup, scripted bot input, lesson picker, or in-table coach.
+- Solo quickstart uses a random identity game and the generic bot policy, so it cannot guarantee the cards, targets, or teaching order required by a lesson.
+
+### Expected behavior
+
+- A validated `tutorial:start` request creates an isolated three-seat in-memory room backed by the existing engine session/respond/legal-action pipeline, skips role/general setup, and returns the human directly to the required lesson decision.
+- Three deterministic basic lessons cover draw → attack/target → end phase, dodge, and pass → damage → draw → heal. Bot decisions come only from the selected scenario's scripted input policy.
+- The home lesson picker and in-table coach expose progress, semantic highlights, retry feedback, skip/exit, replay, and next lesson without changing normal multiplayer behavior.
+
+### Allowed files
+
+- Dedicated tutorial contracts/adapters under `packages/shared/src/tutorial*`, `packages/engine/src/tutorial/**`, `packages/server/src/tutorial/**`, and `packages/client/src/tutorial/**`
+- Narrow tutorial start/room metadata seams in shared protocol/events, `RoomManager`, socket/game flow, client game store, Lobby, and Table
+- Tutorial-focused engine/server/client tests and responsive CSS
+- `docs/hardening/TASKS.md`, `docs/hardening/PROGRESS.md`
+
+### Forbidden changes
+
+- No tutorial condition inside card, general, equipment, damage, turn-loop, legality, targeting, identity, or victory rule implementations.
+- No duplicated client legality, private engine state in the browser, database, score/user system, unrelated assets/effects/audio, or unrelated `App.tsx` content.
+- No advanced lesson content or half-applied resume/navigation behavior assigned to `TUT-003`.
+
+### Type contracts
+
+- Tutorial IDs are one strict shared vocabulary used by protocol, engine setup, server room metadata, and client catalog.
+- Engine setup returns a normal `GameSession`, human player ID, and scenario-owned scripted bot input; no alternate rules engine is introduced.
+- Accepted-action delivery is a generic client boundary containing the pre-answer projected legal actions, so tutorial coaching advances only after a real server acknowledgement.
+
+### Implementation steps
+
+1. Add shared tutorial ID/start contracts and deterministic engine basic scenario factory with golden runs.
+2. Add tutorial room lifecycle and scenario-scripted bot resolution through existing socket/game flow.
+3. Add accepted-action bridge, typed basic client catalog, lesson picker, and in-table coach.
+4. Verify retry/skip/replay/next, semantic anchors, reduced motion, and 932×430/844×390/740×360 bounds.
+
+### Edge cases
+
+- Unknown scenario IDs are rejected before room creation; a failed start leaves no room/session token behind.
+- Scripted bot input that cannot answer the current real decision fails loudly in tests and falls back safely at runtime without a busy loop.
+- Duplicate taps advance the coach once because only acknowledged logical answers publish; a rejected answer never advances.
+- Leaving/skipping clears the tutorial room but preserves completed local progress; replay resets only the selected lesson.
+
 ### Acceptance criteria
 
 - Lessons are replayable, skippable, and complete in about 10–15 minutes together.
 - Bot behavior is scripted only by tutorial controller inputs.
+- Normal create/join/quickstart/rejoin/rematch flows remain tutorial-free.
 
 ### Tests and verification
 
 - Golden scenario runs, wrong-action handling, bot progression, copy/anchor checks, mobile and reduced-motion tests.
+- Full Client, Engine, and Server suites; root typecheck; production build; catalog check; scoped diff review.
+
+### Completion evidence
+
+- Pending implementation and verification.
 
 ---
 

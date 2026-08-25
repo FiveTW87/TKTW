@@ -24,6 +24,9 @@ import { FirstTableWalkthrough } from "../components/FirstTableWalkthrough";
 import { ContextHelpPanel } from "../components/board/ContextHelpPanel";
 import { buildContextHelp } from "../data/contextHelp";
 import { useAssistStore } from "../store/assistStore";
+import { TutorialCoach } from "../tutorial/TutorialCoach";
+import { BASIC_TUTORIAL_LESSONS } from "../tutorial/basicLessons";
+import { createTutorialProgressStorage } from "../tutorial/tutorialProgress";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -48,6 +51,8 @@ export function Table() {
   const answer = useGameStore((s) => s.answer);
   const error = useGameStore((s) => s.error);
   const leaveRoom = useGameStore((s) => s.leaveRoom);
+  const startTutorial = useGameStore((s) => s.startTutorial);
+  const tutorialScenarioId = useGameStore((s) => s.roomState?.tutorialScenarioId);
   const debug = useGameStore((s) => s.debug);
   const combatEffects = useCombatPresentation({
     connected,
@@ -73,6 +78,24 @@ export function Table() {
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
   const { compact } = useDeviceMode();
   const assistanceLevel = useAssistStore((state) => state.level);
+
+  const restartTutorial = async (scenarioId: NonNullable<typeof tutorialScenarioId>) => {
+    createTutorialProgressStorage(window.localStorage).clear(scenarioId);
+    await leaveRoom();
+    await startTutorial("ผู้ฝึก", scenarioId);
+  };
+
+  const continueTutorial = async (scenarioId: NonNullable<typeof tutorialScenarioId>) => {
+    const currentIndex = BASIC_TUTORIAL_LESSONS.findIndex((lesson) => lesson.id === scenarioId);
+    const next = BASIC_TUTORIAL_LESSONS[currentIndex + 1];
+    if (!next) {
+      await leaveRoom();
+      return;
+    }
+    createTutorialProgressStorage(window.localStorage).clear(next.id);
+    await leaveRoom();
+    await startTutorial("ผู้ฝึก", next.id);
+  };
 
   const pending = gameView?.pendingDecision;
   const decisionKey = pending?.id ?? null;
@@ -378,6 +401,14 @@ export function Table() {
       <TableActionCluster action={tableAction} />
 
       <TableOverlays model={overlayModel} />
+      {tutorialScenarioId && (
+        <TutorialCoach
+          scenarioId={tutorialScenarioId}
+          onExit={() => void leaveRoom()}
+          onRestart={() => void restartTutorial(tutorialScenarioId)}
+          onNext={() => void continueTutorial(tutorialScenarioId)}
+        />
+      )}
       <FirstTableWalkthrough />
     </div>
   );

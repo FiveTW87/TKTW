@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-25
 Current milestone: Phase 9 — Interactive tutorial foundation
-Overall status: `TUT-001` completed and committed locally; ready for explicit push approval
+Overall status: `TUT-001` committed locally; `TUT-002` deterministic basic lessons in progress
 
 ## Next task
 
 - `TUT-002` — Basic lessons and scripted bot
 - Owner: Codex + Claude content
-- Status: `backlog`
+- Status: `in_progress`
 
 ## Completed in this cycle
 
@@ -56,9 +56,9 @@ Overall status: `TUT-001` completed and committed locally; ready for explicit pu
 
 ## Next actions
 
-1. Commit the TUT-001 completion record while keeping the unrelated `App.tsx` line-ending status outside staging.
-2. Request explicit approval before pushing the two local TUT-001 commits to `origin/main`.
-3. Expand `TUT-002` before implementation: deterministic basic lesson fixtures, accepted-action integration, and scripted bot inputs around the real engine.
+1. Build and verify deterministic basic engine scenarios and tutorial-room lifecycle through RED→GREEN slices.
+2. Add lesson picker/in-table coach with accepted-action progression and responsive/reduced-motion coverage.
+3. Complete and commit `TUT-002`, then expand and implement `TUT-003`; do not push until requested.
 
 ## Checkpoints
 
@@ -94,7 +94,7 @@ Overall status: `TUT-001` completed and committed locally; ready for explicit pu
 
 ## Blockers
 
-- No code or verification blocker for `TUT-001`; push awaits explicit approval.
+- No code or verification blocker for `TUT-002`; TUT-001 and later tutorial commits remain local until push is requested.
 - ASSIST-001 changed-state screenshot capture hit the existing browser-plugin trusted-service failure before connecting; focused compact/resize/reduced-motion/accessibility tests and the complete Table/client suites passed, and no screenshot was fabricated.
 - ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.

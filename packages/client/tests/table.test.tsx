@@ -138,6 +138,7 @@ vi.mock("socket.io-client", () => ({ io: () => fakeSocket }));
 import App from "../src/App";
 import { useGameStore } from "../src/store/gameStore";
 import { useAssistStore } from "../src/store/assistStore";
+import { acceptedActionChannel } from "../src/lib/acceptedActionChannel";
 
 beforeEach(() => {
   clearSent();
@@ -359,6 +360,8 @@ describe("Table: main action card play", () => {
 
   it("end phase sends choice: endPhase with no cards selected", async () => {
     const user = await enterRoom("ENDPH1");
+    const accepted = vi.fn();
+    const unsubscribe = acceptedActionChannel.subscribe(accepted);
 
     fakeSocket.fire("game:view", {
       viewerPlayerId: "p0",
@@ -381,6 +384,12 @@ describe("Table: main action card play", () => {
     await waitFor(() => expect(sentEvents.some((e) => e.event === "game:answer")).toBe(true));
     const call = sentEvents.find((e) => e.event === "game:answer")!;
     expect(call.payload).toEqual({ roomCode: "ENDPH1", matchId: "test-match", decisionId: "dec_end", choice: "endPhase", clientActionId: expect.any(String) });
+    respondTo("game:answer", { ok: true });
+    await waitFor(() => expect(accepted).toHaveBeenCalledWith({
+      acceptedAnswer: { decisionId: "dec_end", choice: "endPhase" },
+      legalActions: expect.arrayContaining([{ kind: "endPhase" }]),
+    }));
+    unsubscribe();
   });
 
   it("uses the server target contract instead of deriving targets from visible players", async () => {
@@ -706,6 +715,37 @@ async function enterGame(roomCode: string, self: ReturnType<typeof player>, rest
   clearSent();
   return user;
 }
+
+describe("tutorial table integration", () => {
+  it("shows the coach only when the authoritative room is a tutorial", async () => {
+    await enterRoom("TUTORIAL");
+    fakeSocket.fire("room:state", {
+      code: "TUTORIAL",
+      phase: "playing",
+      seats: [],
+      matchId: "tutorial-match",
+      tutorialScenarioId: "basic-turn",
+    });
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [player("p0"), player("p1"), player("p2")],
+      currentTurnPlayerId: "p0",
+      turnNumber: 1,
+      currentPhase: "draw",
+      drawPileCount: 80,
+      discardPile: [],
+      discardPileCount: 0,
+      eventStack: [],
+      pendingDecision: { id: "tutorial_draw", kind: "drawCard", playerId: "p0", data: {} },
+      legalActions: [{ kind: "draw" }],
+      finished: false,
+      gameLogs: [],
+    });
+
+    expect(await screen.findByRole("status", { name: "บทฝึกสอน" })).toHaveTextContent("ขั้น 1/3");
+  });
+});
 
 function fireView(self: ReturnType<typeof player>, rest: ReturnType<typeof player>[], pendingDecision: unknown, overrides: Record<string, unknown> = {}) {
   fakeSocket.fire("game:view", {

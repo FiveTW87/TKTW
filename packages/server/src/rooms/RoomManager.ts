@@ -9,7 +9,14 @@
 // restart. GameSession's own decisionLog/recoverGame machinery exists for
 // that harder problem but isn't wired in here; see gameFlow.ts.
 import { randomUUID } from "node:crypto";
-import { createIdentityGame, createRng, type GameSession } from "@tktw/engine";
+import {
+  createIdentityGame,
+  createRng,
+  createTutorialGame,
+  type GameSession,
+  type TutorialGame,
+  type TutorialScenarioId,
+} from "@tktw/engine";
 import {
   ROOM_CODE_ALPHABET,
   resolveRoomSettings,
@@ -43,6 +50,9 @@ export interface GameRoom {
   phase: RoomPhase;
   seats: SeatSlot[];
   session?: GameSession;
+  /** Present only for a dedicated lesson room. The session is still the real
+   * engine session above; this carries authored setup/bot inputs around it. */
+  tutorial?: TutorialGame;
   /** Set when the match starts — part of the reconnect restore payload. */
   matchId?: string;
   /** SPEC 8.2: this match's player->seat permutation, indexed by lobby seat
@@ -183,6 +193,41 @@ export class RoomManager {
     return { room, sessionToken, seatIndex };
   }
 
+  startTutorial(
+    hostName: string,
+    scenarioId: TutorialScenarioId,
+  ): { room: GameRoom; sessionToken: string; seatIndex: number } {
+    const created = this.createRoom(hostName, { preset: "beginner" });
+    const { room } = created;
+    const tutorial = createTutorialGame(scenarioId);
+    const humanEngineSeat = playerNumber(tutorial.humanPlayerId);
+    const engineSeats = [...Array(tutorial.session.state.players.length).keys()];
+    const botEngineSeats = engineSeats.filter((seat) => seat !== humanEngineSeat);
+
+    for (let index = 0; index < botEngineSeats.length; index++) {
+      room.seats.push({
+        name: `คู่ซ้อม ${index + 1}`,
+        sessionToken: randomUUID(),
+        connected: true,
+        connectionStatus: "connected",
+        isHost: false,
+        isBot: true,
+      });
+    }
+    tutorial.session.state.players[humanEngineSeat]!.name = hostName;
+    botEngineSeats.forEach((engineSeat, index) => {
+      tutorial.session.state.players[engineSeat]!.name = `คู่ซ้อม ${index + 1}`;
+    });
+    room.tutorial = tutorial;
+    room.session = tutorial.session;
+    room.seatAssignment = [humanEngineSeat, ...botEngineSeats];
+    room.matchId = randomUUID();
+    room.matchStartedAt = Date.now();
+    room.answeredActionIds = new Map();
+    room.phase = "playing";
+    return created;
+  }
+
   /** Presenting a valid session token re-attaches a (possibly new) socket
    *  to the seat it was issued for — the only path back into a room after
    *  a tab close/reopen. */
@@ -299,6 +344,7 @@ export class RoomManager {
     delete room.matchStartedAt;
     delete room.result;
     delete room.answeredActionIds;
+    delete room.tutorial;
     room.phase = "lobby";
     if (room.seats.length === 0) room.emptySince = Date.now();
   }
@@ -342,4 +388,10 @@ export class RoomManager {
   size(): number {
     return this.rooms.size;
   }
+}
+
+function playerNumber(playerId: string): number {
+  const match = /^p(\d+)$/.exec(playerId);
+  if (!match) throw new RoomError(`invalid tutorial player id '${playerId}'`);
+  return Number(match[1]);
 }

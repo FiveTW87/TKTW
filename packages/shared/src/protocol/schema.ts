@@ -10,6 +10,7 @@ import {
   playerIdSchema,
 } from "./ids";
 import { roomSettingsSelectionSchema } from "../roomSettings";
+import { TUTORIAL_SCENARIO_IDS } from "@tktw/engine";
 
 // 6 chars, uppercase, no 0/O/1/I — avoids the pairs people misread out loud.
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -78,6 +79,12 @@ export const quickstartWithBotsSchema = z.object({
   }
 });
 
+export const tutorialScenarioIdSchema = z.enum(TUTORIAL_SCENARIO_IDS);
+export const startTutorialSchema = z.object({
+  playerName: playerNameSchema,
+  scenarioId: tutorialScenarioIdSchema,
+}).strict();
+
 // Mirrors engine's PlayerAnswer (types.ts) minus playerId/decisionId, which
 // the server fills in itself from the room seat / current pendingDecision —
 // a client is never trusted to say who it's answering as.
@@ -119,4 +126,5 @@ export type LeaveRoomInput = z.infer<typeof leaveRoomSchema>;
 export type ReturnToLobbyInput = z.infer<typeof returnToLobbySchema>;
 export type AnswerInput = z.infer<typeof answerSchema>;
 export type QuickstartWithBotsInput = z.infer<typeof quickstartWithBotsSchema>;
+export type StartTutorialInput = z.infer<typeof startTutorialSchema>;
 export type SendChatInput = z.infer<typeof sendChatSchema>;

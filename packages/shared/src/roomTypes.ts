@@ -3,6 +3,7 @@
 // ./protocol/views.ts).
 import type { MatchResultView } from "./protocol/views";
 import type { ResolvedRoomSettings } from "./roomSettings";
+import type { TutorialScenarioId } from "@tktw/engine";
 // "abandoned" = the match ended early because everyone else forfeited/left —
 // distinct from "ended" (a real win/loss result) so the client can say so.
 // "revealing" = SPEC 7.2's brief role-reveal screen: roles are already
@@ -42,6 +43,8 @@ export interface RoomStatePayload {
    *  (Phase 5, §9.4) instead — "revealing" has no GameView yet, so this is
    *  the one phase that still needs its own timer field here. */
   revealExpiresAt?: number;
+  /** Present only for a dedicated deterministic lesson room. */
+  tutorialScenarioId?: TutorialScenarioId;
 }
 
 /** SPEC 8.4 / 9.2 — engine's pure MatchSummary plus the server-only bits it
@@ -71,6 +74,8 @@ export type LeaveRoomAck = SimpleAck;
 export type QuickstartWithBotsAck =
   | { ok: true; roomCode: string; sessionToken: string; seatIndex: number }
   | { ok: false; error: string };
+
+export type TutorialStartAck = QuickstartWithBotsAck;
 
 // Real-time chat between players in a room — a pure fire-and-forget
 // broadcast (rooms are in-memory only, no DB, per spec), except the room

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DECISION_KINDS } from "@tktw/engine";
+import { DECISION_KINDS, TUTORIAL_SCENARIO_IDS } from "@tktw/engine";
 import {
   ROOM_PACING_PRESETS,
   answerSchema,
@@ -8,9 +8,19 @@ import {
   legalActionViewSchema,
   quickstartWithBotsSchema,
   roomSettingsSelectionSchema,
+  startTutorialSchema,
 } from "@tktw/shared";
 
 describe("typed protocol seams", () => {
+  it("accepts only the shared tutorial scenario vocabulary at the socket boundary", () => {
+    expect(TUTORIAL_SCENARIO_IDS).toEqual(["basic-turn", "basic-dodge", "basic-recovery"]);
+    for (const scenarioId of TUTORIAL_SCENARIO_IDS) {
+      expect(startTutorialSchema.parse({ playerName: "ผู้ฝึก", scenarioId })).toEqual({ playerName: "ผู้ฝึก", scenarioId });
+    }
+    expect(startTutorialSchema.safeParse({ playerName: "ผู้ฝึก", scenarioId: "unknown-lesson" }).success).toBe(false);
+    expect(startTutorialSchema.safeParse({ playerName: "", scenarioId: "basic-turn" }).success).toBe(false);
+  });
+
   it("accepts named room pacing presets and keeps Standard equal to current production timing", () => {
     expect(roomSettingsSelectionSchema.parse({ preset: "beginner" })).toEqual({ preset: "beginner" });
     expect(roomSettingsSelectionSchema.parse({ preset: "standard" })).toEqual({ preset: "standard" });

@@ -7,6 +7,7 @@ import { useDeviceMode } from "../lib/useDeviceMode";
 import { RoomPacingPicker, RoomPacingSummary } from "../components/RoomPacingControls";
 import type { RoomSettingsSelection } from "@tktw/shared";
 import { AssistPreferencesButton } from "../components/AssistPreferences";
+import { TutorialLessonPicker } from "../tutorial/TutorialLessonPicker";
 
 function LeaveConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -67,7 +68,7 @@ function Masthead({ compact }: { compact: boolean }) {
 }
 
 // R0 — pure landing: logo + two entry buttons, no form yet.
-function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }) {
+function Home({ onCreate, onJoin, onTutorial }: { onCreate: () => void; onJoin: () => void; onTutorial: () => void }) {
   const { compact } = useDeviceMode();
   return (
     <div style={panelStyle}>
@@ -83,6 +84,9 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
           </button>
         </div>
         <RulesButton label="วิธีเล่น & กติกา" style={{ marginTop: compact ? 4 : 10, padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%" }} />
+        <button type="button" onClick={onTutorial} className="btn-secondary" style={{ padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%", borderColor: "var(--gold)" }}>
+          บทฝึกสอน
+        </button>
         <AssistPreferencesButton style={{ padding: compact ? "8px" : "11px", fontSize: compact ? 12 : 14, width: "100%" }} />
       </div>
     </div>
@@ -386,7 +390,9 @@ function WaitingRoom() {
 
 export function Lobby() {
   const roomCode = useGameStore((s) => s.roomCode);
+  const startTutorial = useGameStore((s) => s.startTutorial);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<"create" | "join">("create");
 
   if (roomCode) {
@@ -399,8 +405,18 @@ export function Lobby() {
 
   return (
     <div className="war-table-bg campaign-screen campaign-home" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-      <Home onCreate={() => { setDialogTab("create"); setDialogOpen(true); }} onJoin={() => { setDialogTab("join"); setDialogOpen(true); }} />
+      <Home
+        onCreate={() => { setDialogTab("create"); setDialogOpen(true); }}
+        onJoin={() => { setDialogTab("join"); setDialogOpen(true); }}
+        onTutorial={() => setTutorialOpen(true)}
+      />
       {dialogOpen && <EntryDialog initialTab={dialogTab} onClose={() => setDialogOpen(false)} />}
+      {tutorialOpen && (
+        <TutorialLessonPicker
+          onClose={() => setTutorialOpen(false)}
+          onStart={(scenarioId) => { setTutorialOpen(false); void startTutorial("ผู้ฝึก", scenarioId); }}
+        />
+      )}
     </div>
   );
 }

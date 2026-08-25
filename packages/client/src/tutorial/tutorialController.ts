@@ -20,7 +20,12 @@ export type TutorialExpectedAction =
   | { readonly kind: "draw" }
   | { readonly kind: "playCard"; readonly typeKey: string; readonly source?: "literal" | "conversion" | "zhangba" }
   | { readonly kind: "useSkill"; readonly skillId: string }
-  | { readonly kind: "response"; readonly decisionKind: Extract<LegalActionView, { kind: "response" }>["decisionKind"]; readonly choice?: string }
+  | {
+      readonly kind: "response";
+      readonly decisionKind: Extract<LegalActionView, { kind: "response" }>["decisionKind"];
+      readonly choice?: string;
+      readonly pass?: boolean;
+    }
   | { readonly kind: "discard"; readonly minimumCards?: number }
   | { readonly kind: "endPhase" };
 
@@ -237,7 +242,8 @@ function matchesAnswer(
         && (answer.cardIds?.length ?? 0) >= (expected.minimumCards ?? projectedAction.minCards);
     case "response":
       return projectedAction.kind === "response"
-        && (expected.choice === undefined || answer.choice === expected.choice);
+        && (expected.choice === undefined || answer.choice === expected.choice)
+        && (expected.pass === undefined || (expected.pass ? answer.pass === true : answer.pass !== true));
     case "useSkill":
       return projectedAction.kind === "useSkill"
         && answer.choice === "useSkill"
@@ -355,7 +361,7 @@ function parseExpectedAction(input: unknown, stepId: string): TutorialExpectedAc
       : { kind: "discard", minimumCards: positiveInteger(input.minimumCards, `Step '${stepId}' minimum cards`) };
   }
   if (input.kind === "response") {
-    assertExactKeys(input, ["kind", "decisionKind", "choice"], `Step '${stepId}' expected action`, ["choice"]);
+    assertExactKeys(input, ["kind", "decisionKind", "choice", "pass"], `Step '${stepId}' expected action`, ["choice", "pass"]);
     const decisionKind = nonEmptyString(input.decisionKind, `Step '${stepId}' response kind`);
     if (!(TUTORIAL_RESPONSE_DECISION_KINDS as readonly string[]).includes(decisionKind)) {
       throw new TutorialScenarioError(`Step '${stepId}' has an invalid response decision kind '${decisionKind}'.`);
@@ -364,6 +370,7 @@ function parseExpectedAction(input: unknown, stepId: string): TutorialExpectedAc
       kind: "response",
       decisionKind: decisionKind as TutorialResponseDecisionKind,
       ...(input.choice === undefined ? {} : { choice: nonEmptyString(input.choice, `Step '${stepId}' response choice`) }),
+      ...(input.pass === undefined ? {} : { pass: booleanField(input.pass, `Step '${stepId}' response pass`) }),
     };
   }
   throw new TutorialScenarioError(`Step '${stepId}' has unsupported expected action '${input.kind}'.`);
@@ -380,6 +387,11 @@ function nonEmptyString(value: unknown, label: string): string {
 
 function positiveInteger(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) throw new TutorialScenarioError(`${label} must be a positive integer.`);
+  return value;
+}
+
+function booleanField(value: unknown, label: string): boolean {
+  if (typeof value !== "boolean") throw new TutorialScenarioError(`${label} must be a boolean.`);
   return value;
 }
 

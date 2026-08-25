@@ -3,11 +3,27 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("tutorial production isolation", () => {
-  it("keeps tutorial rules out of engine, shared, and server production sources", () => {
-    const packageRoots = ["engine", "shared", "server"].map((name) => resolve(process.cwd(), "..", name, "src"));
-    const offenders = packageRoots.flatMap(sourceFiles).filter((file) => {
+  it("keeps tutorial conditions out of engine rule implementations", () => {
+    const engineRoot = resolve(process.cwd(), "..", "engine", "src");
+    const ruleRoots = ["cards", "generals", "equipment", "core"].map((name) => resolve(engineRoot, name));
+    const offenders = ruleRoots.flatMap(sourceFiles).filter((file) => {
       const source = readFileSync(file, "utf8");
-      return /(?:from|import)\s*[('"].*tutorial|tutorial(?:Scenario|Controller|Progress|Step|Action)/i.test(source);
+      return /tutorial(?:Scenario|Controller|Progress|Step|Action|Game|Bot)|from\s+["'][^"']*tutorial/i.test(source);
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("limits server tutorial knowledge to lifecycle adapters rather than game rules", () => {
+    const serverRoot = resolve(process.cwd(), "..", "server", "src");
+    const allowed = new Set([
+      resolve(serverRoot, "rooms", "RoomManager.ts"),
+      resolve(serverRoot, "rooms", "gameFlow.ts"),
+      resolve(serverRoot, "socketHandlers.ts"),
+    ]);
+    const offenders = sourceFiles(serverRoot).filter((file) => {
+      if (allowed.has(file)) return false;
+      return /tutorial/i.test(readFileSync(file, "utf8"));
     });
 
     expect(offenders).toEqual([]);

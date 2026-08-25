@@ -61,6 +61,25 @@ beforeEach(() => {
 });
 
 describe("Lobby -> waiting room -> start", () => {
+  it("opens the basic lesson picker and starts the selected deterministic tutorial", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    fakeSocket.fire("connect");
+
+    await user.click(await screen.findByRole("button", { name: "บทฝึกสอน" }));
+    const picker = await screen.findByRole("dialog", { name: "เลือกบทฝึกสอน" });
+    expect(within(picker).getAllByRole("article")).toHaveLength(3);
+    await user.click(within(picker).getByRole("button", { name: "เริ่มบท เทิร์นแรก" }));
+
+    await waitFor(() => expect(sentEvents.some((event) => event.event === "tutorial:start")).toBe(true));
+    expect(sentEvents.find((event) => event.event === "tutorial:start")?.payload).toEqual({
+      playerName: "ผู้ฝึก",
+      scenarioId: "basic-turn",
+    });
+    respondTo("tutorial:start", { ok: true, roomCode: "TUTOR1", sessionToken: "t".repeat(20), seatIndex: 0 });
+    await waitFor(() => expect(useGameStore.getState().roomCode).toBe("TUTOR1"));
+  });
+
   it("creating a room emits room:create and renders the waiting room from the ack", async () => {
     const user = userEvent.setup();
     render(<App />);

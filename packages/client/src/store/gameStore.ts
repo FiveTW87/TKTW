@@ -8,6 +8,8 @@ import {
   type JoinRoomAck,
   type RejoinRoomAck,
   type QuickstartWithBotsAck,
+  type TutorialStartAck,
+  type StartTutorialInput,
   type SimpleAck,
   type GameView,
   type PlayerAnswer,
@@ -15,6 +17,7 @@ import {
   type ChatMessageView,
   type RoomSettingsSelection,
 } from "@tktw/shared";
+import { acceptedActionChannel } from "../lib/acceptedActionChannel";
 
 const STORAGE_KEY = "tktw_session";
 
@@ -97,6 +100,7 @@ interface GameStoreState {
   createRoom: (playerName: string, settings?: RoomSettingsSelection) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
   quickstartWithBots: (playerName: string, botCount: number, settings?: RoomSettingsSelection) => Promise<void>;
+  startTutorial: (playerName: string, scenarioId: StartTutorialInput["scenarioId"]) => Promise<void>;
   startGame: () => Promise<void>;
   answer: (fields: Omit<PlayerAnswer, "playerId">) => Promise<void>;
   leaveRoom: () => Promise<void>;
@@ -243,6 +247,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ roomCode: ack.roomCode, sessionToken: ack.sessionToken, seatIndex: ack.seatIndex, error: null });
     },
 
+    startTutorial: async (playerName, scenarioId) => {
+      const ack = await emitAck<TutorialStartAck>(ClientEvents.TutorialStart, { playerName, scenarioId });
+      if (!ack.ok) {
+        set({ error: ack.error });
+        return;
+      }
+      saveStoredSession({ roomCode: ack.roomCode, sessionToken: ack.sessionToken });
+      set({ roomCode: ack.roomCode, sessionToken: ack.sessionToken, seatIndex: ack.seatIndex, error: null });
+    },
+
     startGame: async () => {
       const { roomCode } = get();
       if (!roomCode) return;
@@ -251,7 +265,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     },
 
     answer: async (fields) => {
-      const { roomCode, matchId, answeringId } = get();
+      const { roomCode, matchId, answeringId, gameView } = get();
       if (!roomCode || !matchId) return;
       const tag = `${fields.decisionId} ${fields.choice ?? (fields.pass ? "pass" : fields.cardIds ? `cards[${fields.cardIds.length}]` : "?")}`;
       // Already answering (or done with) this exact decision → drop the
@@ -283,6 +297,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         set({ error: ack.error, answeringId: null });
       } else {
         pushDebug(`✓ accepted ${fields.decisionId}`);
+        acceptedActionChannel.publish({
+          acceptedAnswer: fields,
+          legalActions: gameView?.legalActions ?? [],
+        });
       }
       // On success we keep answeringId set; the next game:view clears it once
       // the decision has actually advanced.

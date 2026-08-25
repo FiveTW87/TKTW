@@ -9,6 +9,7 @@ import {
   startGameSchema,
   answerSchema,
   quickstartWithBotsSchema,
+  startTutorialSchema,
   returnToLobbySchema,
   sendChatSchema,
   ClientEvents,
@@ -156,6 +157,26 @@ export function registerSocketHandlers(
 
       ok(ack, { roomCode: room.code, sessionToken, seatIndex });
       runBeginRevealPhase(room); // room starts in "revealing" (SPEC 7.2), same as a normal start
+    });
+
+    socket.on(ClientEvents.TutorialStart, (raw: unknown, ack: Ack) => {
+      const parsed = startTutorialSchema.safeParse(raw);
+      if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+
+      let result: ReturnType<RoomManager["startTutorial"]>;
+      try {
+        result = rooms.startTutorial(parsed.data.playerName, parsed.data.scenarioId);
+      } catch (err) {
+        return fail(ack, err, "failed to start tutorial");
+      }
+      const { room, sessionToken, seatIndex } = result;
+      rooms.attachSocket(room, seatIndex, socket.id);
+      data.roomCode = room.code;
+      data.seatIndex = seatIndex;
+      void socket.join(room.code);
+
+      ok(ack, { roomCode: room.code, sessionToken, seatIndex });
+      afterRespond(io, room, effectivePacing(room).decisionTimeoutMs, effectivePacing(room).botAnswerDelayMs);
     });
 
     socket.on(ClientEvents.RoomJoin, (raw: unknown, ack: Ack) => {

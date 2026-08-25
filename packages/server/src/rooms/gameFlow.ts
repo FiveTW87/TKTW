@@ -12,7 +12,10 @@ import {
   summarizeMatch,
   legalActionsFor,
   deriveLatestAndResolvingCard,
+  tutorialBotAnswer,
   type GameSession,
+  type PendingDecision,
+  type PlayerAnswer,
   type ProjectedPlayer,
 } from "@tktw/engine";
 import { ServerEvents, type RoomStatePayload, type RoomStateSeat, type GameView, type ConnectionStatus } from "@tktw/shared";
@@ -139,6 +142,7 @@ export function broadcastRoomState(io: Server, room: GameRoom): void {
     settings: room.pacing,
     ...(room.matchId ? { matchId: room.matchId } : {}),
     ...(room.revealExpiresAt ? { revealExpiresAt: room.revealExpiresAt } : {}),
+    ...(room.tutorial ? { tutorialScenarioId: room.tutorial.scenarioId } : {}),
   };
   room.seats.forEach((seat, i) => {
     if (!seat.socketId) return;
@@ -234,6 +238,13 @@ function safeFallbackAnswer(session: NonNullable<GameRoom["session"]>, decisionI
   return { ...base, pass: true };
 }
 
+export function automatedAnswerFor(room: GameRoom, pending: PendingDecision): PlayerAnswer {
+  if (!room.session) throw new Error(`Room '${room.code}' has no active session.`);
+  return room.tutorial
+    ? tutorialBotAnswer(room.tutorial, pending)
+    : simpleBotAnswer(room.session);
+}
+
 export function scheduleTimeout(
   io: Server,
   room: GameRoom,
@@ -256,7 +267,7 @@ export function scheduleTimeout(
     // the time this fires — only act if it's still the same one waiting.
     if (session.state.pendingDecision?.id !== decisionId) return;
     try {
-      respond(session, isBotTurn ? simpleBotAnswer(session) : defaultAnswerFor(session));
+      respond(session, isBotTurn ? automatedAnswerFor(room, pending) : defaultAnswerFor(session));
     } catch (err) {
       // The bot/AFK answer was rejected by the engine. If we just bailed
       // here the decision would sit forever — nobody else may answer it (the
