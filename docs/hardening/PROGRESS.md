@@ -1,14 +1,14 @@
 # Hardening Progress
 
 Last updated: 2026-08-25
-Current milestone: Phase 9 — Interactive tutorial foundation
-Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
+Current milestone: Phase 9 — Interactive tutorial completed
+Overall status: `TUT-003` completed and committed locally; mobile/reliability hardening remains
 
 ## Next task
 
-- `TUT-003` — Advanced lessons, resume, and polish
-- Owner: Codex + Claude content
-- Status: `in_progress`
+- `MOB-001` — Mobile layout-mode and Safari hardening
+- Owner: Codex
+- Status: `backlog`
 
 ## Completed in this cycle
 
@@ -36,6 +36,7 @@ Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
 - `ASSIST-002` — Exhaustive safe reason copy, narrow context-help model, and compact Basic/Detailed Table help with hidden-information and responsive verification.
 - `TUT-001` — Strict client-only tutorial scenario/controller contracts, real accepted-action matching, fail-fast script validation, safe local progress, and production import isolation.
 - `TUT-002` — Three deterministic playable basic lessons, isolated tutorial rooms, scenario-scripted bots, lesson picker, and acknowledged-action Table coach.
+- `TUT-003` — Real distance/equipment, trick/Wuxie, and identity-role/skill lessons with exhaustive catalog, reconnect-safe progress, reset, and compact navigation polish.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -50,16 +51,16 @@ Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
 
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
-| Engine | 41 | 1,119 | Passed |
-| Server | 5 | 72 | Passed |
-| Client | 43 | 286 | Passed |
-| Total | 89 | 1,477 | Passed |
+| Engine | 41 | 1,122 | Passed |
+| Server | 5 | 73 | Passed |
+| Client | 44 | 290 | Passed |
+| Total | 90 | 1,485 | Passed |
 
 ## Next actions
 
-1. Expand the full `TUT-003` contract and deterministic advanced scenario matrix.
-2. Implement advanced lessons plus safe resume/reset/navigation through RED→GREEN slices.
-3. Complete and commit `TUT-003`; do not push until requested.
+1. Start `MOB-001` when requested, preserving the completed tutorial and Table behavior.
+2. Follow with `REL-001`, then milestone/release QA.
+3. Keep all tutorial commits local until push is explicitly requested.
 
 ## Checkpoints
 
@@ -87,6 +88,8 @@ Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
 - `ASSIST-002` completion record: `0a3dae2` (`ASSIST-002-record-completion`), pushed to `origin/main`.
 - `TUT-001`: `b8d57ca` (`TUT-001-add-tutorial-controller-foundation`).
 - `TUT-002`: `13ce21c` (`TUT-002-add-basic-playable-lessons`).
+- `TUT-002` completion record: `995b7ee` (`TUT-002-record-completion`).
+- `TUT-003`: `e554457` (`TUT-003-add-advanced-lessons-and-progress`).
 
 ## Known workspace notes
 
@@ -96,7 +99,7 @@ Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
 
 ## Blockers
 
-- No code or verification blocker for `TUT-003`; TUT-001/TUT-002 and later tutorial commits remain local until push is requested.
+- No code or verification blocker; tutorial commits remain local until push is requested.
 - ASSIST-001 changed-state screenshot capture hit the existing browser-plugin trusted-service failure before connecting; focused compact/resize/reduced-motion/accessibility tests and the complete Table/client suites passed, and no screenshot was fabricated.
 - ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.

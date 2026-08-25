@@ -55,7 +55,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | completed | Codex + Claude content | 3d | TUT-001 |
-| TUT-003 | Advanced lessons, resume, and polish | in_progress | Codex + Claude content | 4d | TUT-002 |
+| TUT-003 | Advanced lessons, resume, and polish | completed | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
 | QA-001 | Milestone verification matrix | backlog | Codex + Claude review | 2d | Each milestone |
@@ -1840,7 +1840,7 @@ Teach draw/attack/target/end turn and dodge/damage/heal through deterministic pl
 
 ## TUT-003 — Advanced lessons, resume, and polish
 
-Status: in_progress | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 4 days | Risk: Medium
+Status: completed | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 4 days | Risk: Medium
 
 ### Objective
 
@@ -1898,7 +1898,14 @@ Teach distance/equipment, tricks/judgment/Wuxie, roles/victory/skills, and finis
 
 ### Completion report
 
-- Pending implementation and verification.
+- Extended the strict scenario vocabulary and exhaustive client catalog to six lessons. Missing protocol/catalog IDs now fail compile-time coverage.
+- Added a four-seat distance fixture where p2 is genuinely outside Sha range before equipping `sword_qinggang` and becomes a legal target afterward; a real Guohe/Wuxie response fixture; and a real identity-mode role fixture with Sun Quan's legal `sunquan_zhiheng` action.
+- Tutorial rooms derive their seat count and human mapping from each scenario, supporting three- and four-seat lessons without changing normal rooms. Golden tests assert real projected legal actions, not only pending-decision labels.
+- The picker now shows all six lessons, local completion, replay, and explicit per-lesson reset. A fresh launch clears incomplete progress before creating a new engine state; reconnect into the same room resumes only the last acknowledged step boundary.
+- Added semantic skill highlighting and exhaustive next-lesson navigation through the final lesson. Existing decision-key interaction reset prevents half-built card/target/skill selection from surviving an authoritative decision change.
+- Real-browser QA at 740×360 showed all six compact cards in two complete rows after hiding summaries only at short landscape heights. The advanced distance table showed four seats, p2 fogged as out of range, and the Coach on the top edge without table overflow.
+- Verification passed: Engine 41 files / 1,122 tests; Server 5 / 73; Client 44 / 290; total 90 files / 1,485 tests; root typecheck; production client build (303 modules); catalog 256/256; and diff checks.
+- Implementation commit: `e554457` (`TUT-003-add-advanced-lessons-and-progress`). No push was performed.
 
 ---
 
