@@ -94,6 +94,7 @@ Overall status: `REL-001` verified; milestone QA is next
 - `TUT-003`: `e554457` (`TUT-003-add-advanced-lessons-and-progress`).
 - `TUT-003` completion record: `4feec64` (`TUT-003-record-completion`), pushed to `origin/main`.
 - `MOB-001`: `515659d` (`MOB-001-harden-mobile-viewport-layout`).
+- `REL-001`: `9e8fc9d` (`REL-001-add-structured-reliability-diagnostics`).
 
 ## Known workspace notes
 

@@ -2028,6 +2028,7 @@ Add structured decision/reconnect/timeout/forfeit diagnostics and clear in-memor
 
 ### Completion report
 
+- Commit: `9e8fc9d` (`REL-001-add-structured-reliability-diagnostics`).
 - Added an allowlisted `DiagnosticEvent`/`DiagnosticOutcome` record builder and failure-isolated reporter. Correlation fields are bounded and runtime construction drops unknown raw payload keys; reasons redact tokens, UUIDs, opaque values, stacks, and long text.
 - Instrumented rejoin, answer/idempotent replay, disconnect/grace, timeout/fallback, and forfeit transitions with room/match/decision/action/seat correlation where available. Raw engine answers, hands, roles, choices, session tokens, and raw lifecycle errors are never passed to the sink.
 - Replaced unbounded socket acknowledgement promises with a 10-second typed timeout while preserving the original callback transport contract. Recoverable transport failures keep the stored session for retry; room loss after an in-memory server restart and expired access take distinct paths.
