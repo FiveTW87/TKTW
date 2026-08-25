@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-25
 Current milestone: Phase 5 — Room setup and beginner assistance
-Overall status: `ASSIST-002` completed locally; verified and ready for commit/push approval
+Overall status: `ASSIST-002` completed and committed locally; ready for explicit push approval
 
 ## Next task
 
@@ -55,8 +55,8 @@ Overall status: `ASSIST-002` completed locally; verified and ready for commit/pu
 
 ## Next actions
 
-1. Commit the completed `ASSIST-002` implementation while keeping the unrelated `App.tsx` line-ending status outside staging.
-2. Request explicit approval before pushing the local ASSIST-002 commits to `origin/main`.
+1. Commit this ASSIST-002 completion record while keeping the unrelated `App.tsx` line-ending status outside staging.
+2. Request explicit approval before pushing the two local ASSIST-002 commits to `origin/main`.
 3. Expand `TUT-001` before implementation: typed tutorial scenario/controller contracts isolated from production engine rules.
 
 ## Checkpoints
@@ -81,6 +81,7 @@ Overall status: `ASSIST-002` completed locally; verified and ready for commit/pu
 - `ROOM-001`: `f8c0c08` (`ROOM-001-add-typed-room-pacing`).
 - `ROOM-002`: `89164b7` (`ROOM-002-add-lobby-pacing-ui`).
 - `ASSIST-001`: `9027eba` (`ASSIST-001-add-player-onboarding`).
+- `ASSIST-002`: `c65bc71` (`ASSIST-002-add-contextual-action-help`).
 
 ## Known workspace notes
 

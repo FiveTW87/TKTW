@@ -1681,6 +1681,7 @@ Explain the current decision and why visible actions/targets are unavailable wit
 - Real-browser QA passed at 932×430 with a three-player game: the collapsed chip measured 78×28px; the open Detailed panel measured 300×133px and remained entirely inside the 916×193px battle arena while showing only the safe `ท้อคืนชีพ — ไม่มีเป้าหมาย` reason.
 - Verification passed: focused context/controller/component 3 files / 11 tests; Table 68 tests; full Client 37 files / 267 tests; Engine 40 / 1,116; Server 4 / 67; root typecheck; production client build (217 modules); catalog check (256/256); and diff check.
 - No engine/shared/server/protocol/gameStore, legality, tutorial, database, sound, effect, asset, dependency, or unrelated `App.tsx` content changed.
+- Implementation commit: `c65bc71` (`ASSIST-002-add-contextual-action-help`).
 
 ---
 
