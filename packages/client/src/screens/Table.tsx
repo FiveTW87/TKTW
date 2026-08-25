@@ -21,6 +21,9 @@ import { useTableFeedbackPresentation } from "../hooks/useTableFeedbackPresentat
 import { TableActionCluster, TableUtilityRail, type TableActionViewModel } from "../components/board/TableControls";
 import { TableOverlays, TableRecoveryPanel, type TableOverlayViewModel } from "../components/board/TableOverlays";
 import { FirstTableWalkthrough } from "../components/FirstTableWalkthrough";
+import { ContextHelpPanel } from "../components/board/ContextHelpPanel";
+import { buildContextHelp } from "../data/contextHelp";
+import { useAssistStore } from "../store/assistStore";
 
 const PHASE_LABEL: Record<string, string> = {
   prepare: "เฟสเตรียมตัว",
@@ -69,6 +72,7 @@ export function Table() {
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
   const { compact } = useDeviceMode();
+  const assistanceLevel = useAssistStore((state) => state.level);
 
   const pending = gameView?.pendingDecision;
   const decisionKey = pending?.id ?? null;
@@ -177,6 +181,11 @@ export function Table() {
   const submitDiscard = mainAction.commands.submitDiscard;
   const skills = generalSkills(me.generalId);
   const responderLabel = route.kind === "waiting" ? route.label : null;
+  const contextHelp = buildContextHelp({
+    level: assistanceLevel,
+    route,
+    legalActions: gameView.legalActions,
+  });
 
   const selectingLabel = skillMode ? "เลือกการ์ดสำหรับสกิล" : zhangbaMode ? "เลือกการ์ด 2 ใบสำหรับทวน" : isDiscardTo ? "เลือกการ์ดที่จะทิ้ง" : "แตะการ์ดเพื่อเล่น";
   const phaseLabel = (gameView.currentPhase && PHASE_LABEL[gameView.currentPhase]) ?? gameView.currentPhase ?? "";
@@ -327,6 +336,7 @@ export function Table() {
         }}
         busy={busy}
         onOpenDiscard={transient.discard.open}
+        contextHelp={contextHelp ? <ContextHelpPanel key={decisionKey ?? "no-decision"} model={contextHelp} /> : null}
         selfDock={
           <SelfDock
             me={me}

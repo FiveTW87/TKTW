@@ -1911,6 +1911,94 @@ a:hover {
   .card-motion-token { animation: dcCardMotionReduced .36s ease-out forwards; }
 }
 
+/* ASSIST-002 — contextual help is opt-in presentation over server-projected
+   legalActions. It stays a small chip until opened, then grows inward over
+   the mat without reserving command-dock space or intercepting the table. */
+.table-context-help-anchor,
+.mobile-context-help-anchor {
+  position: absolute;
+  z-index: 34;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.table-context-help {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: auto;
+  color: var(--ink);
+  font-family: var(--font-body);
+  text-align: left;
+}
+
+.table-context-help-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin-left: auto;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid rgba(198, 151, 73, .72);
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(48, 32, 18, .97), rgba(21, 14, 9, .97));
+  color: var(--gold-light);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .56);
+  font: 700 11px var(--font-body);
+}
+
+.table-context-help-toggle > span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(205, 155, 68, .16);
+  color: var(--gold-light);
+  font-size: 13px;
+}
+
+.table-context-help-content {
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(250px, 52vh);
+  margin-bottom: 5px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid rgba(176, 126, 55, .72);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(42, 28, 16, .98), rgba(17, 11, 7, .98));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .7), inset 0 0 18px rgba(218, 164, 68, .05);
+}
+
+.table-context-help-content > strong { display: block; color: var(--gold-light); font-size: 13px; }
+.table-context-help-content > p { margin: 3px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.35; }
+.table-context-help-reasons { margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(154, 111, 54, .38); }
+.table-context-help-reasons > b { color: var(--ink); font-size: 10px; }
+.table-context-help-reasons ul { display: grid; gap: 5px; margin: 5px 0 0; padding: 0; list-style: none; }
+.table-context-help-reasons li { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: baseline; }
+.table-context-help-reasons span { overflow: hidden; color: var(--gold-light); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.table-context-help-reasons small { color: var(--ink-muted); font-size: 9px; line-height: 1.3; }
+
+.mobile-context-help-anchor {
+  right: 8px;
+  bottom: 7px;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .table-context-help-toggle { min-height: 28px; padding-block: 3px; font-size: 9px; }
+  .table-context-help-toggle > span { width: 18px; height: 18px; font-size: 11px; }
+  .table-context-help-content { width: min(300px, calc(100vw - 170px)); max-height: min(180px, 48vh); padding: 8px 9px; }
+  .table-context-help-content > strong { font-size: 11px; }
+  .table-context-help-content > p { font-size: 9px; }
+  .table-context-help-reasons li { grid-template-columns: minmax(62px, auto) 1fr; gap: 6px; }
+  .table-context-help-reasons span, .table-context-help-reasons small { font-size: 8px; }
+}
+
 .combat-character-pose {
   --pose-scale: 1;
   --pose-offset-x: 0px;

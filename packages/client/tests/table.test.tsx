@@ -137,6 +137,7 @@ vi.mock("socket.io-client", () => ({ io: () => fakeSocket }));
 
 import App from "../src/App";
 import { useGameStore } from "../src/store/gameStore";
+import { useAssistStore } from "../src/store/assistStore";
 
 beforeEach(() => {
   clearSent();
@@ -154,6 +155,7 @@ beforeEach(() => {
     answeringId: null,
     chatMessages: [],
   });
+  useAssistStore.setState({ level: "basic", walkthrough: { status: "skipped", step: 0 } });
 });
 
 function player(id: string, overrides: Record<string, unknown> = {}) {
@@ -197,6 +199,45 @@ async function enterRoom(roomCode: string) {
   fakeSocket.fire("room:state", { code: roomCode, phase: "playing", seats: [], matchId: "test-match" });
   return user;
 }
+
+describe("Table: contextual assistance", () => {
+  it("shows only server-projected unavailable reasons in Detailed help and hides immediately at Off", async () => {
+    useAssistStore.setState({ level: "detailed" });
+    const user = await enterRoom("HELP002");
+
+    fakeSocket.fire("game:view", {
+      viewerPlayerId: "p0",
+      viewerSeatIndex: 0,
+      players: [
+        player("p0", { hand: [{ id: "private-shan-id", typeKey: "shan", suit: "heart", rank: 2 }] }),
+        player("p1", { role: "rebel", hand: { count: 3 } }),
+        player("p2", { hand: { count: 3 } }),
+      ],
+      currentTurnPlayerId: "p0",
+      turnNumber: 1,
+      currentPhase: "play",
+      drawPileCount: 80,
+      discardPile: [], discardPileCount: 0,
+      pendingDecision: { id: "dec_help", kind: "mainAction", playerId: "p0", data: {} },
+      finished: false,
+      gameLogs: [],
+    });
+
+    const help = await screen.findByRole("region", { name: "คำแนะนำจังหวะปัจจุบัน" });
+    await user.click(within(help).getByRole("button", { name: /คำแนะนำ/ }));
+    expect(within(help).getByText("ใช้ได้เฉพาะตอนที่เกมขอให้ตอบสนอง")).toBeInTheDocument();
+    expect(help).not.toHaveTextContent("private-shan-id");
+    expect(help).not.toHaveTextContent("rebel");
+    expect(sentEvents.some((event) => event.event === "game:answer")).toBe(false);
+
+    useAssistStore.getState().setLevel("off");
+    await waitFor(() => expect(screen.queryByRole("region", { name: "คำแนะนำจังหวะปัจจุบัน" })).not.toBeInTheDocument());
+
+    useAssistStore.getState().setLevel("detailed");
+    const restored = await screen.findByRole("region", { name: "คำแนะนำจังหวะปัจจุบัน" });
+    expect(within(restored).queryByText("เฟสลงการ์ดของคุณ")).not.toBeInTheDocument();
+  });
+});
 
 describe("Table: main action card play", () => {
   it("opponents aren't targetable until a card is selected, then selecting one and playing sends both ids", async () => {
@@ -1271,7 +1312,7 @@ describe("Table: จู่โจม usage limit (the second-จู่โจม f
     await user.click(await screen.findByText("จู่โจม"));
 
     // a notice appears, no confirm bar, and NOTHING is sent to the server
-    expect(await screen.findByText(/ได้ครั้งเดียวต่อเทิร์น/)).toBeInTheDocument();
+    expect(await screen.findByText(/ครบจำนวนที่อนุญาตในเทิร์นนี้แล้ว/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "ยืนยัน" })).not.toBeInTheDocument();
     expect(sentEvents.some((e) => e.event === "game:answer")).toBe(false);
   });
@@ -1293,7 +1334,7 @@ describe("Table: จู่โจม usage limit (the second-จู่โจม f
 
     await user.click(await screen.findByText("จู่โจม"));
     // no block — the confirm flow starts (targets light up)
-    expect(screen.queryByText(/ได้ครั้งเดียวต่อเทิร์น/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ครบจำนวนที่อนุญาตในเทิร์นนี้แล้ว/)).not.toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Bob" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Carol" })).toBeInTheDocument();
@@ -1413,6 +1454,7 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     expect(screen.getByText("การ์ดในมือ")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).toBeInTheDocument();
     expect(document.querySelectorAll(".mobile-opponent-seat")).toHaveLength(9);
+    expect(document.querySelector(".mobile-battle-arena > .mobile-context-help-anchor .table-context-help")).toBeInTheDocument();
   });
 
   it("always shows mobile self portrait, HP, compact skill chips and four horizontal equipment slots", async () => {
@@ -1510,6 +1552,7 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     await enterGame("DESKTOPRING", me, rest);
 
     expect(document.querySelector(".table-board-ring")).toBeInTheDocument();
+    expect(document.querySelector(".table-board-ring > .table-context-help-anchor .table-context-help")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).not.toBeInTheDocument();
     expect(document.querySelector(".table-self-dock .table-self-hero")).not.toBeInTheDocument();
     expect(document.querySelector(".table-self-dock .table-self-skills")).toBeInTheDocument();

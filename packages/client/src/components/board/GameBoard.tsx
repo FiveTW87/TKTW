@@ -34,6 +34,7 @@ export function GameBoard({
   onReveal,
   busy,
   onOpenDiscard,
+  contextHelp,
   selfDock,
 }: {
   gameView: GameView;
@@ -54,6 +55,7 @@ export function GameBoard({
   onReveal: () => void;
   busy: boolean;
   onOpenDiscard: () => void;
+  contextHelp: ReactNode;
   selfDock: ReactNode;
 }) {
   const playerCount = gameView.players.length;
@@ -163,6 +165,7 @@ export function GameBoard({
               onOpenDiscard={onOpenDiscard}
             />
           </div>
+          <div className="mobile-context-help-anchor">{contextHelp}</div>
         </section>
 
         <div className="mobile-command-dock">{selfDock}</div>
@@ -253,6 +256,7 @@ export function GameBoard({
             onOpenDiscard={onOpenDiscard}
           />
         </div>
+        <div className="table-context-help-anchor">{contextHelp}</div>
       </div>
 
       {/* self dock — bottom-center, always the local player (SPEC §11.3).

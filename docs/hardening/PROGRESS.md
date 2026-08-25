@@ -1,12 +1,12 @@
 # Hardening Progress
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 Current milestone: Phase 5 — Room setup and beginner assistance
-Overall status: `ASSIST-001` completed locally; ready for explicit push approval and `ASSIST-002`
+Overall status: `ASSIST-002` completed locally; verified and ready for commit/push approval
 
 ## Next task
 
-- `ASSIST-002` — Context help and unavailable-action reasons
+- `TUT-001` — Tutorial scenario/controller foundation
 - Owner: Codex
 - Status: `backlog`
 
@@ -33,6 +33,7 @@ Overall status: `ASSIST-001` completed locally; ready for explicit push approval
 - `ROOM-001` — Strict named/custom pacing contracts, complete room-lifetime settings, legacy compatibility, and server-authoritative decision/grace/reveal/bot timing.
 - `ROOM-002` — Typed create/quickstart preset UI, collapsed bounded Custom editor, and server-resolved lobby settings preserved through join/rejoin/rematch.
 - `ASSIST-001` — Resilient per-player Off/Basic/Detailed preferences, reusable Lobby/Table settings, Beginner recommendation, and a skippable/replayable first-table orientation with semantic highlights.
+- `ASSIST-002` — Exhaustive safe reason copy, narrow context-help model, and compact Basic/Detailed Table help with hidden-information and responsive verification.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -49,14 +50,14 @@ Overall status: `ASSIST-001` completed locally; ready for explicit push approval
 |---|---:|---:|---|
 | Engine | 40 | 1,116 | Passed |
 | Server | 4 | 67 | Passed |
-| Client | 35 | 259 | Passed |
-| Total | 79 | 1,442 | Passed |
+| Client | 37 | 267 | Passed |
+| Total | 81 | 1,450 | Passed |
 
 ## Next actions
 
-1. Commit the completed `ASSIST-001` implementation while keeping the unrelated `App.tsx` worktree diff outside task staging.
-2. Request explicit approval before pushing the three local room/assistance commits to `origin/main`.
-3. Expand `ASSIST-002` before implementation: friendly current-decision help and server-safe unavailable reasons without strategy or hidden-information leaks.
+1. Commit the completed `ASSIST-002` implementation while keeping the unrelated `App.tsx` line-ending status outside staging.
+2. Request explicit approval before pushing the local ASSIST-002 commits to `origin/main`.
+3. Expand `TUT-001` before implementation: typed tutorial scenario/controller contracts isolated from production engine rules.
 
 ## Checkpoints
 

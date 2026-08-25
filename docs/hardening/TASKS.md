@@ -52,7 +52,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ROOM-001 | Typed room settings and presets | completed | Codex | 1.5d | LEGAL-001 |
 | ROOM-002 | Create/lobby UI and lifecycle preservation | completed | Codex | 1.5d | ROOM-001 |
 | ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
-| ASSIST-002 | Context help and unavailable-action reasons | backlog | Codex | 3d | LEGAL-004, ASSIST-001 |
+| ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | backlog | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | backlog | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
@@ -1615,21 +1615,72 @@ Add per-player assistance levels and a skippable first-table walkthrough stored 
 
 ## ASSIST-002 — Context help and unavailable-action reasons
 
-Status: backlog | Owner: Codex | Reviewer: Claude copy/security | Estimate: 3 days | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude copy/security | Estimate: 3 days | Risk: High
 
 ### Objective
 
 Explain the current decision and why visible actions/targets are unavailable without revealing hidden information or choosing strategy.
+
+### Current behavior
+
+- Reactive decisions already have typed Thai copy, but main-action guidance and unavailable reasons are scattered across controllers and components.
+- The server-authoritative `legalActions` projection exposes stable card/skill reason codes, while the client translates only a subset with ad-hoc fallback notices.
+- Assistance level is durable per player, but Basic/Detailed currently affects onboarding preference only and does not explain the live decision.
+
+### Expected behavior
+
+- One exhaustive client mapping translates every projected card/skill unavailable reason to friendly Thai without recomputing legality.
+- A compact, non-modal contextual-help region explains the viewer's current action. Basic shows neutral orientation; Detailed may additionally list reasons for the viewer's own visible unavailable cards/skills.
+- Off renders no contextual help. Help never submits, selects, targets, blocks table input, recommends a play, or derives facts from another player's hidden hand/role.
+
+### In scope / allowed files
+
+- Client-only typed context-help data/model, a focused presentational component, narrow Table/main-action integration, responsive CSS, client tests, and hardening docs.
+- Reuse `DecisionRoute`, final decision copy, `legalActions`, card metadata, skill metadata, and `AssistanceLevel` only after those values are already safe for the viewer.
+
+### Out of scope / forbidden files
+
+- Engine/shared/server/protocol/gameStore legality changes; client legality mirrors; strategy/ranking/recommended targets; inference from opponents' hands, roles, draw-pile order, or private logs; automated actions; tutorial scenarios; assets/audio/effects; dependencies; and unrelated `App.tsx` content/line endings.
+
+### Type or protocol changes
+
+- Add client-only exhaustive reason types derived from the shared `LegalActionView` union and a discriminated `ContextHelpViewModel`.
+- No network, protocol, engine, room, persistence, or gameplay-state change.
+
+### Implementation steps
+
+1. Red→Green exhaustive public Thai copy for all five card reasons and all three active-skill reasons; replace existing ad-hoc notice copy with the shared resolver.
+2. Red→Green a narrow pure help-model builder for Off/Basic/Detailed and all decision routes. Its input excludes `GameView`, players, roles, logs, and hidden-hand objects by construction.
+3. Add an accessible, compact, non-modal Table help region that remains pointer-safe, avoids duplicating the central announcement, and stays clear of the hand/action controls at supported mobile landscape sizes.
+4. Add hidden-information invariance, mobile positioning, accessibility, and Table interaction regressions; run all gates, attempt changed-state screenshots, document, commit, and request explicit push approval.
+
+### Edge cases
+
+- No pending decision/recovery/finished state, waiting on another player, automatic pending decisions, draw/judgment pile actions, mandatory discard, main action with duplicate options/reasons, conversions and Zhangba, no visible unavailable items, and a new unmapped reason failing typecheck.
+- Assistance switched Off while mounted, Basic↔Detailed changes, long Thai card/skill names, duplicate card copies, compact 740×360/844×390/932×430, safe-area edges, keyboard/screen-reader reading order, reduced motion, modal/inspection overlays, reconnect snapshots, and StrictMode rerenders.
+- Two inputs that differ only in private opponent hand/role/log data must produce identical help; preferably private data is impossible to pass into the model at all.
 
 ### Acceptance criteria
 
 - Stable reason codes map to friendly Thai copy.
 - Explanations never disclose private hand/role information.
 - Assistance can be disabled per player.
+- Basic and Detailed remain neutral explanations, never recommended choices.
+- Existing card/target/skill availability continues to come only from server-projected `legalActions`.
 
 ### Tests and verification
 
-- Copy mapping tests, every legal-action reason, hidden-information snapshots, mobile positioning, and Table interaction regressions.
+- Focused copy/model/component tests; every legal-action reason; hidden-information input/invariance checks; Off/Basic/Detailed; mobile positioning; accessibility; Table/main-action regressions; root typecheck; all package suites; production client build; catalog check; diff check; and changed-state screenshots when browser runtime is available.
+
+### Completion report
+
+- Added exhaustive, compiler-checked Thai copy for all five projected card reasons and all three active-skill reasons. Existing main-action and Zhangba notices now use the same resolver rather than local conditional copy.
+- Added a pure `ContextHelpViewModel` builder whose public input accepts only assistance level, typed decision route, and the viewer's server-projected `legalActions`; it cannot accept players, roles, logs, or hand objects. Off returns nothing, Basic gives neutral orientation, and Detailed deduplicates visible unavailable card/skill reasons without IDs or strategy.
+- Added one accessible non-modal help chip inside both desktop and compact battle arenas. It remains 28px high while closed, expands upward only on request, unmounts immediately at Off, resets closed if re-enabled, and never reserves hand/action-dock space or submits gameplay actions.
+- Added exhaustive copy/model/privacy/type tests, component disclosure/accessibility tests, Table live-store/privacy/no-submit lifecycle coverage, and 932×430/844×390/740×360 plus desktop anchor regressions. Existing server-authoritative target/card/skill and second-Sha tests remain green.
+- Real-browser QA passed at 932×430 with a three-player game: the collapsed chip measured 78×28px; the open Detailed panel measured 300×133px and remained entirely inside the 916×193px battle arena while showing only the safe `ท้อคืนชีพ — ไม่มีเป้าหมาย` reason.
+- Verification passed: focused context/controller/component 3 files / 11 tests; Table 68 tests; full Client 37 files / 267 tests; Engine 40 / 1,116; Server 4 / 67; root typecheck; production client build (217 modules); catalog check (256/256); and diff check.
+- No engine/shared/server/protocol/gameStore, legality, tutorial, database, sound, effect, asset, dependency, or unrelated `App.tsx` content changed.
 
 ---
 

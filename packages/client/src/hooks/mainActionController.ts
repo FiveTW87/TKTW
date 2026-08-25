@@ -3,6 +3,7 @@ import type { SelectionController } from "./useInteraction";
 import { cardDisplay } from "../data/cardNames";
 import { cardMeta, type EquipSlot } from "../data/cardMeta";
 import { generalSkills } from "../data/generalSkills";
+import { cardUnavailableReasonCopy } from "../data/contextHelp";
 
 export type PlayCardOption = Extract<LegalActionView, { kind: "playCard" }>["options"][number];
 export type ActiveSkillOption = Extract<LegalActionView, { kind: "useSkill" }>["options"][number];
@@ -101,11 +102,7 @@ export function createMainActionController({
     if (!pending) return;
     const asType = option.asType ?? null;
     if (!option.available) {
-      notify(option.unavailableReason === "no_legal_target"
-        ? "ตอนนี้ไม่มีเป้าหมายที่ถูกกติกา"
-        : option.unavailableReason === "sha_usage_limit"
-          ? `ลง "${cardDisplay(option.typeKey).name}" ได้ครั้งเดียวต่อเทิร์น`
-          : "ตอนนี้ยังใช้การ์ดนี้ไม่ได้");
+      notify(cardUnavailableReasonCopy(option.unavailableReason));
       return;
     }
     if (
@@ -207,7 +204,7 @@ export function createMainActionController({
   const toggleZhangba = () => {
     if (zhangbaMode) return reset();
     if (!zhangbaOption?.available) {
-      notify(zhangbaOption?.unavailableReason === "insufficient_cards" ? "ต้องมีการ์ดอย่างน้อย 2 ใบ" : "ตอนนี้ยังใช้ทวนงูเลื้อยไม่ได้");
+      notify(zhangbaOption ? cardUnavailableReasonCopy(zhangbaOption.unavailableReason) : "ตอนนี้ยังใช้ทวนงูเลื้อยไม่ได้");
       return;
     }
     commands.beginZhangba();
