@@ -25,7 +25,7 @@ import { ContextHelpPanel } from "../components/board/ContextHelpPanel";
 import { buildContextHelp } from "../data/contextHelp";
 import { useAssistStore } from "../store/assistStore";
 import { TutorialCoach } from "../tutorial/TutorialCoach";
-import { BASIC_TUTORIAL_LESSONS } from "../tutorial/basicLessons";
+import { nextTutorialLesson } from "../tutorial/tutorialLessons";
 import { createTutorialProgressStorage } from "../tutorial/tutorialProgress";
 
 const PHASE_LABEL: Record<string, string> = {
@@ -86,8 +86,7 @@ export function Table() {
   };
 
   const continueTutorial = async (scenarioId: NonNullable<typeof tutorialScenarioId>) => {
-    const currentIndex = BASIC_TUTORIAL_LESSONS.findIndex((lesson) => lesson.id === scenarioId);
-    const next = BASIC_TUTORIAL_LESSONS[currentIndex + 1];
+    const next = nextTutorialLesson(scenarioId);
     if (!next) {
       await leaveRoom();
       return;

@@ -13,7 +13,10 @@ import {
 
 describe("typed protocol seams", () => {
   it("accepts only the shared tutorial scenario vocabulary at the socket boundary", () => {
-    expect(TUTORIAL_SCENARIO_IDS).toEqual(["basic-turn", "basic-dodge", "basic-recovery"]);
+    expect(TUTORIAL_SCENARIO_IDS).toEqual([
+      "basic-turn", "basic-dodge", "basic-recovery",
+      "advanced-distance", "advanced-tricks", "advanced-roles",
+    ]);
     for (const scenarioId of TUTORIAL_SCENARIO_IDS) {
       expect(startTutorialSchema.parse({ playerName: "ผู้ฝึก", scenarioId })).toEqual({ playerName: "ผู้ฝึก", scenarioId });
     }

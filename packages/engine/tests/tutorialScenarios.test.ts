@@ -82,3 +82,42 @@ describe("basic tutorial scenarios", () => {
     expect(tao).toBeDefined();
   });
 });
+
+describe("advanced tutorial scenarios", () => {
+  it("starts a four-seat distance lesson with an initially unavailable far target and a legal range weapon", () => {
+    const tutorial = createTutorialGame("advanced-distance");
+    expect(tutorial.session.state.players).toHaveLength(4);
+    const draw = tutorial.session.state.pendingDecision!;
+    expect(draw).toMatchObject({ kind: "drawCard", playerId: tutorial.humanPlayerId });
+    respond(tutorial.session, { decisionId: draw.id, playerId: "p0", choice: "draw" });
+    const main = tutorial.session.state.pendingDecision!;
+    const before = legalActionsFor(main, "p0", tutorial.session.state).find((action) => action.kind === "playCard")!;
+    const weapon = before.options.find((option) => option.typeKey === "sword_qinggang")!;
+    const shaBefore = before.options.find((option) => option.typeKey === "sha")!;
+    expect(weapon.available).toBe(true);
+    expect(shaBefore.targeting).toMatchObject({ eligibleTargetIds: expect.not.arrayContaining(["p2"]) });
+    respond(tutorial.session, { decisionId: main.id, playerId: "p0", choice: "playCard", cardIds: [weapon.selectableCardIds[0]!] });
+    const after = legalActionsFor(tutorial.session.state.pendingDecision, "p0", tutorial.session.state)
+      .find((action) => action.kind === "playCard")!.options.find((option) => option.typeKey === "sha")!;
+    expect(after.targeting).toMatchObject({ eligibleTargetIds: expect.arrayContaining(["p2"]) });
+  });
+
+  it("starts the trick lesson at a real Wuxie response owned by the learner", () => {
+    const tutorial = createTutorialGame("advanced-tricks");
+    expect(tutorial.session.state.pendingDecision).toMatchObject({ kind: "askWuxie", playerId: tutorial.humanPlayerId });
+    expect(legalActionsFor(tutorial.session.state.pendingDecision, tutorial.humanPlayerId, tutorial.session.state))
+      .toContainEqual(expect.objectContaining({ kind: "response", decisionKind: "askWuxie" }));
+  });
+
+  it("starts the role lesson in a real identity game with a role and active skill", () => {
+    const tutorial = createTutorialGame("advanced-roles");
+    const learner = tutorial.session.state.players.find((player) => player.id === tutorial.humanPlayerId)!;
+    expect(learner.role).toBeDefined();
+    expect(learner.generalId).toBe("sunquan");
+    const draw = tutorial.session.state.pendingDecision!;
+    respond(tutorial.session, { decisionId: draw.id, playerId: tutorial.humanPlayerId, choice: "draw" });
+    expect(legalActionsFor(tutorial.session.state.pendingDecision, tutorial.humanPlayerId, tutorial.session.state)
+      .find((action) => action.kind === "useSkill")?.options)
+      .toContainEqual(expect.objectContaining({ skillId: "sunquan_zhiheng", available: true }));
+  });
+});

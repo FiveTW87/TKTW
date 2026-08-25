@@ -3242,6 +3242,9 @@ a:hover {
   font-weight: 900;
 }
 .tutorial-lesson-card__copy span { color: var(--ink-faint); font-size: 11px; }
+.tutorial-lesson-card.is-completed { border-color: rgba(92, 173, 102, .72); background: rgba(20, 47, 29, .5); }
+.tutorial-lesson-card.is-completed .tutorial-lesson-card__copy span { color: #8fd69a; }
+.tutorial-lesson-card__actions { display: grid; gap: 5px; }
 
 @media (max-height: 460px) and (orientation: landscape) {
   .tutorial-picker-backdrop { padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); }
@@ -3250,8 +3253,11 @@ a:hover {
   .tutorial-picker__header p { display: none; }
   .tutorial-picker__lessons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tutorial-lesson-card { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding: 9px; align-content: start; }
+  .tutorial-lesson-card p { display: none; }
+  .tutorial-lesson-card h3 { font-size: 15px; }
   .tutorial-lesson-card__number { width: 26px; height: 26px; }
-  .tutorial-lesson-card .btn-primary { grid-column: 1 / -1; width: 100%; padding: 7px; }
+  .tutorial-lesson-card__actions { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tutorial-lesson-card__actions .btn-primary { grid-column: 1 / -1; width: 100%; padding: 7px; }
 }
 
 /* Tutorial coach stays on the table edge so it never covers the central action. */

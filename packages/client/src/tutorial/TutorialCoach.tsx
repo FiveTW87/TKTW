@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { StartTutorialInput } from "@tktw/shared";
 import { acceptedActionChannel } from "../lib/acceptedActionChannel";
-import { basicTutorialLesson } from "./basicLessons";
+import { tutorialLesson } from "./tutorialLessons";
 import { createTutorialProgressStorage } from "./tutorialProgress";
 import {
   createTutorialController,
@@ -19,7 +19,7 @@ export interface TutorialCoachProps {
 }
 
 export function TutorialCoach({ scenarioId, onExit, onRestart, onNext }: TutorialCoachProps) {
-  const lesson = useMemo(() => basicTutorialLesson(scenarioId), [scenarioId]);
+  const lesson = useMemo(() => tutorialLesson(scenarioId), [scenarioId]);
   const storage = useMemo(() => createTutorialProgressStorage(window.localStorage), []);
   const [controller, setController] = useState<TutorialController>(() =>
     createTutorialController(lesson.scenario, storage.load(scenarioId)),

@@ -1,11 +1,19 @@
 import { createGame } from "../core/gameFactory";
+import { createIdentityGame } from "../modes/identity";
 import { ALL_CARDS } from "../core/cardData";
 import { respond, type GameSession } from "../core/decisions";
 import { assignGeneral } from "../core/generalAssign";
 import { cardById, getPlayer } from "../core/state";
 import type { Card, EquipSlot, GameState, PendingDecision, PlayerAnswer } from "../types";
 
-export const TUTORIAL_SCENARIO_IDS = ["basic-turn", "basic-dodge", "basic-recovery"] as const;
+export const TUTORIAL_SCENARIO_IDS = [
+  "basic-turn",
+  "basic-dodge",
+  "basic-recovery",
+  "advanced-distance",
+  "advanced-tricks",
+  "advanced-roles",
+] as const;
 export type TutorialScenarioId = (typeof TUTORIAL_SCENARIO_IDS)[number];
 
 export interface TutorialBotScript {
@@ -30,6 +38,12 @@ export function createTutorialGame(scenarioId: TutorialScenarioId): TutorialGame
       return createBasicDodgeGame();
     case "basic-recovery":
       return createBasicRecoveryGame();
+    case "advanced-distance":
+      return createAdvancedDistanceGame();
+    case "advanced-tricks":
+      return createAdvancedTricksGame();
+    case "advanced-roles":
+      return createAdvancedRolesGame();
   }
 }
 
@@ -81,6 +95,45 @@ function createBasicTurnGame(): TutorialGame {
   return tutorialGame("basic-turn", session, "p0");
 }
 
+function createAdvancedDistanceGame(): TutorialGame {
+  const session = createPreparedGame(4);
+  setTutorialHand(session.state, "p0", [cardIdFor("sword_qinggang", 0), cardIdFor("sha", 0)]);
+  setTutorialHand(session.state, "p1", []);
+  setTutorialHand(session.state, "p2", []);
+  setTutorialHand(session.state, "p3", []);
+  return tutorialGame("advanced-distance", session, "p0");
+}
+
+function createAdvancedTricksGame(): TutorialGame {
+  const session = createPreparedGame();
+  setTutorialHand(session.state, "p0", [cardIdFor("guohe", 0)]);
+  setTutorialHand(session.state, "p1", [cardIdFor("wuxie", 0)]);
+  setTutorialHand(session.state, "p2", []);
+  driveOpeningTrick(session, "p0", "p1");
+  while (session.state.pendingDecision?.kind === "askWuxie" && session.state.pendingDecision.playerId !== "p1") {
+    const pending = session.state.pendingDecision;
+    respond(session, { decisionId: pending.id, playerId: pending.playerId, pass: true });
+  }
+  return tutorialGame("advanced-tricks", session, "p1");
+}
+
+function createAdvancedRolesGame(): TutorialGame {
+  const session = createIdentityGame({
+    playerCount: 3,
+    seed: 20_260_803,
+    names: ["ผู้ฝึก", "คู่ซ้อม 1", "คู่ซ้อม 2"],
+  });
+  while (session.state.pendingDecision?.kind === "pickGeneral") {
+    const pending = session.state.pendingDecision;
+    const options = (pending.data as { options: string[] }).options;
+    respond(session, { decisionId: pending.id, playerId: pending.playerId, choice: options[0]! });
+  }
+  const humanPlayerId = session.state.pendingDecision?.playerId ?? "p0";
+  assignGeneral(session.state, humanPlayerId, "sunquan", getPlayer(session.state, humanPlayerId).role === "lord");
+  setTutorialHand(session.state, humanPlayerId, [cardIdFor("sha", 1), cardIdFor("shan", 1)]);
+  return tutorialGame("advanced-roles", session, humanPlayerId);
+}
+
 function tutorialGame(scenarioId: TutorialScenarioId, session: GameSession, humanPlayerId: string): TutorialGame {
   return {
     scenarioId,
@@ -90,14 +143,30 @@ function tutorialGame(scenarioId: TutorialScenarioId, session: GameSession, huma
   };
 }
 
-function createPreparedGame(): GameSession {
+function createPreparedGame(playerCount = 3): GameSession {
   const session = createGame({
-    playerCount: 3,
+    playerCount,
     seed: 20_260_801,
-    names: ["คู่ซ้อม 1", "ผู้ฝึก", "คู่ซ้อม 2"],
+    names: Array.from({ length: playerCount }, (_, index) => index === 0 ? "ผู้ฝึก" : `คู่ซ้อม ${index}`),
   });
   prepareVisibleGenerals(session.state);
   return session;
+}
+
+function driveOpeningTrick(session: GameSession, sourceId: string, targetId: string): void {
+  const draw = session.state.pendingDecision;
+  if (!draw || draw.kind !== "drawCard" || draw.playerId !== sourceId) throw new Error("Tutorial trick prelude expected draw.");
+  respond(session, { decisionId: draw.id, playerId: sourceId, choice: "draw" });
+  const mainAction = session.state.pendingDecision;
+  const trick = getPlayer(session.state, sourceId).hand.find((card) => card.typeKey === "guohe");
+  if (!mainAction || mainAction.kind !== "mainAction" || !trick) throw new Error("Tutorial trick prelude expected Guohe.");
+  respond(session, {
+    decisionId: mainAction.id,
+    playerId: sourceId,
+    choice: "playCard",
+    cardIds: [trick.id],
+    targetIds: [targetId],
+  });
 }
 
 function driveOpeningAttack(session: GameSession, sourceId: string, targetId: string): void {
@@ -123,7 +192,7 @@ function driveOpeningAttack(session: GameSession, sourceId: string, targetId: st
 function prepareVisibleGenerals(state: GameState): void {
   const generals = ["caocao", "liubei", "sunquan"] as const;
   state.players.forEach((player, index) => {
-    assignGeneral(state, player.id, generals[index]!);
+    assignGeneral(state, player.id, generals[index % generals.length]!);
     player.generalRevealed = true;
   });
 }

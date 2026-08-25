@@ -208,7 +208,7 @@ export function SelfDock({
           <div data-card-motion-anchor={`player:${me.id}:judgment`}><DelayedTrickList cards={me.judgmentZone} /></div>
         </div>}
         {compact ? (
-          <div className="table-self-skill-chips" aria-label="สกิลของตัวเอง">
+          <div className="table-self-skill-chips" aria-label="สกิลของตัวเอง" data-tutorial-anchor="skills">
             {skills.length === 0 && <span className="table-self-skill-empty">ไม่มีสกิล</span>}
             {skills.map((skill) => {
               const pending = skill.id === pendingActivateId && pendingActivateMode === "inline";
@@ -231,7 +231,7 @@ export function SelfDock({
             })}
           </div>
         ) : (
-        <div className="table-self-skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: "9px 10px" }}>
+        <div className="table-self-skills" data-tutorial-anchor="skills" style={{ background: "#1d140d", border: "1px solid var(--panel-border-2)", borderRadius: 8, padding: "9px 10px" }}>
           {skills.length === 0 && <div style={{ fontSize: 11, color: "var(--ink-faint)", fontStyle: "italic" }}>ไม่มีสกิล</div>}
           {skills.map((s) => {
             const used = me.skillUsedThisTurn[s.id] ?? 0;

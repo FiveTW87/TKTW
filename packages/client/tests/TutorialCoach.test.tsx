@@ -39,4 +39,17 @@ describe("TutorialCoach", () => {
     await user.click(screen.getByRole("button", { name: "เริ่มสถานการณ์ใหม่" }));
     expect(onRestart).toHaveBeenCalledTimes(1);
   });
+
+  it("resumes an accepted step boundary when the same tutorial room reconnects", () => {
+    localStorage.setItem("tktw_tutorial_progress:basic-turn", JSON.stringify({
+      schemaVersion: 1,
+      scenarioId: "basic-turn",
+      scenarioVersion: 1,
+      status: "active",
+      stepIndex: 1,
+    }));
+    render(<TutorialCoach scenarioId="basic-turn" onExit={vi.fn()} onRestart={vi.fn()} onNext={vi.fn()} />);
+    expect(screen.getByRole("status", { name: "บทฝึกสอน" })).toHaveTextContent("ขั้น 2/3");
+    expect(screen.getByText(/เลือกการ์ดจู่โจม/)).toBeInTheDocument();
+  });
 });

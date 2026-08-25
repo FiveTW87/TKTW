@@ -55,7 +55,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | completed | Codex + Claude content | 3d | TUT-001 |
-| TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
+| TUT-003 | Advanced lessons, resume, and polish | in_progress | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
 | QA-001 | Milestone verification matrix | backlog | Codex + Claude review | 2d | Each milestone |
@@ -1840,11 +1840,47 @@ Teach draw/attack/target/end turn and dodge/damage/heal through deterministic pl
 
 ## TUT-003 — Advanced lessons, resume, and polish
 
-Status: backlog | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 4 days | Risk: Medium
+Status: in_progress | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 4 days | Risk: Medium
 
 ### Objective
 
 Teach distance/equipment, tricks/judgment/Wuxie, roles/victory/skills, and finish tutorial navigation/progress.
+
+### Current behavior
+
+- TUT-002 exposes three basic deterministic rooms and persists step progress, but the catalog has no advanced content or completion state.
+- Restarting a fresh scenario with active step progress could restore copy beyond the new engine state unless the launch boundary resets it deliberately.
+- The three-seat basic fixture cannot demonstrate a genuinely out-of-range target.
+
+### Expected behavior
+
+- Add three deterministic real-engine lessons: equip a range weapon before attacking an out-of-range seat; answer a real trick with Wuxie while explaining trick/judgment timing; and use a real active skill inside an identity-role game.
+- The picker shows all lessons, completed state, and explicit replay/reset. Reconnect into the same room resumes the accepted step boundary, while a fresh lesson launch resets incomplete progress before creating a new engine state.
+- Next/replay/exit navigation never preserves a half-built card/target/skill selection and remains usable at every supported landscape viewport.
+
+### In scope / allowed files
+
+- Existing dedicated tutorial factories/contracts/catalog/Coach/picker, narrow dynamic tutorial-seat lifecycle seams, tutorial progress adapter, Table/Lobby integration, responsive CSS, tests, and hardening docs.
+
+### Out of scope / forbidden files
+
+- No tutorial branch inside card/general/equipment/damage/turn-loop/legality/targeting/identity/victory implementations; no fake client legality; no database/score/user system; no unrelated App/effects/audio/assets/dependencies.
+
+### Type or protocol changes
+
+- Extend the strict tutorial-scenario ID tuple with `advanced-distance`, `advanced-tricks`, and `advanced-roles`.
+- Keep one exhaustive lesson catalog and scenario factory. Progress schema remains versioned and contains no private engine state.
+
+### Implementation steps
+
+1. RED→GREEN strict IDs and deterministic engine golden scenarios, including dynamic four-seat tutorial rooms for real distance.
+2. RED→GREEN advanced authored steps and exhaustive combined catalog/navigation.
+3. RED→GREEN completion badges, fresh-launch reset, reconnect resume, explicit reset/replay, and interaction cleanup.
+4. Verify 932×430, 844×390, 740×360, reduced motion, full suites, build, catalog, visual QA, and scoped diff.
+
+### Edge cases
+
+- Invalid advanced ID; Wuxie responder order; no legal out-of-range target before equipment; bot draw/response/discard between learner steps; completed/version-mismatched/corrupt progress; fresh launch after an incomplete lesson; reconnect with the same room; last lesson navigation; StrictMode; storage failure; portrait gate and safe areas.
 
 ### Acceptance criteria
 
@@ -1852,9 +1888,17 @@ Teach distance/equipment, tricks/judgment/Wuxie, roles/victory/skills, and finis
 - Resume never restores a half-applied UI selection.
 - Completion state is local and resettable.
 
+### Tests to add
+
+- Engine golden tests for the three advanced starts and their real legal actions; dynamic room seat/mapping tests; strict protocol cases; catalog copy/order/progress tests; Coach reconnect/replay/last-next tests; Lobby completion/reset tests; supported viewport and reduced-motion regressions.
+
 ### Tests and verification
 
 - Deterministic lesson tests, resume/reset, all supported viewport sizes, and full engine/client regressions.
+
+### Completion report
+
+- Pending implementation and verification.
 
 ---
 

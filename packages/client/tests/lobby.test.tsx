@@ -41,6 +41,7 @@ import { useAssistStore } from "../src/store/assistStore";
 // blocks in the same file even though each block mounts a fresh <App/>, so
 // without this reset the 2nd test would inherit the 1st test's room/session.
 beforeEach(() => {
+  localStorage.clear();
   Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1024 });
   Object.defineProperty(window, "innerHeight", { configurable: true, writable: true, value: 768 });
   clearSent();
@@ -61,15 +62,19 @@ beforeEach(() => {
 });
 
 describe("Lobby -> waiting room -> start", () => {
-  it("opens the basic lesson picker and starts the selected deterministic tutorial", async () => {
+  it("opens the full lesson picker and starts the selected deterministic tutorial", async () => {
+    localStorage.setItem("tktw_tutorial_progress:basic-turn", JSON.stringify({
+      schemaVersion: 1, scenarioId: "basic-turn", scenarioVersion: 1, status: "active", stepIndex: 1,
+    }));
     const user = userEvent.setup();
     render(<App />);
     fakeSocket.fire("connect");
 
     await user.click(await screen.findByRole("button", { name: "บทฝึกสอน" }));
     const picker = await screen.findByRole("dialog", { name: "เลือกบทฝึกสอน" });
-    expect(within(picker).getAllByRole("article")).toHaveLength(3);
+    expect(within(picker).getAllByRole("article")).toHaveLength(6);
     await user.click(within(picker).getByRole("button", { name: "เริ่มบท เทิร์นแรก" }));
+    expect(localStorage.getItem("tktw_tutorial_progress:basic-turn")).toBeNull();
 
     await waitFor(() => expect(sentEvents.some((event) => event.event === "tutorial:start")).toBe(true));
     expect(sentEvents.find((event) => event.event === "tutorial:start")?.payload).toEqual({
@@ -78,6 +83,24 @@ describe("Lobby -> waiting room -> start", () => {
     });
     respondTo("tutorial:start", { ok: true, roomCode: "TUTOR1", sessionToken: "t".repeat(20), seatIndex: 0 });
     await waitFor(() => expect(useGameStore.getState().roomCode).toBe("TUTOR1"));
+  });
+
+  it("shows completed local lessons and lets the player reset one explicitly", async () => {
+    localStorage.setItem("tktw_tutorial_progress:basic-turn", JSON.stringify({
+      schemaVersion: 1,
+      scenarioId: "basic-turn",
+      scenarioVersion: 1,
+      status: "completed",
+      stepIndex: 2,
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+    fakeSocket.fire("connect");
+    await user.click(await screen.findByRole("button", { name: "บทฝึกสอน" }));
+    const picker = await screen.findByRole("dialog", { name: "เลือกบทฝึกสอน" });
+    expect(within(picker).getByText("สำเร็จแล้ว")).toBeInTheDocument();
+    await user.click(within(picker).getByRole("button", { name: "รีเซ็ตบท เทิร์นแรก" }));
+    expect(localStorage.getItem("tktw_tutorial_progress:basic-turn")).toBeNull();
   });
 
   it("creating a room emits room:create and renders the waiting room from the ack", async () => {

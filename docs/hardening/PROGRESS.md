@@ -2,13 +2,13 @@
 
 Last updated: 2026-08-25
 Current milestone: Phase 9 — Interactive tutorial foundation
-Overall status: `TUT-002` completed and committed locally; `TUT-003` is next
+Overall status: `TUT-002` completed and committed locally; `TUT-003` in progress
 
 ## Next task
 
 - `TUT-003` — Advanced lessons, resume, and polish
 - Owner: Codex + Claude content
-- Status: `backlog`
+- Status: `in_progress`
 
 ## Completed in this cycle
 

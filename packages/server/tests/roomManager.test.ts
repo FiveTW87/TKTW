@@ -33,6 +33,15 @@ describe("RoomManager.startTutorial", () => {
     expect(room.session?.state.pendingDecision).toMatchObject({ kind: "respondShan", playerId: "p1" });
     expect(room.matchId).toBeTruthy();
   });
+
+  it("sizes the room from the advanced scenario and preserves human-to-engine seat mapping", () => {
+    const rooms = new RoomManager();
+    const { room } = rooms.startTutorial("ผู้ฝึก", "advanced-distance");
+    expect(room.seats).toHaveLength(4);
+    expect(room.seats.filter((seat) => seat.isBot)).toHaveLength(3);
+    expect(room.seatAssignment).toEqual([0, 1, 2, 3]);
+    expect(room.session?.state.pendingDecision).toMatchObject({ kind: "drawCard", playerId: "p0" });
+  });
 });
 
 describe("RoomManager.startGame (SPEC 8.2)", () => {
