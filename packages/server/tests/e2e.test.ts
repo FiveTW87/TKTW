@@ -11,10 +11,12 @@ import type { AddressInfo } from "node:net";
 import type { RoomSettingsSelection, RoomStatePayload, MatchResult, GameView } from "@tktw/shared";
 import { gameViewSchema } from "@tktw/shared";
 import { createTktwServer, type TktwServer } from "../src/server";
+import type { ServerDiagnosticRecord } from "../src/diagnostics";
 
 let server: TktwServer;
 let port: number;
 const clients: ClientSocket[] = [];
+let diagnostics: ServerDiagnosticRecord[] = [];
 
 function connectClient(): Promise<ClientSocket> {
   return new Promise((resolve, reject) => {
@@ -171,6 +173,7 @@ function autoAnswerOwnDecisions(
 }
 
 beforeEach(async () => {
+  diagnostics = [];
   server = createTktwServer({
     roomGcGraceMs: 24 * 60 * 60 * 1000,
     roomGcSweepIntervalMs: 60 * 60 * 1000,
@@ -178,6 +181,7 @@ beforeEach(async () => {
     // SPEC 7.2's role-reveal screen defaults to 8s — tests don't want to
     // wait that out just to reach the first real (pickGeneral) decision.
     revealDurationMs: 1,
+    diagnosticSink: (record) => diagnostics.push(record),
   });
   await new Promise<void>((resolve) => server.httpServer.listen(0, resolve));
   port = (server.httpServer.address() as AddressInfo).port;
@@ -406,6 +410,16 @@ describe("answer authorization and validation", () => {
     const resolved = await nextViews;
     // every connected seat gets a fresh view after any decision resolves
     expect(resolved).toHaveLength(3);
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      event: "game.answer",
+      outcome: "accepted",
+      roomCode,
+      matchId: state.matchId,
+      decisionId: view.pendingDecision!.id,
+      clientActionId: "act-correct-player",
+      seatIndex: ownerLobbySeat,
+    }));
+    expect(JSON.stringify(diagnostics)).not.toContain('"pass"');
   });
 });
 
@@ -435,6 +449,11 @@ describe("reconnect via session token", () => {
     const view = await viewPromise;
     expect(view.viewerPlayerId).toBe(seat1View.viewerPlayerId);
     expect((await roomStatePromise).settings).toEqual({ preset: "fast", decisionTimeoutSec: 15, reconnectGraceSec: 30, revealDurationSec: 4, botAnswerDelayMs: 250 });
+    expect(diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ event: "room.rejoin", outcome: "attempt", roomCode }),
+      expect.objectContaining({ event: "room.rejoin", outcome: "success", roomCode, seatIndex: 1 }),
+    ]));
+    expect(JSON.stringify(diagnostics)).not.toContain(tokens[1]);
   });
 
   it("rejects an unknown session token", async () => {
@@ -445,6 +464,12 @@ describe("reconnect via session token", () => {
       sessionToken: "0123456789abcdef0123456789abcdef",
     });
     expect(ack.ok).toBe(false);
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      event: "room.rejoin",
+      outcome: "rejected",
+      roomCode,
+    }));
+    expect(JSON.stringify(diagnostics)).not.toContain("0123456789abcdef0123456789abcdef");
   });
 });
 
@@ -457,6 +482,7 @@ describe("decision timeout default-answer", () => {
       roomGcSweepIntervalMs: 60 * 60 * 1000,
       decisionTimeoutMs: 50,
       revealDurationMs: 1,
+      diagnosticSink: (record) => diagnostics.push(record),
     });
     await new Promise<void>((resolve) => server.httpServer.listen(0, resolve));
     port = (server.httpServer.address() as AddressInfo).port;
@@ -477,6 +503,12 @@ describe("decision timeout default-answer", () => {
       (v) => v.pendingDecision?.id !== first.pendingDecision?.id,
     );
     expect(second.pendingDecision?.id).not.toBe(first.pendingDecision?.id);
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      event: "decision.timeout",
+      outcome: "triggered",
+      roomCode,
+      decisionId: first.pendingDecision?.id,
+    }));
   });
 });
 
@@ -748,6 +780,7 @@ describe("forfeit: grace expiry, leave-mid-match, abandoned (Phase 2 Part B)", (
       decisionTimeoutMs: 30_000,
       gracePeriodMs,
       revealDurationMs: 1,
+      diagnosticSink: (record) => diagnostics.push(record),
     });
     await new Promise<void>((resolve) => server.httpServer.listen(0, resolve));
     port = (server.httpServer.address() as AddressInfo).port;
@@ -775,6 +808,11 @@ describe("forfeit: grace expiry, leave-mid-match, abandoned (Phase 2 Part B)", (
     const state = await goneSeen;
     expect(state.seats[1]!.connectionStatus).toBe("gone");
     expect(state.seats).toHaveLength(3); // seat HELD (SPEC 6.7), not removed
+    expect(diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ event: "socket.disconnect", outcome: "scheduled", roomCode, seatIndex: 1 }),
+      expect.objectContaining({ event: "player.forfeit", outcome: "triggered", roomCode, seatIndex: 1 }),
+    ]));
+    expect(JSON.stringify(diagnostics)).not.toContain(tokens[1]);
 
     // The forfeited token is revoked — the old one can never rejoin.
     const bobAgain = await connectClient();

@@ -1,13 +1,13 @@
 # Hardening Progress
 
 Last updated: 2026-08-25
-Current milestone: Phase 10 — Mobile/Safari hardening completed
-Overall status: `MOB-001` verified; `REL-001` is next
+Current milestone: Phase 10 — Reliability hardening completed
+Overall status: `REL-001` verified; milestone QA is next
 
 ## Next task
 
-- `REL-001` — Structured diagnostics and failure UX
-- Owner: Codex
+- `QA-001` — Milestone verification matrix
+- Owner: Codex + Claude review
 - Status: `backlog`
 
 ## Completed in this cycle
@@ -38,6 +38,7 @@ Overall status: `MOB-001` verified; `REL-001` is next
 - `TUT-002` — Three deterministic playable basic lessons, isolated tutorial rooms, scenario-scripted bots, lesson picker, and acknowledged-action Table coach.
 - `TUT-003` — Real distance/equipment, trick/Wuxie, and identity-role/skill lessons with exhaustive catalog, reconnect-safe progress, reset, and compact navigation polish.
 - `MOB-001` — Shared typed layout snapshot, Safari-toolbar hysteresis, `visualViewport` table sizing, pointer-aware desktop protection, and responsive viewport verification.
+- `REL-001` — Allowlisted structured lifecycle diagnostics, secret-safe correlation, bounded socket acknowledgements, recoverable rejoin policy, and clear restart/expiry/transport copy.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -53,14 +54,14 @@ Overall status: `MOB-001` verified; `REL-001` is next
 | Package | Test files | Tests | Result |
 |---|---:|---:|---|
 | Engine | 41 | 1,122 | Passed |
-| Server | 5 | 73 | Passed |
-| Client | 44 | 295 | Passed |
-| Total | 90 | 1,490 | Passed |
+| Server | 6 | 76 | Passed |
+| Client | 45 | 300 | Passed |
+| Total | 92 | 1,498 | Passed |
 
 ## Next actions
 
-1. Start `REL-001` with structured diagnostics and player-facing recovery copy.
-2. Follow with milestone/release QA.
+1. Start `QA-001` milestone verification matrix.
+2. Follow with `QA-002` full release and production smoke test.
 3. Keep unrelated `App.tsx` line-ending changes out of every commit.
 
 ## Checkpoints

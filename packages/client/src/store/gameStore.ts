@@ -18,6 +18,7 @@ import {
   type RoomSettingsSelection,
 } from "@tktw/shared";
 import { acceptedActionChannel } from "../lib/acceptedActionChannel";
+import { classifyRejoinFailure } from "../data/rejoinFailure";
 
 const STORAGE_KEY = "tktw_session";
 
@@ -131,8 +132,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ initialized: true });
       return;
     }
+    pushDebug(`rejoin → attempt room ${roomCode}`);
     const ack = await emitAck<RejoinRoomAck>(ClientEvents.RoomRejoin, { roomCode, sessionToken });
     if (ack.ok) {
+      pushDebug(`rejoin ✓ room ${roomCode}${ack.matchId ? ` match ${ack.matchId}` : ""}`);
       set({
         roomCode,
         sessionToken,
@@ -142,8 +145,14 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         sessionExpired: false,
       });
     } else {
-      // The server rejected the token (grace expired / revoked / room gone) →
-      // tell the user before dropping them home.
+      const failure = classifyRejoinFailure(ack.error);
+      pushDebug(`rejoin ✗ ${failure}`);
+      if (failure === "transport") {
+        // The room may still exist. Preserve the stored credential so a later
+        // socket reconnect can retry instead of destroying a recoverable seat.
+        set({ initialized: true, error: "connection timeout" });
+        return;
+      }
       clearStoredSession();
       set({
         roomCode: null,
@@ -153,7 +162,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         roomState: null,
         gameView: null,
         initialized: true,
-        sessionExpired: true,
+        sessionExpired: failure !== "room-lost",
+        error: failure === "room-lost" ? "stored room not found after server restart" : null,
       });
     }
   }

@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import sirv from "sirv";
 import { Server as SocketIOServer } from "socket.io";
 import { RoomManager } from "./rooms/RoomManager";
-import { registerSocketHandlers } from "./socketHandlers";
+import { registerSocketHandlers, type SocketHandlerOptions } from "./socketHandlers";
+import { createDiagnosticReporter, type DiagnosticSink } from "./diagnostics";
 
 // Single-service deploy: if the client has been built, serve its static files
 // from this same server (Socket.IO already intercepts /socket.io/ before this
@@ -38,6 +39,8 @@ export interface TktwServerOptions {
    *  aren't stuck waiting out the real 600ms per decision across however many
    *  it takes a 3+ player identity game to end. */
   botAnswerDelayMs?: number;
+  /** Optional structured sink for tests/hosting. Receives allowlisted records only. */
+  diagnosticSink?: DiagnosticSink;
 }
 
 export interface TktwServer {
@@ -77,16 +80,12 @@ export function createTktwServer(opts: TktwServerOptions = {}): TktwServer {
   });
 
   const rooms = new RoomManager();
-  const handlerOpts: {
-    decisionTimeoutMs?: number;
-    gracePeriodMs?: number;
-    revealDurationMs?: number;
-    botAnswerDelayMs?: number;
-  } = {};
+  const handlerOpts: SocketHandlerOptions = {};
   if (opts.decisionTimeoutMs !== undefined) handlerOpts.decisionTimeoutMs = opts.decisionTimeoutMs;
   if (opts.gracePeriodMs !== undefined) handlerOpts.gracePeriodMs = opts.gracePeriodMs;
   if (opts.revealDurationMs !== undefined) handlerOpts.revealDurationMs = opts.revealDurationMs;
   if (opts.botAnswerDelayMs !== undefined) handlerOpts.botAnswerDelayMs = opts.botAnswerDelayMs;
+  if (opts.diagnosticSink) handlerOpts.diagnostics = createDiagnosticReporter(opts.diagnosticSink);
   registerSocketHandlers(io, rooms, handlerOpts);
 
   const graceMs = opts.roomGcGraceMs ?? DEFAULT_GC_GRACE_MS;

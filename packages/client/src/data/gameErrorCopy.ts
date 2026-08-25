@@ -32,6 +32,12 @@ export function gameErrorCopy(rawError: string, players: PlayerView[] = []): Gam
   const error = rawError.trim();
   const lower = error.toLowerCase();
 
+  if (lower.includes("stored room not found after server restart")) {
+    return { title: "ห้องเดิมไม่อยู่แล้ว", message: "เซิร์ฟเวอร์อาจเพิ่งเริ่มใหม่ จึงไม่พบข้อมูลห้องที่เก็บไว้ในหน่วยความจำ", hint: "สร้างห้องใหม่หรือเข้าห้องด้วยรหัสใหม่", glyph: "新" };
+  }
+  if (lower.includes("connection timeout") || lower.includes("ack timeout")) {
+    return { title: "การเชื่อมต่อใช้เวลานานเกินไป", message: "เซิร์ฟเวอร์ยังไม่ตอบรับคำสั่งภายในเวลาที่กำหนด", hint: "ตรวจสอบอินเทอร์เน็ต รอสักครู่ แล้วลองอีกครั้ง", glyph: "連" };
+  }
   if (lower.includes("room not found")) {
     return { title: "ไม่พบห้องนี้", message: "รหัสห้องอาจไม่ถูกต้อง หรือห้องถูกปิดไปแล้ว", hint: "ตรวจสอบรหัสห้องแล้วลองอีกครั้ง", glyph: "室" };
   }

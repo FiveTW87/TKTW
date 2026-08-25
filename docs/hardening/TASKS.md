@@ -57,7 +57,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TUT-002 | Basic lessons and scripted bot | completed | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | completed | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | completed | Codex | 2d | FX-003, ASSIST-002 |
-| REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
+| REL-001 | Structured diagnostics and failure UX | completed | Codex | 1.5d | ROOM-002 |
 | QA-001 | Milestone verification matrix | backlog | Codex + Claude review | 2d | Each milestone |
 | QA-002 | Full release and production smoke test | backlog | Codex | 3d | All tasks |
 
@@ -1975,11 +1975,46 @@ Use one typed layout-mode policy and stabilize compact landscape under browser-t
 
 ## REL-001 — Structured diagnostics and failure UX
 
-Status: backlog | Owner: Codex | Reviewer: Claude security | Estimate: 1.5 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude security | Estimate: 1.5 days | Risk: Medium
 
 ### Objective
 
 Add structured decision/reconnect/timeout/forfeit diagnostics and clear in-memory-session-loss messaging without logging secrets.
+
+### Current behavior
+
+- Server lifecycle failures use ad-hoc `console.error` strings. Normal answer/rejoin/disconnect/timeout/forfeit transitions have no consistent correlation fields, and logger safety depends on each call site remembering not to pass raw payloads.
+- Client debug lines are free-form strings. Rejoin failure discards the stored session and shows one generic expiry screen, so a server restart/room loss is indistinguishable from grace expiry or an invalid seat token.
+- Promise failures around socket acknowledgement can reject without a normalized player-facing failure or diagnostic entry.
+
+### Expected behavior
+
+- One allowlisted structured diagnostic contract records event/outcome plus room, match, decision, client action, and seat correlation when known. Unknown/raw payload fields, session tokens, hands, roles, and private choices never enter the serialized record.
+- Answer, reconnect, disconnect/grace, timeout/fallback, and forfeit paths emit bounded diagnostics. Failure records contain a normalized error name/reason, not stacks or engine/private state.
+- Player-facing copy distinguishes a missing in-memory room/server restart from expired access, connectivity/ack timeout, and stale gameplay actions, with a clear next action.
+
+### In scope / allowed files
+
+- Server diagnostic utility and lifecycle call sites; client diagnostic/error model and copy; focused unit/E2E/component tests; hardening docs.
+
+### Out of scope / forbidden files
+
+- No persistent database/recovery, external telemetry vendor, protocol payload expansion, gameplay/engine behavior change, secrets in logs, visual redesign, dependency, or unrelated `App.tsx` line-ending/content change.
+
+### Type or protocol changes
+
+- Add server-only discriminated diagnostic event/outcome types and allowlisted correlation/error fields. Client failure categories remain local and do not change the socket wire contract.
+
+### Implementation steps
+
+1. RED→GREEN diagnostic record builder/serializer proving correlation fields survive and forbidden keys/values cannot leak.
+2. Instrument rejoin, answer, disconnect/grace, timeout/fallback, and forfeit lifecycle transitions without passing raw socket/engine payloads.
+3. RED→GREEN normalized client transport/rejoin failure categories and Thai recovery copy for restart, expiry, connectivity, and stale actions.
+4. Verify focused logger/copy/E2E cases, full suites, typecheck, build, catalog, and diff scope; commit and push only after all gates pass.
+
+### Edge cases
+
+- Zod errors, non-Error throws, socket ack timeout/rejection, room deleted after restart, forged/expired token, duplicate action replay, stale match/decision, bot vs player timeout, safe fallback failing twice, reconnect before grace fires, explicit leave vs grace forfeit, abandoned match, unicode/very long reasons, and logger sink throwing.
 
 ### Acceptance criteria
 
@@ -1990,6 +2025,15 @@ Add structured decision/reconnect/timeout/forfeit diagnostics and clear in-memor
 ### Tests and verification
 
 - Logger field/redaction tests, timeout/fallback/reconnect E2E, failure popup tests, health/build checks.
+
+### Completion report
+
+- Added an allowlisted `DiagnosticEvent`/`DiagnosticOutcome` record builder and failure-isolated reporter. Correlation fields are bounded and runtime construction drops unknown raw payload keys; reasons redact tokens, UUIDs, opaque values, stacks, and long text.
+- Instrumented rejoin, answer/idempotent replay, disconnect/grace, timeout/fallback, and forfeit transitions with room/match/decision/action/seat correlation where available. Raw engine answers, hands, roles, choices, session tokens, and raw lifecycle errors are never passed to the sink.
+- Replaced unbounded socket acknowledgement promises with a 10-second typed timeout while preserving the original callback transport contract. Recoverable transport failures keep the stored session for retry; room loss after an in-memory server restart and expired access take distinct paths.
+- Added Thai restart/ack-timeout recovery copy and a pure rejoin failure classifier without changing popup markup/CSS or the unrelated `App.tsx` worktree diff.
+- RED covered the missing diagnostic module and missing failure classifier. A first full-client attempt exposed the incompatible Socket.IO timeout wrapper; focused GeneralSelect/Table regressions reproduced it, the wrapper was corrected to retain `socket.emit`, and the focused rerun passed 74/74.
+- Final verification passed Client 45 files / 300 tests, Server 6 / 76, Engine 41 / 1,122, total 92 / 1,498; root typecheck; production client build (305 modules); `/health` returned `{ "ok": true }`; catalog 256/256; and diff checks. No visual screenshot was needed because visible markup/CSS/layout did not change; the changed copy is covered by model and popup regressions.
 
 ---
 

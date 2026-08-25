@@ -19,6 +19,7 @@ import {
 } from "@tktw/shared";
 import { RoomManager, RoomError, seatPlayerId, type GameRoom, CHAT_LOG_LIMIT } from "./rooms/RoomManager";
 import { resolveEffectiveRoomPacing } from "./rooms/roomPacing";
+import { reportServerDiagnostic, type DiagnosticReporter } from "./diagnostics";
 import {
   afterRespond,
   beginRevealPhase,
@@ -92,6 +93,7 @@ export interface SocketHandlerOptions {
    *  aren't stuck waiting out the real 600ms per decision across however many
    *  it takes a 3+ player identity game to end. */
   botAnswerDelayMs?: number;
+  diagnostics?: DiagnosticReporter;
 }
 
 export function registerSocketHandlers(
@@ -99,18 +101,19 @@ export function registerSocketHandlers(
   rooms: RoomManager,
   opts: SocketHandlerOptions = {},
 ): void {
+  const report = opts.diagnostics ?? reportServerDiagnostic;
   const effectivePacing = (room: GameRoom) => resolveEffectiveRoomPacing(room, opts);
   const runAfterRespond = (room: GameRoom): void => {
     const pacing = effectivePacing(room);
-    afterRespond(io, room, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
+    afterRespond(io, room, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs, report);
   };
   const runBeginRevealPhase = (room: GameRoom): void => {
     const pacing = effectivePacing(room);
-    beginRevealPhase(io, room, pacing.revealDurationMs, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
+    beginRevealPhase(io, room, pacing.revealDurationMs, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs, report);
   };
   const graceOptsFor = (room: GameRoom) => {
     const pacing = effectivePacing(room);
-    return { graceMs: pacing.gracePeriodMs, decisionTimeoutMs: pacing.decisionTimeoutMs, botDelayMs: pacing.botAnswerDelayMs };
+    return { graceMs: pacing.gracePeriodMs, decisionTimeoutMs: pacing.decisionTimeoutMs, botDelayMs: pacing.botAnswerDelayMs, report };
   };
 
   io.on("connection", (socket: Socket) => {
@@ -203,6 +206,7 @@ export function registerSocketHandlers(
     socket.on(ClientEvents.RoomRejoin, (raw: unknown, ack: Ack) => {
       const parsed = rejoinRoomSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+      report({ event: "room.rejoin", outcome: "attempt", roomCode: parsed.data.roomCode });
 
       try {
         const { room, seatIndex } = rooms.rejoin(parsed.data.roomCode, parsed.data.sessionToken);
@@ -212,6 +216,13 @@ export function registerSocketHandlers(
         void socket.join(room.code);
 
         ok(ack, { seatIndex, phase: room.phase, ...(room.matchId ? { matchId: room.matchId } : {}) });
+        report({
+          event: "room.rejoin",
+          outcome: "success",
+          roomCode: room.code,
+          ...(room.matchId ? { matchId: room.matchId } : {}),
+          seatIndex,
+        });
         broadcastRoomState(io, room);
         // SPEC 7.2: a rejoin during the reveal screen still needs the
         // projected view (own role; the lord's is public either way).
@@ -224,6 +235,7 @@ export function registerSocketHandlers(
         // connected as each message was sent — replay it to this socket alone.
         for (const message of room.chatLog) socket.emit(ServerEvents.ChatMessage, message);
       } catch (err) {
+        report({ event: "room.rejoin", outcome: "rejected", roomCode: parsed.data.roomCode, error: err });
         fail(ack, err, "rejoin failed");
       }
     });
@@ -256,7 +268,7 @@ export function registerSocketHandlers(
         delete data.seatIndex;
         ok(ack);
         const pacing = effectivePacing(room);
-        forfeitAndContinue(io, rooms, room, seatIndex, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs);
+        forfeitAndContinue(io, rooms, room, seatIndex, pacing.decisionTimeoutMs, pacing.botAnswerDelayMs, report);
       }
     });
 
@@ -335,18 +347,30 @@ export function registerSocketHandlers(
     socket.on(ClientEvents.GameAnswer, (raw: unknown, ack: Ack) => {
       const parsed = answerSchema.safeParse(raw);
       if (!parsed.success) return fail(ack, parsed.error, "invalid payload");
+      const answerDiagnostic = {
+        event: "game.answer" as const,
+        roomCode: parsed.data.roomCode,
+        matchId: parsed.data.matchId,
+        decisionId: parsed.data.decisionId,
+        clientActionId: parsed.data.clientActionId,
+        ...(data.seatIndex !== undefined ? { seatIndex: data.seatIndex } : {}),
+      };
+      report({ ...answerDiagnostic, outcome: "attempt" });
 
       const room = rooms.getRoom(parsed.data.roomCode);
       if (!room || room.phase !== "playing" || !room.session) {
+        report({ ...answerDiagnostic, outcome: "rejected", reason: "game is not in progress" });
         return fail(ack, new RoomError("game is not in progress"), "game is not in progress");
       }
       if (data.roomCode !== room.code || data.seatIndex === undefined) {
+        report({ ...answerDiagnostic, outcome: "rejected", reason: "socket is not attached to room" });
         return fail(ack, new RoomError("not a member of this room"), "not a member of this room");
       }
       // SPEC 8.3/8.7: a session's decisionIds restart at dec_1 every match, so
       // decisionId alone can't tell a stale answer from a previous match
       // apart from a legitimate one in this one — reject it outright.
       if (parsed.data.matchId !== room.matchId) {
+        report({ ...answerDiagnostic, outcome: "rejected", reason: "stale match" });
         return fail(ack, new RoomError("stale match"), "stale match");
       }
 
@@ -356,12 +380,19 @@ export function registerSocketHandlers(
       // your decision" — the original attempt already advanced things.
       // Replay the stored success instead of re-applying or misreporting it.
       const cached = room.answeredActionIds?.get(parsed.data.clientActionId);
-      if (cached) return ok(ack);
+      if (cached) {
+        report({ ...answerDiagnostic, outcome: "success", reason: "duplicate action replayed" });
+        return ok(ack);
+      }
 
       const pending = room.session.state.pendingDecision;
       const myPlayerId = seatPlayerId(engineSeatOf(room, data.seatIndex));
-      if (!pending) return fail(ack, new RoomError("no pending decision"), "no pending decision");
+      if (!pending) {
+        report({ ...answerDiagnostic, outcome: "rejected", reason: "no pending decision" });
+        return fail(ack, new RoomError("no pending decision"), "no pending decision");
+      }
       if (pending.playerId !== myPlayerId) {
+        report({ ...answerDiagnostic, outcome: "rejected", reason: "not decision owner" });
         return fail(ack, new RoomError("not your decision to answer"), "not your decision to answer");
       }
 
@@ -373,10 +404,17 @@ export function registerSocketHandlers(
         // were, so it's safe to just report the error back — the client
         // can retry the same decision, no room-level recovery needed. Not
         // cached: a genuine rejection is safe to just re-validate later.
+        report({
+          ...answerDiagnostic,
+          outcome: "rejected",
+          errorName: err instanceof Error ? err.name : "NonError",
+          reason: "engine rejected answer",
+        });
         return fail(ack, err, "invalid move");
       }
       (room.answeredActionIds ??= new Map()).set(parsed.data.clientActionId, { ok: true });
       ok(ack);
+      report({ ...answerDiagnostic, outcome: "accepted" });
       runAfterRespond(room);
     });
 
@@ -385,6 +423,13 @@ export function registerSocketHandlers(
       const room = rooms.getRoom(data.roomCode);
       if (!room) return;
       const seatIndex = data.seatIndex;
+      report({
+        event: "socket.disconnect",
+        outcome: "triggered",
+        roomCode: room.code,
+        ...(room.matchId ? { matchId: room.matchId } : {}),
+        ...(seatIndex !== undefined ? { seatIndex } : {}),
+      });
       rooms.disconnectSocket(room, socket.id);
       // Mid-match: hold the seat for the grace window, then forfeit if the
       // player hasn't reconnected (a reconnect clears the timer). In the lobby

@@ -21,6 +21,7 @@ import {
 import { ServerEvents, type RoomStatePayload, type RoomStateSeat, type GameView, type ConnectionStatus } from "@tktw/shared";
 import { seatPlayerId, RoomManager, type GameRoom } from "./RoomManager";
 import { defaultAnswerFor, DECISION_TIMEOUT_MS, GRACE_PERIOD_MS, REVEAL_DURATION_MS } from "../timeouts";
+import { reportServerDiagnostic, type DiagnosticReporter } from "../diagnostics";
 
 // SPEC 7.2: "revealing" (the role-reveal screen) and "playing" are both a
 // live match — a seat's connection/grace handling shouldn't care which of
@@ -202,6 +203,7 @@ export function beginRevealPhase(
   revealMs = REVEAL_DURATION_MS,
   decisionTimeoutMs = DECISION_TIMEOUT_MS,
   botDelayMs = BOT_ANSWER_DELAY_MS,
+  report: DiagnosticReporter = reportServerDiagnostic,
 ): void {
   if (room.phase !== "revealing") return;
   room.revealExpiresAt = Date.now() + revealMs;
@@ -212,7 +214,7 @@ export function beginRevealPhase(
     if (room.phase !== "revealing") return; // e.g. abandoned mid-reveal
     room.phase = "playing";
     delete room.revealExpiresAt;
-    afterRespond(io, room, decisionTimeoutMs, botDelayMs);
+    afterRespond(io, room, decisionTimeoutMs, botDelayMs, report);
   }, revealMs);
 }
 
@@ -250,6 +252,7 @@ export function scheduleTimeout(
   room: GameRoom,
   timeoutMs = DECISION_TIMEOUT_MS,
   botDelayMs = BOT_ANSWER_DELAY_MS,
+  report: DiagnosticReporter = reportServerDiagnostic,
 ): void {
   clearRoomTimer(room);
   const session = room.session;
@@ -261,11 +264,26 @@ export function scheduleTimeout(
   const now = Date.now();
   room.decisionStartedAt = now;
   room.decisionExpiresAt = now + delay;
+  report({
+    event: "decision.timeout",
+    outcome: "scheduled",
+    roomCode: room.code,
+    ...(room.matchId ? { matchId: room.matchId } : {}),
+    decisionId,
+  });
 
   room.decisionTimer = setTimeout(() => {
     // The decision may have already been answered (or the room GC'd) by
     // the time this fires — only act if it's still the same one waiting.
     if (session.state.pendingDecision?.id !== decisionId) return;
+    report({
+      event: "decision.timeout",
+      outcome: "triggered",
+      roomCode: room.code,
+      ...(room.matchId ? { matchId: room.matchId } : {}),
+      decisionId,
+      reason: isBotTurn ? "bot decision delay elapsed" : "player decision deadline elapsed",
+    });
     try {
       respond(session, isBotTurn ? automatedAnswerFor(room, pending) : defaultAnswerFor(session));
     } catch (err) {
@@ -275,7 +293,15 @@ export function scheduleTimeout(
       // Fall back to a guaranteed-terminating answer instead so play always
       // continues. This is the room-level counterpart to the client's own
       // "never strand a decision" guards.
-      console.error(`[room ${room.code}] ${isBotTurn ? "bot" : "timeout"} auto-answer failed, using safe fallback:`, err);
+      report({
+        event: "decision.fallback",
+        outcome: "attempt",
+        roomCode: room.code,
+        ...(room.matchId ? { matchId: room.matchId } : {}),
+        decisionId,
+        errorName: err instanceof Error ? err.name : "NonError",
+        reason: "automated answer rejected; using safe fallback",
+      });
       const pd = session.state.pendingDecision;
       try {
         if (!pd || pd.id !== decisionId) return; // already moved on
@@ -284,11 +310,26 @@ export function scheduleTimeout(
         // pass/endPhase should be legal for every decision kind, so this is
         // essentially unreachable — log loudly and leave the room paused
         // rather than busy-looping the same failing answer.
-        console.error(`[room ${room.code}] safe fallback ALSO failed — room paused:`, err2);
+        report({
+          event: "decision.fallback",
+          outcome: "failed",
+          roomCode: room.code,
+          ...(room.matchId ? { matchId: room.matchId } : {}),
+          decisionId,
+          errorName: err2 instanceof Error ? err2.name : "NonError",
+          reason: "safe fallback rejected; room paused",
+        });
         return;
       }
+      report({
+        event: "decision.fallback",
+        outcome: "recovered",
+        roomCode: room.code,
+        ...(room.matchId ? { matchId: room.matchId } : {}),
+        decisionId,
+      });
     }
-    afterRespond(io, room, timeoutMs, botDelayMs);
+    afterRespond(io, room, timeoutMs, botDelayMs, report);
   }, delay);
 }
 
@@ -300,6 +341,7 @@ export function afterRespond(
   room: GameRoom,
   timeoutMs = DECISION_TIMEOUT_MS,
   botDelayMs = BOT_ANSWER_DELAY_MS,
+  report: DiagnosticReporter = reportServerDiagnostic,
 ): void {
   if (room.session?.state.finished) {
     room.phase = "ended";
@@ -307,7 +349,7 @@ export function afterRespond(
     finalizeMatchResult(room);
   }
   broadcastViews(io, room);
-  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs);
+  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs, report);
   broadcastRoomState(io, room); // refresh connection status + decision deadline
   broadcastMatchResult(io, room);
 }
@@ -369,9 +411,17 @@ export function forfeitAndContinue(
   seatIndex: number,
   timeoutMs = DECISION_TIMEOUT_MS,
   botDelayMs = BOT_ANSWER_DELAY_MS,
+  report: DiagnosticReporter = reportServerDiagnostic,
 ): void {
   const seat = room.seats[seatIndex];
   if (!seat) return;
+  report({
+    event: "player.forfeit",
+    outcome: "triggered",
+    roomCode: room.code,
+    ...(room.matchId ? { matchId: room.matchId } : {}),
+    seatIndex,
+  });
   rooms.revokeSeatToken(room, seatIndex);
   seat.connectionStatus = "gone";
   // A grace-expiry forfeit already went through disconnectSocket (connected
@@ -398,11 +448,28 @@ export function forfeitAndContinue(
       try {
         respond(session, forfeitSkipAnswer(session.state.pendingDecision));
       } catch (err) {
-        console.error(`[room ${room.code}] forfeit-drive answer was rejected — stopping:`, err);
+        report({
+          event: "player.forfeit",
+          outcome: "failed",
+          roomCode: room.code,
+          ...(room.matchId ? { matchId: room.matchId } : {}),
+          decisionId: session.state.pendingDecision?.id,
+          seatIndex,
+          errorName: err instanceof Error ? err.name : "NonError",
+          reason: "forfeit drive answer rejected",
+        });
         break;
       }
       if (++guard > 100) {
-        console.error(`[room ${room.code}] forfeit-drive did not terminate — pausing`);
+        report({
+          event: "player.forfeit",
+          outcome: "failed",
+          roomCode: room.code,
+          ...(room.matchId ? { matchId: room.matchId } : {}),
+          decisionId: session.state.pendingDecision?.id,
+          seatIndex,
+          reason: "forfeit drive exceeded guard",
+        });
         break;
       }
     }
@@ -416,7 +483,7 @@ export function forfeitAndContinue(
 
   broadcastViews(io, room);
   if (maybeAbandon(io, room)) return;
-  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs);
+  if (room.phase === "playing") scheduleTimeout(io, room, timeoutMs, botDelayMs, report);
   broadcastRoomState(io, room);
   broadcastMatchResult(io, room);
 }
@@ -428,16 +495,25 @@ export function armGraceTimer(
   rooms: RoomManager,
   room: GameRoom,
   seatIndex: number,
-  opts: { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number } = {},
+  opts: { graceMs?: number; decisionTimeoutMs?: number; botDelayMs?: number; report?: DiagnosticReporter } = {},
 ): void {
   const seat = room.seats[seatIndex];
   if (!seat) return;
   if (seat.graceTimer) clearTimeout(seat.graceTimer);
   const graceMs = opts.graceMs ?? GRACE_PERIOD_MS;
+  const report = opts.report ?? reportServerDiagnostic;
+  report({
+    event: "socket.disconnect",
+    outcome: "scheduled",
+    roomCode: room.code,
+    ...(room.matchId ? { matchId: room.matchId } : {}),
+    seatIndex,
+    reason: "reconnect grace armed",
+  });
   seat.graceTimer = setTimeout(() => {
     delete seat.graceTimer;
     // A reconnect (or a game that already ended) makes the forfeit moot.
     if (seat.connected || !isMatchActive(room)) return;
-    forfeitAndContinue(io, rooms, room, seatIndex, opts.decisionTimeoutMs, opts.botDelayMs);
+    forfeitAndContinue(io, rooms, room, seatIndex, opts.decisionTimeoutMs, opts.botDelayMs, report);
   }, graceMs);
 }
