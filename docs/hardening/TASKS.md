@@ -54,7 +54,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | ASSIST-001 | Preferences and first-time onboarding | completed | Codex | 2d | TABLE-003, ROOM-002 |
 | ASSIST-002 | Context help and unavailable-action reasons | completed | Codex | 3d | LEGAL-004, ASSIST-001 |
 | TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
-| TUT-002 | Basic lessons and scripted bot | in_progress | Codex + Claude content | 3d | TUT-001 |
+| TUT-002 | Basic lessons and scripted bot | completed | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | backlog | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
@@ -1765,7 +1765,7 @@ Create typed tutorial scenarios, steps, completion conditions, highlights, and l
 
 ## TUT-002 — Basic lessons and scripted bot
 
-Status: in_progress | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 3 days | Risk: Medium
+Status: completed | Owner: Codex + Claude content | Reviewer: Codex | Estimate: 3 days | Risk: Medium
 
 ### Objective
 
@@ -1828,7 +1828,13 @@ Teach draw/attack/target/end turn and dodge/damage/heal through deterministic pl
 
 ### Completion evidence
 
-- Pending implementation and verification.
+- Added one strict tutorial-ID vocabulary across engine/shared/server/client, a validated `tutorial:start` event, isolated three-seat tutorial rooms, and normal `GameSession` setup through the existing respond/legal-action pipeline.
+- Added deterministic real-rule lessons for first turn, dodge, and damage/recovery. Scenario-owned bot scripts answer main action, draw, response, and minimum discard decisions; unknown IDs are rejected before room creation.
+- Added an accepted-action channel that publishes only after server acknowledgement and carries the pre-answer projected legal actions. The Coach advances from that boundary, handles wrong actions safely, persists progress, highlights semantic targets, and exposes exit/replay/next navigation.
+- Added a compact accessible lesson picker and edge-mounted Coach. Real-browser QA at 740×360 measured the Coach at 480×50px with no page overflow; it stayed above the central action and the picker rendered all three lesson cards in one row. Reduced-motion disables highlight animation.
+- Isolation tests confirm tutorial knowledge is limited to dedicated factories/lifecycle adapters and never enters engine card/general/equipment/core rule modules. Normal room and Table regressions remain green.
+- Verification passed: Engine 41 files / 1,119 tests; Server 5 / 72; Client 43 / 286; total 89 files / 1,477 tests; root typecheck; production client build (301 modules); catalog 256/256; and diff checks.
+- Implementation commit: `13ce21c` (`TUT-002-add-basic-playable-lessons`). No push was performed.
 
 ---
 
