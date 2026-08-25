@@ -1493,6 +1493,9 @@ describe("Table: mobile-landscape gate sizes (SPEC §12.3)", () => {
     await enterGame(`GATE${w}x${h}`, me, rest);
     expect(screen.getByText("การ์ดในมือ")).toBeInTheDocument();
     expect(document.querySelector(".mobile-landscape-board")).toBeInTheDocument();
+    const table = document.querySelector<HTMLElement>(".table-theme");
+    expect(table).toHaveAttribute("data-layout-mode", "compact-landscape");
+    expect(table?.style.getPropertyValue("--table-viewport-height")).toBe(`${h}px`);
     expect(document.querySelectorAll(".mobile-opponent-seat")).toHaveLength(9);
     expect(document.querySelector(".mobile-battle-arena > .mobile-context-help-anchor .table-context-help")).toBeInTheDocument();
   });

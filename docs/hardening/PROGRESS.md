@@ -1,12 +1,12 @@
 # Hardening Progress
 
 Last updated: 2026-08-25
-Current milestone: Phase 9 — Interactive tutorial completed
-Overall status: `TUT-003` completed and committed locally; mobile/reliability hardening remains
+Current milestone: Phase 10 — Mobile/Safari hardening completed
+Overall status: `MOB-001` verified; `REL-001` is next
 
 ## Next task
 
-- `MOB-001` — Mobile layout-mode and Safari hardening
+- `REL-001` — Structured diagnostics and failure UX
 - Owner: Codex
 - Status: `backlog`
 
@@ -37,6 +37,7 @@ Overall status: `TUT-003` completed and committed locally; mobile/reliability ha
 - `TUT-001` — Strict client-only tutorial scenario/controller contracts, real accepted-action matching, fail-fast script validation, safe local progress, and production import isolation.
 - `TUT-002` — Three deterministic playable basic lessons, isolated tutorial rooms, scenario-scripted bots, lesson picker, and acknowledged-action Table coach.
 - `TUT-003` — Real distance/equipment, trick/Wuxie, and identity-role/skill lessons with exhaustive catalog, reconnect-safe progress, reset, and compact navigation polish.
+- `MOB-001` — Shared typed layout snapshot, Safari-toolbar hysteresis, `visualViewport` table sizing, pointer-aware desktop protection, and responsive viewport verification.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -53,14 +54,14 @@ Overall status: `TUT-003` completed and committed locally; mobile/reliability ha
 |---|---:|---:|---|
 | Engine | 41 | 1,122 | Passed |
 | Server | 5 | 73 | Passed |
-| Client | 44 | 290 | Passed |
-| Total | 90 | 1,485 | Passed |
+| Client | 44 | 295 | Passed |
+| Total | 90 | 1,490 | Passed |
 
 ## Next actions
 
-1. Start `MOB-001` when requested, preserving the completed tutorial and Table behavior.
-2. Follow with `REL-001`, then milestone/release QA.
-3. Keep all tutorial commits local until push is explicitly requested.
+1. Start `REL-001` with structured diagnostics and player-facing recovery copy.
+2. Follow with milestone/release QA.
+3. Keep unrelated `App.tsx` line-ending changes out of every commit.
 
 ## Checkpoints
 
@@ -90,6 +91,7 @@ Overall status: `TUT-003` completed and committed locally; mobile/reliability ha
 - `TUT-002`: `13ce21c` (`TUT-002-add-basic-playable-lessons`).
 - `TUT-002` completion record: `995b7ee` (`TUT-002-record-completion`).
 - `TUT-003`: `e554457` (`TUT-003-add-advanced-lessons-and-progress`).
+- `TUT-003` completion record: `4feec64` (`TUT-003-record-completion`), pushed to `origin/main`.
 
 ## Known workspace notes
 

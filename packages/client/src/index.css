@@ -114,11 +114,12 @@ body {
   --table-bronze-light: #d1a45b;
   --table-ember: #8f2d1f;
   --table-safe-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  --table-viewport-height: 100dvh;
   isolation: isolate;
   width: 100%;
   min-width: 0;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: var(--table-viewport-height);
+  height: var(--table-viewport-height);
   overflow: hidden;
   background:
     radial-gradient(circle at 8% 70%, rgba(146, 48, 25, .2), transparent 18%),
@@ -147,7 +148,7 @@ body {
 .table-screen-shell {
   width: 100%;
   min-width: 0;
-  height: 100dvh !important;
+  height: var(--table-viewport-height) !important;
   min-height: 0 !important;
   overflow: hidden;
   padding-bottom: var(--table-safe-bottom);
@@ -156,7 +157,7 @@ body {
 .table-game-board {
   height: 100%;
   min-height: 0;
-  max-height: 100dvh;
+  max-height: var(--table-viewport-height);
   overflow: hidden;
 }
 

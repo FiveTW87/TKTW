@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { Card } from "@tktw/shared";
 import { useGameStore } from "../store/gameStore";
 import { GameBoard } from "../components/board/GameBoard";
@@ -76,7 +77,7 @@ export function Table() {
   });
   const [showDebug, setShowDebug] = useState(false);
   const narrow = useIsNarrow(); // mobile / small-tablet: stack the history sidebar
-  const { compact } = useDeviceMode();
+  const { compact, layoutMode, viewportHeight } = useDeviceMode();
   const assistanceLevel = useAssistStore((state) => state.level);
 
   const restartTutorial = async (scenarioId: NonNullable<typeof tutorialScenarioId>) => {
@@ -318,7 +319,14 @@ export function Table() {
   };
 
   return (
-    <div className="war-table-bg table-theme" style={{ position: "relative" }}>
+    <div
+      className="war-table-bg table-theme"
+      data-layout-mode={layoutMode}
+      style={{
+        position: "relative",
+        "--table-viewport-height": `${viewportHeight}px`,
+      } as CSSProperties}
+    >
       <div className="war-table-rays" />
       <TableUtilityRail onRequestLeave={transient.leaveConfirm.open} />
       {/* Board + history share ONE flex row (column when narrow) so history
@@ -329,7 +337,7 @@ export function Table() {
         className="table-screen-shell"
         style={
           compact
-            ? { display: "flex", flexDirection: narrow ? "column" : "row", height: "100vh", overflow: "hidden", position: "relative" }
+            ? { display: "flex", flexDirection: narrow ? "column" : "row", height: "var(--table-viewport-height)", overflow: "hidden", position: "relative" }
             : { display: "flex", flexDirection: narrow ? "column" : "row", minHeight: "100vh", position: "relative" }
         }
       >

@@ -56,7 +56,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TUT-001 | Tutorial scenario/controller foundation | completed | Codex | 2d | ASSIST-002, PRES-002 |
 | TUT-002 | Basic lessons and scripted bot | completed | Codex + Claude content | 3d | TUT-001 |
 | TUT-003 | Advanced lessons, resume, and polish | completed | Codex + Claude content | 4d | TUT-002 |
-| MOB-001 | Mobile layout-mode and Safari hardening | backlog | Codex | 2d | FX-003, ASSIST-002 |
+| MOB-001 | Mobile layout-mode and Safari hardening | completed | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | backlog | Codex | 1.5d | ROOM-002 |
 | QA-001 | Milestone verification matrix | backlog | Codex + Claude review | 2d | Each milestone |
 | QA-002 | Full release and production smoke test | backlog | Codex | 3d | All tasks |
@@ -1911,11 +1911,46 @@ Teach distance/equipment, tricks/judgment/Wuxie, roles/victory/skills, and finis
 
 ## MOB-001 — Mobile layout-mode and Safari hardening
 
-Status: backlog | Owner: Codex | Reviewer: Claude accessibility | Estimate: 2 days | Risk: Medium
+Status: completed | Owner: Codex | Reviewer: Claude accessibility | Estimate: 2 days | Risk: Medium
 
 ### Objective
 
 Use one typed layout-mode policy and stabilize compact landscape under browser-toolbar and safe-area changes.
+
+### Current behavior
+
+- `useDeviceMode` independently derives `{ orientation, compact }` in every caller from `window.innerHeight <= 560`; it ignores `visualViewport`, pointer class, and previous mode.
+- Repeated Safari toolbar resize events can make independently mounted consumers disagree or flip at the threshold. `Table` still uses inline `100vh` while the compact CSS mostly uses `100dvh`.
+- Supported gate-size and circular-seat tests exist, but there is no hysteresis, visualViewport, desktop-short-window, or remount-consistency regression.
+
+### Expected behavior
+
+- One typed module-level layout snapshot exposes `portrait`, `compact-landscape`, or `desktop`, plus orientation/compact compatibility fields and effective viewport dimensions.
+- It prefers `visualViewport` when available, applies bounded hysteresis, and publishes one consistent snapshot to every consumer. Toolbar-only height changes cannot oscillate compact mode near the entry threshold.
+- Compact table height uses the effective dynamic viewport contract, safe-area offsets remain bounded, and desktop short windows are not mistaken for phones without a mobile-sized width or coarse pointer.
+
+### In scope / allowed files
+
+- Client device-mode policy/store/hook, narrow Table/CSS integration, focused unit/component/Table tests, hardening docs, and changed-state browser screenshots.
+
+### Out of scope / forbidden files
+
+- No seat-order redesign, gameplay/protocol/engine/server change, normal desktop visual redesign, tutorial/content change, dependency, assets/audio/effects, or unrelated `App.tsx` content/line endings.
+
+### Type or protocol changes
+
+- Add client-only `TableLayoutMode = "portrait" | "compact-landscape" | "desktop"` and typed viewport/pointer inputs. No network contract change.
+
+### Implementation steps
+
+1. RED→GREEN pure layout classification and hysteresis at supported gates, toolbar bands, portrait rotation, coarse/fine pointer, and short desktop windows.
+2. RED→GREEN one shared external-store hook listening to window/visualViewport resize and orientation/media changes, including remount consistency and cleanup.
+3. Route Table viewport height through the effective snapshot and tighten safe-area/touch-target CSS without changing the existing mobile design or seat geometry.
+4. Verify 3/5/8/10 clockwise seats, 932×430/844×390/740×360, toolbar resize sequences, portrait, reduced motion, build/catalog/full suites, and real-browser screenshots.
+
+### Edge cases
+
+- `visualViewport` absent, zero/invalid transient viewport values, SSR, StrictMode duplicate subscriptions, toolbar height crossing 560 repeatedly, rotation while compact, desktop 1440×500, coarse tablet landscape, resize storms, late-mounted consumers, safe-area zero/large values, browser zoom, and a decision changing during resize.
 
 ### Acceptance criteria
 
@@ -1926,6 +1961,14 @@ Use one typed layout-mode policy and stabilize compact landscape under browser-t
 ### Tests and verification
 
 - 932×430, 844×390, 740×360, orientation/resize, safe-area, coarse pointer, and real-device checklist.
+
+### Completion report
+
+- Added a pure typed `TableLayoutMode` classifier with separate 560px entry and 640px exit thresholds, coarse-pointer/mobile-width eligibility, portrait precedence, and safe invalid-dimension fallback.
+- Replaced independent hook state with one `useSyncExternalStore` snapshot shared by every Table consumer. It prefers `visualViewport`, listens to Safari-compatible viewport/orientation/pointer changes, and preserves hysteresis across late mounts.
+- Routed the Table root, screen shell, and board maximum height through the effective viewport CSS contract; the existing design, seat geometry, gameplay, protocol, engine, server, assets, and unrelated `App.tsx` were unchanged.
+- RED was 4 expected policy failures; focused GREEN passed 2 files / 80 tests. Full verification passed Client 44 files / 295 tests, Engine 41 / 1,122, Server 5 / 73, root typecheck, production client build (303 modules), catalog 256/256, and diff checks.
+- Browser QA passed at 932×430, 844×390, and 740×360 with exact Table/Shell heights, zero body overflow, no clipped buttons at the smallest gate, and no console warnings/errors. A live 550→590→555→650 sequence remained compact through toolbar jitter and exited at 650.
 
 ---
 
