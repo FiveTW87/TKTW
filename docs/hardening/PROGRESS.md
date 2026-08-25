@@ -1,13 +1,13 @@
 # Hardening Progress
 
 Last updated: 2026-08-25
-Current milestone: Phase 10 — Reliability hardening completed
-Overall status: `REL-001` verified; milestone QA is next
+Current milestone: Phase 11 — Milestone verification completed
+Overall status: `QA-001` verified; full release QA is next
 
 ## Next task
 
-- `QA-001` — Milestone verification matrix
-- Owner: Codex + Claude review
+- `QA-002` — Full release and production smoke test
+- Owner: Codex + User + Claude independent review
 - Status: `backlog`
 
 ## Completed in this cycle
@@ -39,6 +39,7 @@ Overall status: `REL-001` verified; milestone QA is next
 - `TUT-003` — Real distance/equipment, trick/Wuxie, and identity-role/skill lessons with exhaustive catalog, reconnect-safe progress, reset, and compact navigation polish.
 - `MOB-001` — Shared typed layout snapshot, Safari-toolbar hysteresis, `visualViewport` table sizing, pointer-aware desktop protection, and responsive viewport verification.
 - `REL-001` — Allowlisted structured lifecycle diagnostics, secret-safe correlation, bounded socket acknowledgements, recoverable rejoin policy, and clear restart/expiry/transport copy.
+- `QA-001` — Repeatable sequential milestone gate, current risk-to-evidence matrix, named browser/viewport/player/network coverage, and read-only catalog verification.
 - Added one `pnpm typecheck` gate covering engine, shared, server, and client.
 - Kept all existing source and test includes active; fixed the engine contract helper's broad string indexing at its type source.
 - Added branded protocol IDs after Zod parsing without changing their wire representation.
@@ -60,8 +61,8 @@ Overall status: `REL-001` verified; milestone QA is next
 
 ## Next actions
 
-1. Start `QA-001` milestone verification matrix.
-2. Follow with `QA-002` full release and production smoke test.
+1. Start `QA-002` full release and production smoke test.
+2. Record real-device/manual cells separately from automated evidence.
 3. Keep unrelated `App.tsx` line-ending changes out of every commit.
 
 ## Checkpoints
@@ -104,7 +105,7 @@ Overall status: `REL-001` verified; milestone QA is next
 
 ## Blockers
 
-- No code or verification blocker; tutorial commits remain local until push is requested.
+- No code or automated verification blocker.
 - ASSIST-001 changed-state screenshot capture hit the existing browser-plugin trusted-service failure before connecting; focused compact/resize/reduced-motion/accessibility tests and the complete Table/client suites passed, and no screenshot was fabricated.
 - ROOM-002 screenshot capture hit the existing browser-plugin trusted-service failure; compact/accessibility and complete Lobby tests passed, and no screenshot was fabricated.
 - FX-001 screenshot capture was unavailable because the in-app browser runtime rejected its own service before connecting to the local page; automated responsive and DOM verification passed.

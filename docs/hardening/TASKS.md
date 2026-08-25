@@ -58,7 +58,7 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TUT-003 | Advanced lessons, resume, and polish | completed | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | completed | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | completed | Codex | 1.5d | ROOM-002 |
-| QA-001 | Milestone verification matrix | backlog | Codex + Claude review | 2d | Each milestone |
+| QA-001 | Milestone verification matrix | completed | Codex + Claude review | 2d | Each milestone |
 | QA-002 | Full release and production smoke test | backlog | Codex | 3d | All tasks |
 
 ---
@@ -2040,7 +2040,7 @@ Add structured decision/reconnect/timeout/forfeit diagnostics and clear in-memor
 
 ## QA-001 — Milestone verification matrix
 
-Status: backlog | Owner: Codex | Reviewer: Claude | Estimate: 2 days distributed | Risk: High
+Status: completed | Owner: Codex | Reviewer: Claude | Estimate: 2 days distributed | Risk: High
 
 ### Objective
 
@@ -2055,6 +2055,14 @@ Maintain targeted and full verification at every milestone and prevent test-coun
 ### Tests and verification
 
 - The matrix itself references all engine/server/client/presentation/tutorial risk areas and current baseline.
+
+### Completion report
+
+- Added `pnpm verify:milestone`, a fail-fast sequential gate for root typecheck, Engine/Server/Client suites, production client build, and catalog drift. Sequential execution avoids the documented server-timeout contention with engine fuzz tests.
+- Added `QA_MATRIX.md` with the 92-file / 1,498-test baseline, count-regression policy, risk-to-evidence ownership, and named desktop/iPhone/player/network/match/accessibility cells.
+- Made `pnpm catalog:check` read-only. A SHA-256 before/after assertion proved the catalog remained byte-identical while all 256 cases passed.
+- Verification passed in 444 seconds: typecheck for all four packages; Engine 41/1,122; Server 6/76; Client 45/300; production build with 305 modules; catalog 256/256; and diff checks. No screenshot was required because this task changes verification tooling and documentation only.
+- The production build still reports the existing 549.27 kB minified main-chunk warning; it is recorded for `QA-002` performance/release review and is not hidden by this gate.
 
 ---
 

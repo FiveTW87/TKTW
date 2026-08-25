@@ -1,12 +1,12 @@
 # Current Handoff
 
-Date: 2026-08-21
+Date: 2026-08-25
 Integration owner: Codex
-Current task: `TABLE-002` complete; next task is `TABLE-003`
+Current task: `QA-001` complete; next task is `QA-002`
 
 ## Objective
 
-Continue the completed compiler foundation into typed IDs and exhaustive decisions, then follow the durable execution system for Core Hardening, Game Feel, lobby pacing, Beginner Assist, Tutorial, and release QA.
+Run full release QA over the completed hardening, game-feel, lobby, assistance, tutorial, mobile, and reliability milestones without expanding product scope.
 
 ## Approved scope
 
@@ -25,10 +25,11 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - Active-skill/client-migration checkpoint: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - Table-controller checkpoint: `04af1ae` (`TABLE-001-extract-table-controllers`).
-- Table-lifecycle checkpoint: `c0accf6` (`TABLE-002-deepen-table-lifecycles`).
+- Latest pushed checkpoint before QA-001: `1c40921` (`REL-001-record-completion`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
-- Automated tests passed: engine 1,114; server 58; client 179; total 1,351.
-- Production client build passed on 2026-08-21.
+- `pnpm verify:milestone` is the canonical sequential gate; see `QA_MATRIX.md`.
+- Automated tests passed: engine 1,122; server 76; client 300; total 1,498.
+- Production client build passed with 305 modules on 2026-08-25.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
 ## Worktree precautions
@@ -38,17 +39,17 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after TABLE-002
+## Immediate next task after QA-001
 
-`TABLE-003` — presentational extraction and cleanup.
+`QA-002` — full release and production smoke test.
 
 Before implementing:
 
-1. Extract the action cluster, utility rail, and overlay markup into presentational modules with typed props.
-2. Keep gameplay/store knowledge in the existing controllers and leave DOM anchors/class names stable.
-3. Preserve Thai copy, responsive layouts, double-submit protection, modal lifetimes, and presentation-only distance display.
-4. Do not merge draw animation or combat presentation into the new markup modules.
-5. Run rendering/mobile/anchor/Table regressions, all package suites, typecheck, and production build.
+1. Re-run `pnpm verify:milestone` at the final release candidate.
+2. Complete named 3/5/8/10-player, reconnect/timeout/forfeit/rematch, hidden-information, tutorial, sound, reduced-motion, and mobile cells from `QA_MATRIX.md`.
+3. Verify 932×430, 844×390, and 740×360 plus a real iPhone Safari landscape pass.
+4. Run production server/client and `/health`, then record the in-memory restart limitation.
+5. Do not mark unavailable real-device or independent-review evidence as passed.
 
 ## Claude coordination
 

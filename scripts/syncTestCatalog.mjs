@@ -258,7 +258,11 @@ function sync() {
   }
   out.push("");
 
-  writeFileSync(CATALOG, out.join("\n").replace(/\n{3,}$/, "\n"), "utf8");
+  // A check is a read-only gate. Keeping the candidate in memory prevents CI
+  // and local verification from dirtying the worktree merely to report drift.
+  if (!MODE.check) {
+    writeFileSync(CATALOG, out.join("\n").replace(/\n{3,}$/, "\n"), "utf8");
+  }
   console.log(
     `${tally.pass} pass / ${tally.fail} fail / ${tally.waived} waived / ${tally.pending} pending (${total} checkboxes)`,
   );

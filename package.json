@@ -6,6 +6,7 @@
   "scripts": {
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "verify:milestone": "node scripts/verifyMilestone.mjs",
     "catalog:sync": "node scripts/syncTestCatalog.mjs",
     "catalog:check": "node scripts/syncTestCatalog.mjs --check",
     "sim": "pnpm --filter @tktw/engine sim",

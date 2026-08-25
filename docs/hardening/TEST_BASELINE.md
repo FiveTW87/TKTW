@@ -1,13 +1,13 @@
 # Test and Verification Baseline
 
-Baseline date: 2026-08-21
-Commands executed through `TABLE-002`: targeted Vitest, `pnpm typecheck`, full package Vitest, `pnpm build:client`, `pnpm catalog:check`
+Baseline date: 2026-08-25
+Canonical command: `pnpm verify:milestone`
 
 ## Typecheck and build result
 
 - `pnpm typecheck` checks engine, shared, server, and client with their existing TypeScript include lists.
 - All four packages pass `tsc --noEmit`.
-- The production client build passes with 202 modules transformed.
+- The production client build passes with 305 modules transformed.
 - Engine contract tests remain inside typechecking; no test or source directory was excluded to make the gate pass.
 - `pnpm catalog:check` reports 256 pass, 0 fail, 0 waived, and 0 pending.
 
@@ -15,12 +15,12 @@ Commands executed through `TABLE-002`: targeted Vitest, `pnpm typecheck`, full p
 
 | Package | Test files | Tests | Status |
 |---|---:|---:|---|
-| `@tktw/engine` | 40 | 1,114 | Passed |
-| `@tktw/server` | 3 | 58 | Passed |
-| `@tktw/client` | 23 | 179 | Passed |
-| Total | 66 | 1,351 | Passed |
+| `@tktw/engine` | 41 | 1,122 | Passed |
+| `@tktw/server` | 6 | 76 | Passed |
+| `@tktw/client` | 45 | 300 | Passed |
+| Total | 92 | 1,498 | Passed |
 
-The root parallel suite produced one 20-second quickstart-bot timeout while the client suite and engine fuzz suites were competing for resources. The same quickstart group then passed alone in 4.3 seconds, and the complete server suite passed separately with all 58 tests; no functional failure remained.
+The canonical milestone command runs package suites sequentially because earlier parallel runs could starve timing-sensitive server E2E while engine fuzz suites were competing for resources. `pnpm catalog:check` is read-only and passed a byte-for-byte SHA-256 before/after check.
 
 The engine baseline includes deterministic replay, atomicity/retry safety, 3–10-player identity games, 1,000-game fuzz suites, all card/equipment contracts, all registered generals, death/forfeit, hidden information, and physical-deck integrity.
 
