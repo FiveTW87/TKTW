@@ -1964,6 +1964,7 @@ Use one typed layout-mode policy and stabilize compact landscape under browser-t
 
 ### Completion report
 
+- Commit: `515659d` (`MOB-001-harden-mobile-viewport-layout`).
 - Added a pure typed `TableLayoutMode` classifier with separate 560px entry and 640px exit thresholds, coarse-pointer/mobile-width eligibility, portrait precedence, and safe invalid-dimension fallback.
 - Replaced independent hook state with one `useSyncExternalStore` snapshot shared by every Table consumer. It prefers `visualViewport`, listens to Safari-compatible viewport/orientation/pointer changes, and preserves hysteresis across late mounts.
 - Routed the Table root, screen shell, and board maximum height through the effective viewport CSS contract; the existing design, seat geometry, gameplay, protocol, engine, server, assets, and unrelated `App.tsx` were unchanged.

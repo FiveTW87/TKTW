@@ -92,6 +92,7 @@ Overall status: `MOB-001` verified; `REL-001` is next
 - `TUT-002` completion record: `995b7ee` (`TUT-002-record-completion`).
 - `TUT-003`: `e554457` (`TUT-003-add-advanced-lessons-and-progress`).
 - `TUT-003` completion record: `4feec64` (`TUT-003-record-completion`), pushed to `origin/main`.
+- `MOB-001`: `515659d` (`MOB-001-harden-mobile-viewport-layout`).
 
 ## Known workspace notes
 
