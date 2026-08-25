@@ -2058,6 +2058,7 @@ Maintain targeted and full verification at every milestone and prevent test-coun
 
 ### Completion report
 
+- Commit: `94c1d8d` (`QA-001-add-milestone-verification-matrix`).
 - Added `pnpm verify:milestone`, a fail-fast sequential gate for root typecheck, Engine/Server/Client suites, production client build, and catalog drift. Sequential execution avoids the documented server-timeout contention with engine fuzz tests.
 - Added `QA_MATRIX.md` with the 92-file / 1,498-test baseline, count-regression policy, risk-to-evidence ownership, and named desktop/iPhone/player/network/match/accessibility cells.
 - Made `pnpm catalog:check` read-only. A SHA-256 before/after assertion proved the catalog remained byte-identical while all 256 cases passed.

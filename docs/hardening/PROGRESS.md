@@ -96,6 +96,7 @@ Overall status: `QA-001` verified; full release QA is next
 - `TUT-003` completion record: `4feec64` (`TUT-003-record-completion`), pushed to `origin/main`.
 - `MOB-001`: `515659d` (`MOB-001-harden-mobile-viewport-layout`).
 - `REL-001`: `9e8fc9d` (`REL-001-add-structured-reliability-diagnostics`).
+- `QA-001`: `94c1d8d` (`QA-001-add-milestone-verification-matrix`).
 
 ## Known workspace notes
 
