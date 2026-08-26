@@ -12,15 +12,27 @@ describe("useTableFeedbackPresentation", () => {
   afterEach(() => vi.useRealTimers());
 
   it("keeps the initial snapshot silent then presents judgment feedback in order", () => {
+    const play = vi.fn();
     const reveal = log("j0", "judgmentReveal", { actorId: "p1", cardType: "tao", data: { suit: "heart", rank: 8, reason: "bagua" } });
     const replace = log("j1", "judgmentReplace", { actorId: "p2", targetIds: ["p1"], cardType: "sha", data: { suit: "spade", rank: 7 } });
     const { result, rerender } = renderHook(
-      ({ logs }) => useTableFeedbackPresentation({ connected: true, matchId: "m1", logs, turnNumber: 1, phase: "judge", currentTurnPlayerName: "ผู้เล่นหนึ่ง" }),
+      ({ logs }) => useTableFeedbackPresentation({ connected: true, matchId: "m1", logs, turnNumber: 1, phase: "judge", currentTurnPlayerName: "ผู้เล่นหนึ่ง", play }),
       { initialProps: { logs: [reveal] as GameLogView[] } },
     );
     expect(result.current).toEqual([]);
     act(() => rerender({ logs: [reveal, replace] }));
     expect(result.current.map((cue) => cue.kind)).toEqual(["judgmentReplace"]);
+    expect(play).toHaveBeenCalledWith("judgment");
+  });
+
+  it("gives a Shandian hit its own high-impact sound", () => {
+    const play = vi.fn();
+    const { rerender } = renderHook(
+      ({ logs }) => useTableFeedbackPresentation({ connected: true, matchId: "m1", logs, turnNumber: 1, phase: "judge", currentTurnPlayerName: "p1", play }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log("bolt", "judgment", { actorId: "p1", cardType: "shandian", amount: 3, data: { outcome: "hit" } })] }));
+    expect(play).toHaveBeenCalledWith("lightning");
   });
 
   it("presents Wuxie depth and one final result, then expires bounded cues", () => {

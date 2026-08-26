@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameLogView } from "@tktw/shared";
 import type { CardMotionKind, CardMotionPresentationEvent, CardMotionZone, DrawPresentationEvent, PresentationEvent } from "../presentation/presentationEvents";
+import { playSfx, type SfxName } from "../lib/sfx";
 import { usePresentationQueue } from "./usePresentationQueue";
 
 export interface CardMotionEffect {
@@ -22,6 +23,7 @@ export interface CardMotionPresentationOptions {
   matchId: string | undefined;
   logs: readonly GameLogView[] | undefined;
   intervalMs?: number;
+  play?: (name: SfxName) => void;
 }
 
 const RETRY_INTERVAL_MS = 50;
@@ -69,7 +71,16 @@ function drawAsMotion(event: DrawPresentationEvent): CardMotionPresentationEvent
   };
 }
 
-export function useCardMotionPresentation({ connected, matchId, logs, intervalMs }: CardMotionPresentationOptions): CardMotionEffect[] {
+function motionSfx(motion: CardMotionKind): SfxName {
+  switch (motion) {
+    case "draw": case "steal": case "wuguPick": return "cardDraw";
+    case "discard": case "equipmentLoss": return "cardDiscard";
+    case "equip": return "equip";
+    case "play": case "delayed": case "wuguReveal": return "cardPlay";
+  }
+}
+
+export function useCardMotionPresentation({ connected, matchId, logs, intervalMs, play = playSfx }: CardMotionPresentationOptions): CardMotionEffect[] {
   const [effects, setEffects] = useState<CardMotionEffect[]>([]);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const mounted = useRef(true);
@@ -117,6 +128,7 @@ export function useCardMotionPresentation({ connected, matchId, logs, intervalMs
         ...(event.amount !== undefined ? { amount: event.amount } : {}),
         ...(event.anonymous ? { anonymous: true as const } : {}),
       };
+      try { play(motionSfx(event.motion)); } catch { /* optional audio */ }
       setEffects((current) => [...current.filter((item) => item.id !== effect.id), effect].slice(-MAX_ACTIVE));
       const removal = setTimeout(() => {
         timers.current.delete(removal);
@@ -154,7 +166,7 @@ export function useCardMotionPresentation({ connected, matchId, logs, intervalMs
     };
 
     tryPresent(RETRY_COUNT);
-  }, []);
+  }, [play]);
 
   usePresentationQueue({
     connected,

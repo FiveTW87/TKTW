@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameLogView } from "@tktw/shared";
 import { usePresentationQueue } from "./usePresentationQueue";
 import type { PresentationEvent } from "../presentation/presentationEvents";
+import { playSfx, type SfxName } from "../lib/sfx";
 
 export type TableFeedbackCue =
   | { id: string; kind: "judgmentReveal"; playerId: string; cardType?: string; suit?: string; rank?: number; reason?: string }
@@ -19,6 +20,7 @@ interface Options {
   turnNumber: number | undefined;
   phase: string | undefined;
   currentTurnPlayerName: string | undefined;
+  play?: (name: SfxName) => void;
 }
 
 const MAX_CUES = 4;
@@ -46,6 +48,7 @@ export function useTableFeedbackPresentation(options: Options): TableFeedbackCue
   const snapshotRef = useRef<{ matchId: string; turnNumber: number; phase: string; logs: readonly GameLogView[] | undefined } | null>(null);
   const awaitingFreshRef = useRef(false);
   const disconnectedLogsRef = useRef<readonly GameLogView[] | undefined>(undefined);
+  const play = options.play ?? playSfx;
 
   const clear = useCallback(() => {
     for (const timer of timersRef.current.values()) clearTimeout(timer);
@@ -56,13 +59,23 @@ export function useTableFeedbackPresentation(options: Options): TableFeedbackCue
   const show = useCallback((cue: TableFeedbackCue) => {
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     setCues((current) => [...current.filter((item) => item.id !== cue.id), cue].slice(-MAX_CUES));
+    const sound: SfxName | undefined = cue.kind === "wuxieCounter" || cue.kind === "wuxieResult"
+      ? "wuxie"
+      : cue.kind === "turn"
+        ? "turnStart"
+        : cue.kind === "phase"
+          ? undefined
+          : cue.kind === "judgmentResult" && cue.cardType === "shandian" && cue.outcome === "hit"
+            ? "lightning"
+            : "judgment";
+    if (sound) { try { play(sound); } catch { /* optional audio */ } }
     const previous = timersRef.current.get(cue.id);
     if (previous) clearTimeout(previous);
     timersRef.current.set(cue.id, setTimeout(() => {
       timersRef.current.delete(cue.id);
       setCues((current) => current.filter((item) => item.id !== cue.id));
     }, reduced ? 650 : 1500));
-  }, []);
+  }, [play]);
 
   usePresentationQueue({
     connected: options.connected,

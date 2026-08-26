@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   SfxManager,
+  SFX_NAMES,
   playSfx,
   type SfxAudioDriver,
   type SfxName,
@@ -40,6 +41,7 @@ function setup(options: {
   volume?: number;
   maxActive?: number;
   maxPerName?: number;
+  now?: () => number;
 } = {}) {
   const driver = options.driver ?? new FakeDriver();
   const interactionHandlers = new Set<() => void>();
@@ -57,6 +59,7 @@ function setup(options: {
     subscribeToInteraction,
     maxActive: options.maxActive,
     maxPerName: options.maxPerName,
+    now: options.now,
   });
 
   return { manager, driver, createDriver, subscribeToInteraction, interactionHandlers };
@@ -64,8 +67,8 @@ function setup(options: {
 
 describe("SfxManager", () => {
   it("keeps the compatibility player safe when Web Audio is unavailable", () => {
-    const names = ["cardPlay", "skillUse", "draw", "damage", "dodge", "heal", "death", "turnStart", "win", "lose"] as const;
-    for (const name of names) expect(() => playSfx(name)).not.toThrow();
+    expect(SFX_NAMES).toHaveLength(16);
+    for (const name of SFX_NAMES) expect(() => playSfx(name)).not.toThrow();
   });
 
   it("creates the driver lazily and skips muted or silent playback", () => {
@@ -104,7 +107,7 @@ describe("SfxManager", () => {
     const { manager, driver } = setup({ maxActive: 2, maxPerName: 2 });
     manager.play("death");
     manager.play("win");
-    manager.play("draw");
+    manager.play("cardDraw");
     expect(driver.plays.map((entry) => entry.name)).toEqual(["death", "win"]);
 
     manager.play("lose");
@@ -116,13 +119,24 @@ describe("SfxManager", () => {
     const { manager, driver } = setup({ maxActive: 1 });
     manager.play("cardPlay");
     driver.plays[0]?.voice.stop();
-    manager.play("draw");
+    manager.play("cardDraw");
     expect(driver.plays).toHaveLength(2);
 
     expect(() => manager.dispose()).not.toThrow();
     expect(() => manager.dispose()).not.toThrow();
     expect(driver.plays[1]?.voice.stopped).toBe(true);
     expect(driver.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("suppresses rapid duplicate cues without suppressing a later cue", () => {
+    let now = 100;
+    const { manager, driver } = setup({ now: () => now });
+    manager.play("cardPlay");
+    now += 10;
+    manager.play("cardPlay");
+    now += 40;
+    manager.play("cardPlay");
+    expect(driver.plays.map((entry) => entry.name)).toEqual(["cardPlay", "cardPlay"]);
   });
 
   it("drops blocked sounds, unlocks on one interaction, and plays only future sounds", async () => {

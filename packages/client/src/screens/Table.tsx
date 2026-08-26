@@ -15,7 +15,6 @@ import { useInteraction } from "../hooks/useInteraction";
 import { useDecisionController } from "../hooks/useDecisionController";
 import { createMainActionController } from "../hooks/mainActionController";
 import { useTableTransientUi } from "../hooks/useTableTransientUi";
-import { useTableSfx } from "../hooks/useTableSfx";
 import { useCombatPresentation } from "../hooks/useCombatPresentation";
 import { useCardMotionPresentation } from "../hooks/useCardMotionPresentation";
 import { useTableFeedbackPresentation } from "../hooks/useTableFeedbackPresentation";
@@ -131,7 +130,6 @@ export function Table() {
   } = decision;
   const { notice, toast, inspectingPlayer: inspecting, inspectingCard, playChoice: playChoices, discardOpen: showDiscard, leaveConfirmOpen: confirmingLeave, showDeathDialog } = transient.state;
   const showNotice = transient.notice.show;
-  useTableSfx({ connected, gameView, viewerPlayerId: me?.id });
 
   // ── Draw feel: flash the flip-in animation on cards that just entered the
   // hand. Diff current hand ids against last render's; animate only the newly

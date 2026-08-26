@@ -194,12 +194,13 @@ describe("useCombatPresentation", () => {
     );
 
     act(() => rerender({ logs: [log({ actorId: "target", amount: 2, data: { sourceId: "attacker" } })] }));
-    expect(play).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(220));
     expect(play).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledWith("attack");
+    act(() => vi.advanceTimersByTime(220));
+    expect(play).toHaveBeenCalledTimes(2);
     expect(play).toHaveBeenCalledWith("damage");
     act(() => rerender({ logs: [log({ actorId: "target", amount: 2, data: { sourceId: "attacker" } })] }));
-    expect(play).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
   });
 
   it("keeps skill, damage, and death phases ordered with their matching sounds", () => {
@@ -226,11 +227,11 @@ describe("useCombatPresentation", () => {
 
     act(() => vi.advanceTimersByTime(540));
     expect(result.current.some((effect) => effect.kind === "hit")).toBe(true);
-    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "damage"]);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "attack", "damage"]);
 
     act(() => vi.advanceTimersByTime(90));
     expect(result.current.some((effect) => effect.kind === "death")).toBe(true);
-    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "damage", "death"]);
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["skillUse", "attack", "damage", "death"]);
   });
 
   it("keeps full-body poses inside a short mobile landscape viewport while impact stays on the seat", () => {

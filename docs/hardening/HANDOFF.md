@@ -1,8 +1,8 @@
 # Current Handoff
 
-Date: 2026-08-25
+Date: 2026-08-26
 Integration owner: Codex
-Current task: `QA-001` complete; next task is `QA-002`
+Current task: `SFX-002` complete; next task is user listening acceptance then `QA-002`
 
 ## Objective
 
@@ -28,7 +28,7 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Latest pushed checkpoint before QA-001: `1c40921` (`REL-001-record-completion`).
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
 - `pnpm verify:milestone` is the canonical sequential gate; see `QA_MATRIX.md`.
-- Automated tests passed: engine 1,122; server 76; client 300; total 1,498.
+- Automated tests passed: engine 1,122; server 76; client 302; total 1,500.
 - Production client build passed with 305 modules on 2026-08-25.
 - The server and client are deployed as one Node service; rooms are process-memory only.
 
@@ -39,13 +39,13 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Stage explicit documentation/ignore paths only.
 - Approved and currently mapped artwork must not be replaced without user approval.
 
-## Immediate next task after QA-001
+## Immediate next task after SFX-002
 
 `QA-002` — full release and production smoke test.
 
 Before implementing:
 
-1. Re-run `pnpm verify:milestone` at the final release candidate.
+1. Listen to all 16 cues in real Chrome and iPhone Safari, then record any mix-level changes without altering event timing.
 2. Complete named 3/5/8/10-player, reconnect/timeout/forfeit/rematch, hidden-information, tutorial, sound, reduced-motion, and mobile cells from `QA_MATRIX.md`.
 3. Verify 932×430, 844×390, and 740×360 plus a real iPhone Safari landscape pass.
 4. Run production server/client and `/health`, then record the in-memory restart limitation.

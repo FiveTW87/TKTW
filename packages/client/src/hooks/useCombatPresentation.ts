@@ -65,12 +65,12 @@ function posePriority(effect: CombatEffect): number {
 
 function outcomeSfx(effect: CombatEffect): SfxName | undefined {
   switch (effect.kind) {
+    case "travel": return "attack";
     case "hit": return "damage";
     case "dodge": return "dodge";
     case "heal": return "heal";
     case "skill": return "skillUse";
     case "death": return "death";
-    case "travel": return undefined;
   }
 }
 

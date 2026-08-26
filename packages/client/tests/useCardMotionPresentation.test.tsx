@@ -30,9 +30,10 @@ describe("useCardMotionPresentation", () => {
   });
 
   it("silently baselines history then presents public play source-to-destination", () => {
+    const play = vi.fn();
     const historical = log("old", "cardPlay", { actorId: "p1", cardId: "c0", cardType: "sha" });
     const { result, rerender } = renderHook(
-      ({ logs }) => useCardMotionPresentation({ connected: true, matchId: "m1", logs }),
+      ({ logs }) => useCardMotionPresentation({ connected: true, matchId: "m1", logs, play }),
       { initialProps: { logs: [historical] as GameLogView[] } },
     );
     expect(result.current).toEqual([]);
@@ -49,6 +50,25 @@ describe("useCardMotionPresentation", () => {
       cardType: "tao",
       reduced: false,
     })]);
+    expect(play).toHaveBeenCalledWith("cardPlay");
+  });
+
+  it("routes draw, discard, and equipment sounds from the visible motion", () => {
+    anchor("player:p1:equipment", 120, 240);
+    const play = vi.fn();
+    const { rerender } = renderHook(
+      ({ logs }) => useCardMotionPresentation({ connected: true, matchId: "m1", logs, play, intervalMs: 0 }),
+      { initialProps: { logs: [] as GameLogView[] } },
+    );
+    act(() => rerender({ logs: [log("draw", "draw", { actorId: "p1" })] }));
+    act(() => vi.runOnlyPendingTimers());
+    act(() => rerender({ logs: [
+      log("draw", "draw", { actorId: "p1" }),
+      log("discard", "discard", { actorId: "p1" }),
+      log("equip", "equip", { actorId: "p1", cardType: "bagua" }),
+    ] }));
+    act(() => vi.advanceTimersByTime(220));
+    expect(play.mock.calls.map(([name]) => name)).toEqual(["cardDraw", "cardDiscard", "equip"]);
   });
 
   it("retries a late destination once and drops a permanently missing destination", () => {

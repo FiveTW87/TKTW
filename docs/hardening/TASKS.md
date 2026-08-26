@@ -58,8 +58,9 @@ Status / Owner / Reviewer / Branch / Dependencies / Estimate / Risk
 | TUT-003 | Advanced lessons, resume, and polish | completed | Codex + Claude content | 4d | TUT-002 |
 | MOB-001 | Mobile layout-mode and Safari hardening | completed | Codex | 2d | FX-003, ASSIST-002 |
 | REL-001 | Structured diagnostics and failure UX | completed | Codex | 1.5d | ROOM-002 |
+| SFX-002 | Layered game-audio reset and event mix | completed | Codex | 2.5d | SFX-001, FX-003 |
 | QA-001 | Milestone verification matrix | completed | Codex + Claude review | 2d | Each milestone |
-| QA-002 | Full release and production smoke test | backlog | Codex | 3d | All tasks |
+| QA-002 | Full release and production smoke test | backlog | Codex | 3d | All tasks, SFX-002 |
 
 ---
 
@@ -2035,6 +2036,75 @@ Add structured decision/reconnect/timeout/forfeit diagnostics and clear in-memor
 - Added Thai restart/ack-timeout recovery copy and a pure rejoin failure classifier without changing popup markup/CSS or the unrelated `App.tsx` worktree diff.
 - RED covered the missing diagnostic module and missing failure classifier. A first full-client attempt exposed the incompatible Socket.IO timeout wrapper; focused GeneralSelect/Table regressions reproduced it, the wrapper was corrected to retain `socket.emit`, and the focused rerun passed 74/74.
 - Final verification passed Client 45 files / 300 tests, Server 6 / 76, Engine 41 / 1,122, total 92 / 1,498; root typecheck; production client build (305 modules); `/health` returned `{ "ok": true }`; catalog 256/256; and diff checks. No visual screenshot was needed because visible markup/CSS/layout did not change; the changed copy is covered by model and popup regressions.
+
+---
+
+## SFX-002 — Layered game-audio reset and event mix
+
+Status: completed | Owner: Codex | Reviewer: User listening + Claude event audit | Estimate: 2.5 days | Risk: High
+
+### Objective
+
+Replace the thin ten-tone synthesizer with a bounded layered Web Audio sound bank whose cues land on the visible card, combat, judgment, Wuxie, Shandian, turn, and result phases.
+
+### Current behavior
+
+- Ten oscillator-only cues share a flat destination path and sound synthetic/thin.
+- Draw/discard/turn routing is owned by a separate snapshot hook while card motion, combat, and table feedback have their own visible timelines.
+- Card equipment, discard, attack travel, judgment, Wuxie, and Shandian have no distinct audio identity.
+
+### Expected behavior
+
+- One typed 16-cue bank composes deterministic tone and filtered-noise layers through one compressor-protected mix.
+- Audio is emitted by the same presentation owner that makes the corresponding visual state visible; reconnect/history baselines stay silent.
+- Cooldowns, per-cue polyphony, global limits, priority eviction, autoplay recovery, mute, volume, and failure isolation remain bounded.
+
+### In scope / allowed files
+
+- `packages/client/src/audio/sfxBank.ts`, `packages/client/src/lib/sfx.ts`, and audio tests.
+- Narrow sound-routing edits in card-motion, combat, table-feedback, Table composition, and their tests.
+- Removal of the superseded snapshot-only `useTableSfx` owner and its test after equivalent coverage moves to presentation owners.
+- Hardening progress, task, handoff, baseline, and QA matrix records.
+
+### Out of scope / forbidden files
+
+- Engine/shared/server rules or protocol, gameplay timing, UI/CSS/layout, artwork, database/users/scores, voice chat, licensed/downloaded audio, background music, and unrelated `App.tsx` content or line endings.
+- Awaiting sound before gameplay/presentation, replaying blocked or historical sounds, or unbounded buffers/voices.
+
+### Type or protocol changes
+
+- Client-only `SfxName` expands to 16 literal cues backed by exhaustive `Record<SfxName, SfxRecipe>` recipes and typed tone/noise layer unions. No wire change.
+
+### Implementation steps
+
+1. Define recipe/layer contracts and bounded cue bank; add invariant tests.
+2. Replace the raw oscillator driver with tone/noise synthesis, deterministic noise, envelopes, master compressor, cooldown, and per-cue priority/polyphony.
+3. Route card sounds from visible card motion, attack/hit sounds from combat phases, and judgment/Wuxie/lightning/turn sounds from table feedback.
+4. Delete the duplicated snapshot sound hook, preserve Result and preference controls, then run focused and full verification.
+
+### Edge cases
+
+- Missing/throwing/closed/suspended AudioContext, Safari prefixed context, rejected or synchronous resume, rapid duplicate logs, multi-target bursts, same-frame skill→attack→damage→death, reduced motion, reconnect/log rollback/match reset, Shandian hit vs miss, muted/zero/invalid volume, storage failure, node creation/stop/disconnect/close failure, and component unmount.
+
+### Acceptance criteria
+
+- Every public cue has a bounded recipe and no cue can create unbounded overlapping voices.
+- The same accepted event produces at most one sound in each intended visible phase and no historical reconnect burst.
+- Shandian hit has a distinct highest-priority cue; miss remains judgment feedback without thunder impact.
+- Gameplay, socket handling, presentation progression, and React rendering never await or throw because of audio.
+
+### Tests and verification
+
+- Sound-bank invariants; manager mute/volume/cooldown/polyphony/priority/autoplay/failure tests; card/combat/feedback timing; Result/preferences regressions; full client/engine/server suites; root typecheck; production build; catalog and diff checks.
+
+### Completion report
+
+- Replaced the oscillator-only ten-cue definitions with one exhaustive 16-cue layered bank using deterministic filtered noise, shaped tone envelopes, cue-specific output levels, cooldowns, priorities, and polyphony limits.
+- Rebuilt the Web Audio output path around a shared mix and dynamics compressor. Lazy context creation, Safari-prefixed fallback, gesture recovery, mute/volume storage, failure isolation, global eviction, and idempotent cleanup remain intact.
+- Moved sound ownership onto visible presentation phases: card draw/play/discard/equip from card motion; attack travel plus hit/dodge/heal/skill/death from combat; judgment/Wuxie/Shandian/turn from table feedback; win/lose remain on Result.
+- Removed the superseded snapshot-only `useTableSfx` hook and its duplicate routing. Initial snapshots, reconnects, match resets, and log rollbacks remain silent through the existing presentation queue contract.
+- Focused verification passed 8 files / 60 tests. Milestone verification passed in 221 seconds: Engine 41/1,122, Server 6/76, Client 45/302, total 92/1,500; root typecheck; production build with 305 modules; catalog 256/256; and diff checks.
+- No screenshot was required because UI/DOM/CSS/layout did not change. Final perceived mix and loudness remain a listening acceptance item for the user in real Chrome/iPhone Safari; the build's existing main-chunk warning is now 551.95 kB minified.
 
 ---
 

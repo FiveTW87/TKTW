@@ -1,8 +1,8 @@
 # Hardening Progress
 
-Last updated: 2026-08-25
-Current milestone: Phase 11 — Milestone verification completed
-Overall status: `QA-001` verified; full release QA is next
+Last updated: 2026-08-26
+Current milestone: Phase 12 — Game audio reset completed
+Overall status: `SFX-002` verified; full release QA is next
 
 ## Next task
 
@@ -26,6 +26,7 @@ Overall status: `QA-001` verified; full release QA is next
 - `PRES-001` — Typed presentation-event model, silent-baseline queue, combat adapter migration, and failure isolation.
 - `PRES-002` — Reconnect-safe presentation baseline, bounded target/source anchor retry, and reduced-motion outcome verification.
 - `SFX-001` — Centralized synthesized playback, autoplay recovery, bounded logical-effect concurrency, and resilient preferences.
+- `SFX-002` — Layered 16-cue sound bank, compressor-protected mix, presentation-phase routing, distinct attack/equipment/judgment/Wuxie/lightning cues, and duplicate snapshot-owner removal.
 - `FX-001` — Typed card/equipment movement, semantic anchors, anonymous hidden-card cues, reduced motion, and bounded lifecycle.
 - `FX-002` — Ordered combat/skill timelines, per-player pose arbitration, route labels, burst bounds, and phase-aligned SFX.
 - `FX-003` — Public judgment/Wuxie sequencing, reconnect-safe turn/phase cues, and explicit urgent timer semantics.
@@ -56,13 +57,13 @@ Overall status: `QA-001` verified; full release QA is next
 |---|---:|---:|---|
 | Engine | 41 | 1,122 | Passed |
 | Server | 6 | 76 | Passed |
-| Client | 45 | 300 | Passed |
-| Total | 92 | 1,498 | Passed |
+| Client | 45 | 302 | Passed |
+| Total | 92 | 1,500 | Passed |
 
 ## Next actions
 
-1. Start `QA-002` full release and production smoke test.
-2. Record real-device/manual cells separately from automated evidence.
+1. Perform user listening acceptance for the new mix in Chrome and iPhone Safari.
+2. Start `QA-002` full release and production smoke test.
 3. Keep unrelated `App.tsx` line-ending changes out of every commit.
 
 ## Checkpoints

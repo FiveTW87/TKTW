@@ -1,6 +1,6 @@
 # Milestone Verification Matrix
 
-Last updated: 2026-08-25
+Last updated: 2026-08-26
 Owner: Codex | Independent review: pending (Claude)
 
 This is the repeatable verification contract for every hardening milestone. A task is not complete because its focused tests pass; the applicable row below and its evidence must also be recorded in `TASKS.md`.
@@ -14,12 +14,12 @@ Run `pnpm verify:milestone` from the repository root. It deliberately runs packa
 | Type boundaries | `pnpm typecheck` | Engine, Shared, Server, Client pass | No source/test exclusions; any new error blocks completion |
 | Engine authority | `pnpm --filter @tktw/engine test` | 41 files / 1,122 tests | Count may only decrease with a named removal and replacement rationale |
 | Server/protocol | `pnpm --filter @tktw/server test` | 6 files / 76 tests | Reconnect, timeout, hidden view, idempotency, and diagnostics stay covered |
-| Client/presentation | `pnpm --filter @tktw/client test` | 45 files / 300 tests | Table, mobile, effects, sound, assist, tutorial, and recovery stay covered |
+| Client/presentation | `pnpm --filter @tktw/client test` | 45 files / 302 tests | Table, mobile, effects, sound, assist, tutorial, and recovery stay covered |
 | Production bundle | `pnpm build:client` | 305 modules transformed | Typecheck and Vite build must both pass |
 | Physical catalog | `pnpm catalog:check` | 256 pass / 0 fail / 0 waived / 0 pending | Check is read-only; drift or missing implementation blocks completion |
 | Diff hygiene | `git diff --check` | Clean | Whitespace errors block commit |
 
-Current automated total: 92 test files / 1,498 tests. Shared has no runtime suite; its schemas and types are exercised by engine, server, and client contract tests and by root typecheck.
+Current automated total: 92 test files / 1,500 tests. Shared has no runtime suite; its schemas and types are exercised by engine, server, and client contract tests and by root typecheck.
 
 ## Risk-to-evidence map
 

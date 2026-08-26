@@ -1,6 +1,6 @@
 # Test and Verification Baseline
 
-Baseline date: 2026-08-25
+Baseline date: 2026-08-26
 Canonical command: `pnpm verify:milestone`
 
 ## Typecheck and build result
@@ -17,8 +17,8 @@ Canonical command: `pnpm verify:milestone`
 |---|---:|---:|---|
 | `@tktw/engine` | 41 | 1,122 | Passed |
 | `@tktw/server` | 6 | 76 | Passed |
-| `@tktw/client` | 45 | 300 | Passed |
-| Total | 92 | 1,498 | Passed |
+| `@tktw/client` | 45 | 302 | Passed |
+| Total | 92 | 1,500 | Passed |
 
 The canonical milestone command runs package suites sequentially because earlier parallel runs could starve timing-sensitive server E2E while engine fuzz suites were competing for resources. `pnpm catalog:check` is read-only and passed a byte-for-byte SHA-256 before/after check.
 
