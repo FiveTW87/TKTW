@@ -98,6 +98,7 @@ Overall status: `SFX-002` verified; full release QA is next
 - `MOB-001`: `515659d` (`MOB-001-harden-mobile-viewport-layout`).
 - `REL-001`: `9e8fc9d` (`REL-001-add-structured-reliability-diagnostics`).
 - `QA-001`: `94c1d8d` (`QA-001-add-milestone-verification-matrix`).
+- `SFX-002`: `5231676` (`SFX-002-reset-layered-game-audio`).
 
 ## Known workspace notes
 

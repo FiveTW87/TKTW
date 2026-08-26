@@ -25,7 +25,7 @@ Read `SPEC.md` and `DECISIONS.md`. Database, persistent accounts/scores, C#, new
 - Card-target legality checkpoint: `0b0f6f0` (`LEGAL-003-add-authoritative-card-targets`).
 - Active-skill/client-migration checkpoint: `c6f8f61` (`LEGAL-004-migrate-client-to-authoritative-skills`).
 - Table-controller checkpoint: `04af1ae` (`TABLE-001-extract-table-controllers`).
-- Latest pushed checkpoint before QA-001: `1c40921` (`REL-001-record-completion`).
+- Latest implementation checkpoint: `5231676` (`SFX-002-reset-layered-game-audio`); push remains pending user instruction.
 - `pnpm typecheck` now covers all four packages and passes without excluding existing source or test files.
 - `pnpm verify:milestone` is the canonical sequential gate; see `QA_MATRIX.md`.
 - Automated tests passed: engine 1,122; server 76; client 302; total 1,500.

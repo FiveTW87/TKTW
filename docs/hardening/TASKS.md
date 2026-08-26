@@ -2099,6 +2099,7 @@ Replace the thin ten-tone synthesizer with a bounded layered Web Audio sound ban
 
 ### Completion report
 
+- Commit: `5231676` (`SFX-002-reset-layered-game-audio`).
 - Replaced the oscillator-only ten-cue definitions with one exhaustive 16-cue layered bank using deterministic filtered noise, shaped tone envelopes, cue-specific output levels, cooldowns, priorities, and polyphony limits.
 - Rebuilt the Web Audio output path around a shared mix and dynamics compressor. Lazy context creation, Safari-prefixed fallback, gesture recovery, mute/volume storage, failure isolation, global eviction, and idempotent cleanup remain intact.
 - Moved sound ownership onto visible presentation phases: card draw/play/discard/equip from card motion; attack travel plus hit/dodge/heal/skill/death from combat; judgment/Wuxie/Shandian/turn from table feedback; win/lose remain on Result.
